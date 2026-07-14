@@ -128,13 +128,21 @@ async function fetchFromSheets() {
     if (tErr) throw tErr;
     if (tutorsData && tutorsData.length > 0) {
       state.tutors = tutorsData;
+    } else if (state.tutors.length > 0) {
+      // Auto-migrate local tutors to empty Supabase database
+      for (const t of state.tutors) {
+        await supabaseClient.from('tutors').upsert(t);
+      }
     }
 
     // 4. Fetch Demos configurations
     const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
     if (dErr) throw dErr;
-    if (demosData) {
+    if (demosData && demosData.length > 0) {
       state.demos = demosData.map(mapSheetDemoToApp);
+    } else if (state.demos.length > 0) {
+      // Auto-migrate local demos to empty Supabase database
+      await supabaseClient.from('demos').insert(state.demos);
     }
 
     saveToLocalStorage();
