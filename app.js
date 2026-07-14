@@ -971,7 +971,7 @@ function renderAdminTutors() {
   tbody.innerHTML = "";
 
   if (state.tutors.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:30px;">No tutors.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:30px;">No tutors.</td></tr>`;
     return;
   }
 
@@ -985,7 +985,6 @@ function renderAdminTutors() {
         </div>
       </td>
       <td><code>${t.accessCode}</code></td>
-      <td>${t.email || '-'}</td>
       <td>
         <button class="btn btn-sm edit-tutor-btn-el" data-id="${t.id}">Edit</button>
         <button class="btn btn-sm btn-danger delete-tutor-btn-el" data-id="${t.id}">Delete</button>
@@ -1096,7 +1095,6 @@ function openTutorModal(tutorId = null) {
       document.getElementById("tutor-form-id").value = tutor.id;
       document.getElementById("tutor-form-name").value = tutor.name;
       document.getElementById("tutor-form-code").value = tutor.accessCode;
-      document.getElementById("tutor-form-email").value = tutor.email || "";
     }
   } else {
     title.textContent = "Add Tutor Profile";
@@ -1110,10 +1108,9 @@ async function handleTutorSubmit(e) {
   const id = document.getElementById("tutor-form-id").value;
   const name = document.getElementById("tutor-form-name").value.trim();
   const accessCode = document.getElementById("tutor-form-code").value.trim();
-  const email = document.getElementById("tutor-form-email").value.trim();
 
   const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-  const tutorData = { name, accessCode, email, avatar };
+  const tutorData = { name, accessCode, avatar };
 
   if (id) {
     const idx = state.tutors.findIndex(t => t.id === id);
@@ -1544,7 +1541,7 @@ function initEventListeners() {
   const bulkTutorsBtn = document.getElementById("bulk-import-tutors-btn");
   if (bulkTutorsBtn) {
     bulkTutorsBtn.addEventListener("click", async () => {
-      const raw = prompt("Paste comma-separated tutor rows (Name, AccessCode, Email):");
+      const raw = prompt("Paste comma-separated tutor rows (Name, AccessCode):");
       if (raw) {
         const lines = raw.split("\n");
         let added = 0;
@@ -1553,12 +1550,11 @@ function initEventListeners() {
           if (parts.length >= 2) {
             const name = parts[0].trim();
             const accessCode = parts[1].trim();
-            const email = parts[2]?.trim() || "";
             
             if (name && accessCode) {
               const id = `tutor_${Date.now()}_${added}`;
               const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-              const tutorData = { id, name, accessCode, email, avatar };
+              const tutorData = { id, name, accessCode, avatar };
               
               state.tutors.push(tutorData);
               // Async write back
