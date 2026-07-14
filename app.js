@@ -328,7 +328,7 @@ function getMonthYearFilteredDemos() {
   const textMonthShort = textMonthLong.slice(0, 3);
 
   return state.demos.filter(d => {
-    const val = (d.date || d.dateTime || "").toLowerCase().trim();
+    const val = String(d.date || d.dateTime || "").toLowerCase().trim();
     if (!val) return false;
 
     // 1. Check textual matches (e.g. "15 Jul 26" or "15 July 2026")
