@@ -184,10 +184,14 @@ function loadFromLocalStorage() {
 }
 
 function saveToLocalStorage() {
-  localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
-  localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
-  localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
-  localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
+  try {
+    localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
+    localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
+    localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
+    localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
+  } catch (e) {
+    console.warn("Storage quota exceeded. Skipping local browser caching. Data syncs directly to Google Sheet.", e);
+  }
 }
 
 // --- Authentication controller ---
