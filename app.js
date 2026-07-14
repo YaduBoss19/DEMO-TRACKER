@@ -1834,7 +1834,6 @@ function processImportedRows(rows) {
     };
     
     state.demos.push(demoData);
-    writeToSheets("addDemo", demoData);
     addedCount++;
   }
   
@@ -1842,6 +1841,10 @@ function processImportedRows(rows) {
     saveToLocalStorage();
     updateViews();
     showToast(`Successfully imported ${addedCount} demos.`);
+    
+    // Batch upload all imported rows to Google Sheets in a single network request
+    const demosToSync = state.demos.slice(-addedCount).map(mapAppDemoToSheet);
+    writeToSheets("addDemosBulk", demosToSync);
   } else {
     showToast("No valid rows were found. Make sure Student Name is populated.", "warning");
   }
