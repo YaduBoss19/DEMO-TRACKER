@@ -50,6 +50,10 @@ function initSupabase() {
   const url = state.branding.supabaseUrl;
   const key = state.branding.supabaseKey;
   if (url && key) {
+    if (typeof window.supabase === "undefined") {
+      console.warn("Supabase SDK not loaded yet. Delaying database connection.");
+      return;
+    }
     try {
       supabase = window.supabase.createClient(url, key);
       
@@ -380,7 +384,7 @@ function handleSignout() {
 }
 
 async function syncFullState() {
-  if (state.branding.sheetsUrl) {
+  if (state.branding.supabaseUrl) {
     const success = await fetchFromSheets();
     if (success) {
       applyBranding();
