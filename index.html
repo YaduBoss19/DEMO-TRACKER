@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eight Times Eight Chess Academy - Portal Entrance</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Specific styles for the entrance router page */
+    .entrance-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      width: 100vw;
+      background-color: #0c0f17;
+      background-image: 
+        linear-gradient(45deg, #111420 25%, transparent 25%), 
+        linear-gradient(-45deg, #111420 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #111420 75%), 
+        linear-gradient(-45deg, transparent 75%, #111420 75%);
+      background-size: 80px 80px;
+      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
+      padding: 20px;
+    }
+    
+    .entrance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 760px;
+      margin-top: 40px;
+    }
+    
+    @media (max-width: 600px) {
+      .entrance-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .entrance-card {
+      background: rgba(30, 41, 59, 0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 35px 24px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 320px;
+    }
+    
+    .entrance-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    }
+    
+    .entrance-card h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      color: white;
+      margin-bottom: 12px;
+    }
+    
+    .entrance-card p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    
+    .entrance-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="entrance-container">
+    <div class="login-header-group" style="margin-bottom: 10px;">
+      <div class="login-brand-logo" id="entrance-logo-slot">
+        <!-- Logo SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+      </div>
+      <h1 class="login-title" id="entrance-brand-name">Eight Times Eight Chess Academy</h1>
+      <div class="login-subtitle">Dashboard Portal</div>
+    </div>
+
+    <div class="entrance-grid">
+      
+      <!-- Tutor Portal Route Card -->
+      <div class="entrance-card">
+        <div>
+          <div class="entrance-icon">♟️</div>
+          <h2>Tutor Portal</h2>
+          <p>Sign in using your tutor credentials to track your completed demos, conversion metrics, feedback notes, and incentive slab achievements.</p>
+        </div>
+        <a href="tutor.html" class="login-btn" style="text-decoration: none;">
+          Enter Tutor Portal
+        </a>
+      </div>
+
+      <!-- Admin Portal Route Card -->
+      <div class="entrance-card">
+        <div>
+          <div class="entrance-icon">👑</div>
+          <h2>Admin Portal</h2>
+          <p>Log in using your manager credentials to coordinate tutors, edit incentive slab requirements, configure branding theme options, and manage sheets sync.</p>
+        </div>
+        <a href="admin.html" class="login-btn" style="text-decoration: none;">
+          Enter Admin Portal
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="mockData.js"></script>
+  <script>
+    // Load custom branding options on launch
+    document.addEventListener("DOMContentLoaded", () => {
+      const localBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
+      if (localBranding) {
+        const branding = JSON.parse(localBranding);
+        
+        // Update brand text
+        document.getElementById("entrance-brand-name").textContent = branding.companyName;
+        
+        // Update logo
+        const logoSlot = document.getElementById("entrance-logo-slot");
+        if (logoSlot) {
+          logoSlot.innerHTML = branding.logoUrl
+            ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
+            : branding.companyLogo;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

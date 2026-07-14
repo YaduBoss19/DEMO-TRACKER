@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eight Times Eight Chess Academy - Admin Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- LOGIN SCREEN (Checkered chess theme, default visible) -->
+  <div id="login-screen">
+    <div class="login-header-group">
+      <div class="login-brand-logo" id="login-logo-slot">
+        <!-- Logo SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+      </div>
+      <h1 class="login-title" id="login-brand-name">Eight Times Eight Chess Academy</h1>
+      <div class="login-subtitle">Admin Portal</div>
+    </div>
+
+    <div class="login-card">
+      <form id="login-form">
+        <div class="login-form-group">
+          <label class="login-label" for="login-tutor-name">Manager Name</label>
+          <input type="text" id="login-tutor-name" class="login-input" placeholder="Enter admin name" required>
+        </div>
+        <div class="login-form-group" style="margin-bottom: 24px;">
+          <label class="login-label" for="login-access-code">Access Code</label>
+          <input type="password" id="login-access-code" class="login-input" placeholder="Enter admin access code" required>
+        </div>
+        <button type="submit" class="login-btn">
+          <span>↥</span> View Admin Dashboard
+        </button>
+      </form>
+    </div>
+    
+    <div class="login-footer-text">
+      Enter your manager credentials to configure the system
+    </div>
+  </div>
+
+  <!-- APP CONTAINER (Hidden initially until admin signs in) -->
+  <div id="app-container" style="display: none;">
+    
+    <!-- Sidebar Navigation -->
+    <aside>
+      <div class="logo-container">
+        <div class="logo-icon" id="sidebar-logo-slot">
+          <!-- Logo SVG -->
+        </div>
+        <div class="logo-text company-name-text">Eight Times Eight...</div>
+      </div>
+      
+      <nav>
+        <div class="nav-menu">
+          <a class="nav-item active" data-tab="dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="3" y="3" width="7" height="9" rx="1" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="14" y="3" width="7" height="5" rx="1" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="14" y="12" width="7" height="9" rx="1" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="3" y="16" width="7" height="5" rx="1" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+            Dashboard
+          </a>
+          <a class="nav-item" data-tab="mydemos">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            All Demos
+          </a>
+          <a class="nav-item" data-tab="leaderboard">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+            Leaderboard
+          </a>
+
+          <!-- Admin Specific menu links -->
+          <div class="nav-header">Admin panel</div>
+          <a class="nav-item" data-tab="admin-slabs">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+            </svg>
+            Incentive Settings
+          </a>
+          <a class="nav-item" data-tab="admin-branding">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+            </svg>
+            Brand Settings
+          </a>
+          <a class="nav-item" data-tab="admin-tutors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            Tutor Access
+          </a>
+        </div>
+      </nav>
+      
+      <!-- Sidebar Profile Card -->
+      <div class="sidebar-footer">
+        <!-- Tutor select switcher to view individual dashboard stats -->
+        <div class="tutor-picker-container" id="admin-tutor-swapper-box" style="margin-bottom:12px;">
+          <label class="picker-label" for="tutor-profile-select">View statistics for</label>
+          <select id="tutor-profile-select" class="custom-select tutor-select-el"></select>
+        </div>
+
+        <div class="profile-card">
+          <img class="profile-avatar" id="sidebar-user-avatar" src="" alt="Admin Avatar">
+          <div class="profile-info">
+            <span class="profile-name" id="sidebar-user-name">Loading...</span>
+            <span class="profile-role">Academy Manager</span>
+          </div>
+        </div>
+        
+        <div class="signout-btn" id="sidebar-signout-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sign out
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Pane -->
+    <main>
+      
+      <header>
+        <div class="header-title-area">
+          <h1 id="main-header-title">Welcome back, Admin</h1>
+          <p id="main-header-subtitle">Academy Dashboard Overview</p>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div class="date-switcher">
+            <button class="date-switcher-btn" id="date-switcher-prev">‹</button>
+            <span class="date-switcher-value" id="date-switcher-month">July 2026</span>
+            <button class="date-switcher-btn" id="date-switcher-next">›</button>
+          </div>
+          
+          <div class="sync-loader" id="sheets-sync-status" style="display: none;">
+            <div class="spinner"></div>
+            <span>Syncing Sheets...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Warning alert banner -->
+      <div class="alert-banner" id="dashboard-alert-banner" style="display: none;">
+        <span>⚠️</span>
+        <span id="dashboard-alert-text">-</span>
+      </div>
+
+      <!-- VIEW: ADMIN DASHBOARD -->
+      <section id="dashboard-view" class="view-section active">
+        
+        <div class="kpi-grid">
+          <div class="kpi-card demos-done">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Demos Done</span>
+              <span class="kpi-value" id="dash-demos-done">0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card demos-converted">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Converted Demos</span>
+              <span class="kpi-value" id="dash-demos-converted">0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card demos-not-done">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Demos Not Done</span>
+              <span class="kpi-value" id="dash-demos-not-done">0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card demos-cancelled">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Demos Cancelled</span>
+              <span class="kpi-value" id="dash-demos-cancelled">0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card current-slab">
+            <div class="kpi-icon-wrapper">
+              <span class="currency-symbol" style="font-size:1.2rem; font-weight:700;">₹</span>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Current Slab</span>
+              <span class="kpi-value" id="dash-current-slab">₹0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card incentive-earned">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Incentive Earned</span>
+              <span class="kpi-value" id="dash-incentive-earned">₹0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card today-demos">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Today's Demos</span>
+              <span class="kpi-value" id="dash-today-demos">0</span>
+            </div>
+          </div>
+
+          <div class="kpi-card total-demos">
+            <div class="kpi-icon-wrapper">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+            </div>
+            <div class="kpi-text-group">
+              <span class="kpi-title">Total Demos</span>
+              <span class="kpi-value" id="dash-total-demos">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Left: circle gauge -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Conversion Percentage</h3>
+            </div>
+            <div class="circular-progress-card">
+              <div class="circular-progress">
+                <svg>
+                  <circle class="bg-ring" cx="80" cy="80" r="75" />
+                  <circle class="progress-ring" id="dash-circle-ring" cx="80" cy="80" r="75" />
+                </svg>
+                <div class="progress-text-center">
+                  <span class="progress-number" id="dash-circle-number">0.0%</span>
+                  <span class="progress-label">Conversion</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Top 5 Tutors -->
+            <div style="margin-top: 15px; border-top:1px solid var(--border-color); padding-top:20px;">
+              <h4 style="font-size:0.8rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                <span>🔥</span> Top 5 Tutors (Motivation Panel)
+              </h4>
+              <div id="mini-leaderboard-container"></div>
+            </div>
+          </div>
+
+          <!-- Right: slabs progress -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Incentive Slabs Progress</h3>
+            </div>
+            <div class="incentive-slabs-container" id="dash-slabs-progress-container"></div>
+          </div>
+        </div>
+
+        <!-- Tutor Performance Bar Chart (Admin Only) -->
+        <div class="card-panel">
+          <div class="panel-header" style="margin-bottom: 15px;">
+            <h3 class="panel-title">Tutor Conversion Rates Chart</h3>
+          </div>
+          <div class="chart-container" id="admin-chart-container">
+            <!-- Dynamic CSS Bar Chart populated by app.js -->
+          </div>
+        </div>
+
+        <!-- Simulator -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">Incentive Predictor & Simulator</h3>
+          </div>
+          <div class="admin-grid" style="grid-template-columns: 1fr 1fr; gap: 30px;">
+            <div>
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between;">
+                  <label for="sim-demos">Simulate Completed Demos</label>
+                  <span style="font-weight:700; color:var(--brand-secondary);" id="sim-demos-val">0</span>
+                </div>
+                <input type="range" id="sim-demos" class="filter-input" min="0" max="60" value="0" style="padding:0; margin:8px 0;">
+              </div>
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between;">
+                  <label for="sim-conversion">Simulate Conversion %</label>
+                  <span style="font-weight:700; color:var(--brand-secondary);" id="sim-conversion-val">0%</span>
+                </div>
+                <input type="range" id="sim-conversion" class="filter-input" min="0" max="100" value="0" style="padding:0; margin:8px 0;">
+              </div>
+            </div>
+            <div style="background-color:#f9fafb; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                <span style="font-size:0.85rem; color:var(--text-muted);">Simulated Slab:</span>
+                <span id="sim-projected-slab" style="font-weight:700;">None</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom: 15px; align-items:center;">
+                <span style="font-size:0.85rem; font-weight:700;">Projected Incentive:</span>
+                <span id="sim-projected-incentive" style="font-size:1.6rem; font-weight:700; color:var(--color-success);">₹0</span>
+              </div>
+              <div id="sim-projected-tip" style="font-size:0.8rem; color:var(--text-muted); border-left:3px solid var(--brand-secondary); padding-left:10px; line-height:1.4;">
+                Slide values to preview slab tiers.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- VIEW: ALL DEMOS (Image 5) -->
+      <section id="mydemos-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header" style="margin-bottom: 15px;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">All Demos</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Central database log containing tutor sessions</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn" id="bulk-import-btn">Bulk Import Demos</button>
+              <button class="btn btn-primary" id="add-demo-btn">+ Add Demo</button>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-bar">
+            <input type="text" id="demo-search-input" class="filter-input" placeholder="Search student or tutor...">
+            <select id="demo-filter-status" class="filter-select">
+              <option value="ALL">All Status</option>
+              <option value="Demo Done">Demo Done</option>
+              <option value="Demo Not Done">Demo Not Done</option>
+              <option value="Converted">Converted</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table" id="demos-table">
+              <thead id="demos-table-head">
+                <!-- Javascript fills table -->
+              </thead>
+              <tbody id="demos-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: LEADERBOARD (Image 3) -->
+      <section id="leaderboard-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header" style="margin-bottom: 20px;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; margin-bottom: 4px;">Leaderboard</h2>
+              <button class="btn btn-sm" id="download-payroll-btn">📥 Download Payroll CSV</button>
+            </div>
+            <div class="tab-pills" id="leaderboard-tab-pills">
+              <button class="tab-pill active" data-sort="conversion">Conversion %</button>
+              <button class="tab-pill" data-sort="incentive">Incentive</button>
+              <button class="tab-pill" data-sort="completed">Completed</button>
+              <button class="tab-pill" data-sort="converted">Converted</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">#</th>
+                  <th>Tutor</th>
+                  <th>Completed</th>
+                  <th>Converted</th>
+                  <th>Conv %</th>
+                  <th>Incentive</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-rows-container"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: ADMIN INCENTIVE SETTINGS -->
+      <section id="admin-slabs-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">Incentive Settings</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Define completed demo counts and conversion percentage targets</p>
+            </div>
+            <button class="btn btn-primary" id="admin-add-slab-btn">+ Add Slab</button>
+          </div>
+          <div class="slab-list" id="admin-slabs-list"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: ADMIN BRANDING SETTINGS -->
+      <section id="admin-branding-view" class="view-section">
+        <div class="admin-grid">
+          
+          <div class="card-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">White-Label Configurations</h3>
+            </div>
+            
+            <form id="branding-form">
+              <div class="form-group">
+                <label for="brand-name">Organization Name</label>
+                <input type="text" id="brand-name" class="form-control" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="brand-currency">Currency Symbol</label>
+                  <input type="text" id="brand-currency" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="brand-logo-file" style="color:var(--brand-secondary)">📁 Upload Custom Logo Image</label>
+                  <input type="file" id="brand-logo-file" class="form-control" accept="image/*" style="padding: 6px 14px;">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label>Theme Colors</label>
+                <div class="form-row">
+                  <div class="form-group" style="flex-direction:row; align-items:center; gap:8px;">
+                    <input type="color" id="color-primary" style="width:36px; height:36px; border:none; cursor:pointer;">
+                    <span>Primary Accent</span>
+                  </div>
+                  <div class="form-group" style="flex-direction:row; align-items:center; gap:8px;">
+                    <input type="color" id="color-secondary" style="width:36px; height:36px; border:none; cursor:pointer;">
+                    <span>Secondary Accent</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <label for="brand-sheets-url" style="color:var(--color-info)">🔗 Google Sheet Web App Deployment URL</label>
+                <input type="text" id="brand-sheets-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                  <button type="button" class="btn btn-sm" id="test-connection-btn">🔌 Test Connection</button>
+                  <span id="connection-status-msg" style="font-size: 0.8rem; font-weight: 700;"></span>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="flex-grow: 1;">Save Brand Settings</button>
+                <button type="button" class="btn" id="reset-branding-btn">Reset Defaults</button>
+              </div>
+              <div style="margin-top: 10px;">
+                <button type="button" class="btn btn-danger" id="clear-database-btn" style="width: 100%;">Wipe Tutors & Demos Data</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Login Preview -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Branded Login Screen Preview</h3>
+            </div>
+            <div style="background-color:#0c0f17; border-radius:12px; padding:20px; display:flex; flex-direction:column; align-items:center; gap:10px; border: 1px solid var(--border-color);">
+              <div class="logo-icon" id="preview-logo-slot" style="background-color:#1e293b;"></div>
+              <div class="logo-text" id="preview-brand-name" style="color:white; font-size:0.85rem; text-align:center; max-width:180px;">EIGHT TIMES EIGHT CHESS ACADEMY</div>
+              <div style="font-size:0.6rem; color:#94a3b8; font-weight:700; text-transform:uppercase;">TUTOR PORTAL</div>
+              
+              <div style="width:100%; display:flex; flex-direction:column; gap:6px; margin-top:10px;">
+                <input type="text" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); padding:8px; border-radius:6px; font-size:0.7rem; color:white;" value="Tutor Name" disabled>
+                <input type="password" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); padding:8px; border-radius:6px; font-size:0.7rem; color:white;" value="••••••••" disabled>
+                <button type="button" style="background-color:white; color:#0f172a; border:none; padding:8px; border-radius:6px; font-size:0.7rem; font-weight:700;">View My Demos</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- VIEW: ADMIN TUTORS ACCESS -->
+      <section id="admin-tutors-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">Tutors & Credentials</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Configure tutor logins and manage access credentials</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn" id="bulk-import-tutors-btn">Bulk Import Tutors</button>
+              <button class="btn btn-primary" id="admin-add-tutor-btn">+ Add Tutor</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Tutor Name</th>
+                  <th>Access Code</th>
+                  <th>Email Address</th>
+                  <th style="width:100px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-tutors-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODALS (Slabs, Tutors, Demos, notes edit) -->
+  <div class="modal-backdrop" id="slab-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="slab-modal-title">Add Incentive Slab</h4>
+        <button class="modal-close" type="button" id="slab-modal-close">✕</button>
+      </div>
+      <form id="slab-form">
+        <div class="modal-body">
+          <input type="hidden" id="slab-id">
+          <div class="form-group">
+            <label for="slab-rate">Incentive Per Converted Demo (<span class="currency-symbol">₹</span>)</label>
+            <input type="number" id="slab-rate" class="form-control" required min="0">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="slab-min-demos">Min Completed Demos</label>
+              <input type="number" id="slab-min-demos" class="form-control" required min="0">
+            </div>
+            <div class="form-group">
+              <label for="slab-min-conversion">Min Conversion %</label>
+              <input type="number" id="slab-min-conversion" class="form-control" required min="0" max="100">
+            </div>
+          </div>
+          <div class="form-group" style="flex-direction:row; align-items:center; gap:12px; margin-top: 10px;">
+            <label class="switch">
+              <input type="checkbox" id="slab-enabled" checked>
+              <span class="slider-toggle"></span>
+            </label>
+            <span style="font-weight:600; font-size:0.85rem;">Enable Slab?</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="slab-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Slab</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="tutor-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="tutor-modal-title">Add Tutor Profile</h4>
+        <button class="modal-close" type="button" id="tutor-modal-close">✕</button>
+      </div>
+      <form id="tutor-form">
+        <div class="modal-body">
+          <input type="hidden" id="tutor-form-id">
+          <div class="form-group">
+            <label for="tutor-form-name">Tutor Full Name</label>
+            <input type="text" id="tutor-form-name" class="form-control" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tutor-form-code">Access Code</label>
+              <input type="text" id="tutor-form-code" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="tutor-form-email">Email Address</label>
+              <input type="email" id="tutor-form-email" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="tutor-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Tutor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="demo-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="demo-modal-title">Add Demo Log</h4>
+        <button class="modal-close" type="button" id="demo-modal-close">✕</button>
+      </div>
+      <form id="demo-form">
+        <div class="modal-body">
+          <input type="hidden" id="demo-id">
+          <div class="form-group">
+            <label for="demo-tutor-select">Assigned Tutor</label>
+            <select id="demo-tutor-select" class="form-control" required></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="demo-student-name">Student Name</label>
+              <input type="text" id="demo-student-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="demo-date-input">Demo Date</label>
+              <input type="text" id="demo-date-input" class="form-control" placeholder="e.g. 15 Jul 26" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="demo-time-input">Demo Time</label>
+              <input type="text" id="demo-time-input" class="form-control" placeholder="e.g. 10:00 AM" required>
+            </div>
+            <div class="form-group">
+              <label for="demo-slot">Slot Info (SLOT NUMBER)</label>
+              <input type="text" id="demo-slot" class="form-control" placeholder="e.g. Slot 1" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="demo-status-select">Status (DEMO STATUS)</label>
+              <select id="demo-status-select" class="form-control">
+                <option value="Demo Not Done" selected>Demo Not Done</option>
+                <option value="Demo Done">Demo Done</option>
+                <option value="Converted">Converted</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="demo-level">Level</label>
+              <input type="text" id="demo-level" class="form-control" placeholder="e.g. Beginner">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="demo-age">Student Age</label>
+              <input type="text" id="demo-age" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="demo-language">Language</label>
+              <input type="text" id="demo-language" class="form-control">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="demo-agent-name">Agent Name</label>
+              <input type="text" id="demo-agent-name" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="demo-location">Location</label>
+              <input type="text" id="demo-location" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="demo-mobile-number">Mobile Number (MOBILE NUMBER)</label>
+            <input type="text" id="demo-mobile-number" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="demo-feedback">Feedback & Notes</label>
+            <textarea id="demo-feedback" class="form-control" style="resize:vertical; min-height:80px;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="demo-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Demo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="mockData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

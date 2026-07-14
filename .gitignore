@@ -1,0 +1,7 @@
+# Local IDE and System files
+.gemini/
+.agents/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

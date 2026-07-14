@@ -1,0 +1,1737 @@
+// app.js
+
+// State management
+let state = {
+  branding: {},
+  slabs: [],
+  tutors: [],
+  demos: [],
+  currentUser: null, // { name, role, id, email, avatar }
+  activeTab: "dashboard",
+  leaderboardSortKey: "conversion",
+  selectedMonth: new Date().getMonth(), // 0-11
+  selectedYear: new Date().getFullYear(),
+  bulkSelectedDemoIds: []
+};
+
+// Check page scope
+const isTutorPage = window.location.pathname.toLowerCase().includes("tutor.html");
+const isAdminPage = window.location.pathname.toLowerCase().includes("admin.html");
+
+// --- Google Sheets Mapping Translators ---
+function mapSheetDemoToApp(s) {
+  return {
+    id: s.id || `demo_${Date.now()}_${Math.random()}`,
+    tutorId: s.tutorId || "",
+    tutorName: s["TUTOR NAME"] || s.tutorName || "",
+    studentName: s["STUDENT NAME"] || s.studentName || "",
+    date: s["DATE"] || s.date || "",
+    time: s["TIME"] || s.time || "",
+    dateTime: (s["DATE"] || s.date || "") + " " + (s["TIME"] || s.time || ""),
+    slot: s["SLOT NUMBER"] || s.slot || "",
+    status: s["DEMO STATUS"] || s.status || "Demo Not Done",
+    age: s["AGE"] || s.age || "-",
+    language: s["LANGUAGE"] || s.language || "-",
+    agentName: s["AGENT NAME"] || s.agentName || "-",
+    location: s["LOCATION"] || s.location || "-",
+    mobileNumber: s["MOBILE NUMBER"] || s.mobileNumber || "-",
+    level: s["LEVEL"] || s.level || "-",
+    feedback: s.feedback || s["FEEDBACK/NOTES"] || ""
+  };
+}
+
+function mapAppDemoToSheet(a) {
+  return {
+    id: a.id,
+    tutorId: a.tutorId,
+    "TUTOR NAME": a.tutorName,
+    "STUDENT NAME": a.studentName,
+    "DATE": a.date,
+    "TIME": a.time,
+    "SLOT NUMBER": a.slot,
+    "DEMO STATUS": a.status,
+    "AGE": a.age,
+    "LANGUAGE": a.language,
+    "AGENT NAME": a.agentName,
+    "LOCATION": a.location,
+    "MOBILE NUMBER": a.mobileNumber,
+    "LEVEL": a.level,
+    feedback: a.feedback
+  };
+}
+
+// --- Google Sheets Sync Engine ---
+async function fetchFromSheets() {
+  const url = state.branding.sheetsUrl;
+  if (!url) return false;
+
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
+
+  try {
+    const response = await fetch(`${url}?action=readAll`, {
+      method: "GET",
+      mode: "cors"
+    });
+    const result = await response.json();
+    
+    if (result && result.status === "success" && result.data) {
+      const data = result.data;
+      if (data.branding) state.branding = { ...state.branding, ...data.branding };
+      if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
+      if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
+      if (data.demos && data.demos.length > 0) {
+        state.demos = data.demos.map(mapSheetDemoToApp);
+      }
+      
+      saveToLocalStorage();
+      return true;
+    }
+  } catch (err) {
+    console.error("Failed to fetch from Google Sheets: ", err);
+    showToast("Sheets sync failed. Running in Offline Mode.", "warning");
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
+  }
+  return false;
+}
+
+async function writeToSheets(action, payload) {
+  const url = state.branding.sheetsUrl;
+  if (!url) return false;
+
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
+
+  let mappedPayload = payload;
+  let finalAction = action;
+
+  // Intercept and translate payloads/actions for sheet layout compatibility
+  if (action === "addDemo" || action === "updateDemo") {
+    mappedPayload = mapAppDemoToSheet(payload);
+  } else if (action === "updateDemoStatus") {
+    finalAction = "updateDemoCell";
+    mappedPayload = { id: payload.id, columnName: "DEMO STATUS", value: payload.status };
+  } else if (action === "updateDemoFeedback") {
+    finalAction = "updateDemoCell";
+    mappedPayload = { id: payload.id, columnName: "feedback", value: payload.feedback };
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: JSON.stringify({ action: finalAction, data: mappedPayload })
+    });
+    const result = await response.json();
+    return result && result.status === "success";
+  } catch (err) {
+    console.error("Failed to write to Google Sheets: ", err);
+    showToast("Write failed. Saved locally.", "warning");
+    return false;
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
+  }
+}
+
+// --- Local Storage load/save ---
+function loadFromLocalStorage() {
+  const localBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
+  const localSlabs = localStorage.getItem("CHESS_PORTAL_SLABS");
+  const localTutors = localStorage.getItem("CHESS_PORTAL_TUTORS");
+  const localDemos = localStorage.getItem("CHESS_PORTAL_DEMOS");
+  const sessionUser = sessionStorage.getItem("CHESS_PORTAL_SESSION");
+
+  if (localBranding) {
+    try {
+      const parsed = JSON.parse(localBranding);
+      state.branding = {
+        ...window.DEFAULT_BRANDING,
+        ...parsed,
+        themeColors: {
+          ...window.DEFAULT_BRANDING.themeColors,
+          ...(parsed.themeColors || {})
+        }
+      };
+    } catch (e) {
+      state.branding = { ...window.DEFAULT_BRANDING };
+    }
+  } else {
+    state.branding = { ...window.DEFAULT_BRANDING };
+  }
+  state.slabs = localSlabs ? JSON.parse(localSlabs) : [ ...window.DEFAULT_SLABS ];
+  
+  // Wipes old mock data from local cache if it is detected on launch
+  const hasDummyTutors = localTutors && (localTutors.includes("Rahul Sharma") || localTutors.includes("Rahul"));
+  if (hasDummyTutors) {
+    sessionStorage.removeItem("CHESS_PORTAL_SESSION");
+    state.currentUser = null;
+    localStorage.removeItem("CHESS_PORTAL_TUTORS");
+    localStorage.removeItem("CHESS_PORTAL_DEMOS");
+    state.tutors = [ ...window.DEFAULT_TUTORS ]; // Empty array []
+    state.demos = [ ...window.DEFAULT_DEMOS ]; // Empty array []
+  } else {
+    state.tutors = localTutors ? JSON.parse(localTutors) : [ ...window.DEFAULT_TUTORS ];
+    state.demos = localDemos ? JSON.parse(localDemos) : [ ...window.DEFAULT_DEMOS ];
+  }
+  
+  if (sessionUser) {
+    state.currentUser = JSON.parse(sessionUser);
+  }
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
+  localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
+  localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
+  localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
+}
+
+// --- Authentication controller ---
+function handleLogin(e) {
+  e.preventDefault();
+  const nameInput = document.getElementById("login-tutor-name").value.trim();
+  const codeInput = document.getElementById("login-access-code").value.trim();
+
+  if (!nameInput || !codeInput) return;
+
+  if (isAdminPage) {
+    // Admin login validation
+    if (codeInput === window.ADMIN_ACCESS_CODE) {
+      state.currentUser = {
+        id: "admin",
+        name: nameInput,
+        email: "yadukrishnanpp19@gmail.com",
+        role: "admin",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=YaduAdmin"
+      };
+      loginSuccess();
+    } else {
+      showToast("Invalid Admin Access Code.", "warning");
+    }
+  } else if (isTutorPage) {
+    // Tutor login validation
+    const tutor = state.tutors.find(t => t.name.toLowerCase() === nameInput.toLowerCase() && t.accessCode === codeInput);
+    if (tutor) {
+      state.currentUser = {
+        id: tutor.id,
+        name: tutor.name,
+        email: tutor.email,
+        role: "tutor",
+        avatar: tutor.avatar
+      };
+      loginSuccess();
+    } else {
+      showToast("Invalid Tutor Name or Access Code.", "warning");
+    }
+  }
+}
+
+function loginSuccess() {
+  sessionStorage.setItem("CHESS_PORTAL_SESSION", JSON.stringify(state.currentUser));
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-container").style.display = "flex";
+  
+  showToast(`Welcome, ${state.currentUser.name}!`);
+  
+  state.activeTab = "dashboard";
+  applyBranding();
+  syncFullState().then(() => {
+    updateViews();
+  });
+}
+
+function handleSignout() {
+  sessionStorage.removeItem("CHESS_PORTAL_SESSION");
+  state.currentUser = null;
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("app-container").style.display = "none";
+  document.getElementById("login-form").reset();
+  showToast("Logged out successfully.", "info");
+}
+
+async function syncFullState() {
+  if (state.branding.sheetsUrl) {
+    const success = await fetchFromSheets();
+    if (success) {
+      applyBranding();
+    }
+  }
+}
+
+// --- Theme and Branding Customizer ---
+function applyBranding() {
+  const root = document.documentElement;
+  const branding = state.branding;
+  const colors = branding.themeColors;
+
+  root.style.setProperty('--brand-primary', colors.primary);
+  root.style.setProperty('--brand-secondary', colors.secondary);
+  root.style.setProperty('--bg-color', colors.background);
+  root.style.setProperty('--surface-color', colors.surface);
+  root.style.setProperty('--card-bg', colors.cardBg);
+  root.style.setProperty('--text-main', colors.textMain);
+  root.style.setProperty('--text-muted', colors.textMuted);
+
+  document.querySelectorAll(".company-name-text").forEach(el => {
+    el.textContent = branding.companyName;
+  });
+  const loginBrandName = document.getElementById("login-brand-name");
+  if (loginBrandName) loginBrandName.textContent = branding.companyName;
+  
+  const previewBrandName = document.getElementById("preview-brand-name");
+  if (previewBrandName) previewBrandName.textContent = branding.companyName;
+
+  const logoSlot1 = document.getElementById("login-logo-slot");
+  const logoSlot2 = document.getElementById("sidebar-logo-slot");
+  const logoSlot3 = document.getElementById("preview-logo-slot");
+
+  const logoMarkup = branding.logoUrl
+    ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
+    : branding.companyLogo;
+
+  if (logoSlot1) logoSlot1.innerHTML = logoMarkup;
+  if (logoSlot2) logoSlot2.innerHTML = logoMarkup;
+  if (logoSlot3) logoSlot3.innerHTML = logoMarkup;
+
+  document.querySelectorAll(".currency-symbol").forEach(el => {
+    el.textContent = branding.currency;
+  });
+
+  const sidebarAvatar = document.getElementById("sidebar-user-avatar");
+  const sidebarName = document.getElementById("sidebar-user-name");
+  
+  if (state.currentUser) {
+    if (sidebarAvatar) sidebarAvatar.src = state.currentUser.avatar;
+    if (sidebarName) sidebarName.textContent = state.currentUser.name;
+  }
+}
+
+// --- Calculations ---
+function getMonthYearFilteredDemos() {
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const filterString = `${months[state.selectedMonth]} ${state.selectedYear % 100}`;
+  
+  return state.demos.filter(d => {
+    return d.dateTime.toLowerCase().includes(filterString.toLowerCase()) || 
+           d.dateTime.toLowerCase().includes(`${months[state.selectedMonth].slice(0,3)} ${state.selectedYear % 100}`.toLowerCase());
+  });
+}
+
+function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
+  const tutorDemos = demosList.filter(d => d.tutorId === tutorId);
+  const completed = tutorDemos.filter(d => d.status === "Demo Done" || d.status === "Converted").length;
+  const converted = tutorDemos.filter(d => d.status === "Converted").length;
+  const pending = tutorDemos.filter(d => d.status === "Demo Not Done").length;
+  const cancelled = tutorDemos.filter(d => d.status === "Cancelled").length;
+  const total = tutorDemos.length;
+
+  const conversion = completed > 0 ? (converted / completed) * 100 : 0;
+
+  const activeSlabs = state.slabs.filter(s => s.enabled);
+  const eligibleSlab = getEligibleSlab(completed, conversion, activeSlabs);
+  const rate = eligibleSlab ? eligibleSlab.rate : 0;
+  const incentive = converted * rate;
+
+  return {
+    tutorId,
+    total,
+    completed,
+    converted,
+    pending,
+    cancelled,
+    conversion,
+    eligibleSlab,
+    rate,
+    incentive
+  };
+}
+
+function getEligibleSlab(completed, conversion, slabs) {
+  let highestSlab = null;
+  for (const slab of slabs) {
+    if (completed >= slab.minDemos && conversion >= slab.minConversion) {
+      if (!highestSlab || slab.rate > highestSlab.rate) {
+        highestSlab = slab;
+      }
+    }
+  }
+  return highestSlab;
+}
+
+// --- Views Dispatches ---
+function updateViews() {
+  const headerTitle = document.getElementById("main-header-title");
+  const headerSubtitle = document.getElementById("main-header-subtitle");
+
+  if (state.currentUser) {
+    if (isAdminPage) {
+      if (headerTitle) headerTitle.textContent = `Welcome back, ${state.currentUser.name}`;
+      if (headerSubtitle) headerSubtitle.textContent = "Academy Dashboard Overview";
+    } else {
+      if (headerTitle) headerTitle.textContent = `Welcome back, ${state.currentUser.name}`;
+      if (headerSubtitle) headerSubtitle.textContent = "Performance Overview";
+    }
+  }
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    if (item.getAttribute("data-tab") === state.activeTab) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+
+  document.querySelectorAll(".view-section").forEach(view => {
+    if (view.getAttribute("id") === `${state.activeTab}-view`) {
+      view.classList.add("active");
+    } else {
+      view.classList.remove("active");
+    }
+  });
+
+  if (state.activeTab === "dashboard") renderDashboard();
+  if (state.activeTab === "mydemos") renderDemosTable();
+  if (state.activeTab === "leaderboard") renderLeaderboard();
+  if (state.activeTab === "admin-slabs") renderAdminSlabs();
+  if (state.activeTab === "admin-branding") renderAdminBranding();
+  if (state.activeTab === "admin-tutors") renderAdminTutors();
+}
+
+// --- VIEW: DASHBOARD ---
+function renderDashboard() {
+  const isTutor = isTutorPage;
+  const tutorId = isTutor ? state.currentUser.id : document.getElementById("tutor-profile-select")?.value || state.tutors[0]?.id;
+
+  if (!tutorId) {
+    zeroDashboard();
+    return;
+  }
+
+  const demos = getMonthYearFilteredDemos();
+  const metrics = calculateTutorMetrics(tutorId, demos);
+  const currency = state.branding.currency;
+
+  const alertBanner = document.getElementById("dashboard-alert-banner");
+  const alertText = document.getElementById("dashboard-alert-text");
+
+  if (isTutor) {
+    if (metrics.pending > 0) {
+      if (alertBanner) alertBanner.style.display = "flex";
+      if (alertText) alertText.textContent = `${metrics.pending} overdue demos still marked "Not Done" — please update the status.`;
+    } else {
+      if (alertBanner) alertBanner.style.display = "none";
+    }
+  } else {
+    const allPending = demos.filter(d => d.status === "Demo Not Done").length;
+    if (allPending > 0) {
+      if (alertBanner) alertBanner.style.display = "flex";
+      if (alertText) alertText.textContent = `${allPending} overdue demos still marked "Not Done" — please update their status.`;
+    } else {
+      if (alertBanner) alertBanner.style.display = "none";
+    }
+  }
+
+  document.getElementById("dash-demos-done").textContent = metrics.completed;
+  document.getElementById("dash-demos-converted").textContent = metrics.converted;
+  document.getElementById("dash-demos-not-done").textContent = metrics.pending;
+  document.getElementById("dash-demos-cancelled").textContent = metrics.cancelled;
+  
+  document.getElementById("dash-current-slab").textContent = metrics.eligibleSlab 
+    ? `${currency}${metrics.eligibleSlab.rate}` 
+    : `${currency}0`;
+
+  document.getElementById("dash-incentive-earned").textContent = `${currency}${metrics.incentive.toLocaleString()}`;
+
+  const todayString = "15 Jul 26";
+  const todaysCount = demos.filter(d => (isTutor ? d.tutorId === tutorId : true) && d.dateTime.includes(todayString)).length;
+  document.getElementById("dash-today-demos").textContent = todaysCount;
+
+  document.getElementById("dash-total-demos").textContent = metrics.total;
+
+  const circleRing = document.getElementById("dash-circle-ring");
+  const circleNum = document.getElementById("dash-circle-number");
+  if (circleNum) circleNum.textContent = `${metrics.conversion.toFixed(1)}%`;
+  if (circleRing) {
+    const offset = 471 - (metrics.conversion / 100) * 471;
+    circleRing.style.strokeDashoffset = Math.max(0, Math.min(471, offset));
+  }
+
+  renderSlabsProgressBarList(metrics);
+  renderMiniLeaderboard();
+
+  // Render Tutor Conversion Bar Chart (Admin Only)
+  if (isAdminPage) {
+    renderTutorConversionChart(demos);
+  }
+
+  const simDemos = document.getElementById("sim-demos");
+  const simConv = document.getElementById("sim-conversion");
+  if (simDemos && simConv) {
+    if (simDemos.dataset.dirty !== "true") simDemos.value = metrics.completed;
+    if (simConv.dataset.dirty !== "true") simConv.value = Math.round(metrics.conversion);
+  }
+  updatePredictor();
+}
+
+function renderTutorConversionChart(demos) {
+  const container = document.getElementById("admin-chart-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const chartData = state.tutors.map(tutor => {
+    const stats = calculateTutorMetrics(tutor.id, demos);
+    return {
+      name: tutor.name,
+      conversion: stats.conversion
+    };
+  }).sort((a, b) => b.conversion - a.conversion);
+
+  if (chartData.length === 0) {
+    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.82rem; padding: 20px;">No tutors registered. Add profiles in Tutor Access to display chart data.</div>`;
+    return;
+  }
+
+  chartData.forEach(row => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "chart-row";
+    rowDiv.innerHTML = `
+      <span class="chart-tutor-name" title="${row.name}">${row.name}</span>
+      <div class="chart-bar-outer">
+        <div class="chart-bar-inner" style="width: 0%;"></div>
+      </div>
+      <span class="chart-tutor-val">${row.conversion.toFixed(1)}%</span>
+    `;
+    container.appendChild(rowDiv);
+
+    // Micro-animation layout trigger
+    setTimeout(() => {
+      const barInner = rowDiv.querySelector(".chart-bar-inner");
+      if (barInner) barInner.style.width = `${row.conversion}%`;
+    }, 50);
+  });
+}
+
+function zeroDashboard() {
+  document.getElementById("dash-demos-done").textContent = 0;
+  document.getElementById("dash-demos-converted").textContent = 0;
+  document.getElementById("dash-demos-not-done").textContent = 0;
+  document.getElementById("dash-demos-cancelled").textContent = 0;
+  document.getElementById("dash-current-slab").textContent = `${state.branding.currency}0`;
+  document.getElementById("dash-incentive-earned").textContent = `${state.branding.currency}0`;
+  document.getElementById("dash-today-demos").textContent = 0;
+  document.getElementById("dash-total-demos").textContent = 0;
+
+  const circleRing = document.getElementById("dash-circle-ring");
+  const circleNum = document.getElementById("dash-circle-number");
+  if (circleNum) circleNum.textContent = "0.0%";
+  if (circleRing) circleRing.style.strokeDashoffset = 471;
+
+  document.getElementById("dash-slabs-progress-container").innerHTML = "";
+  document.getElementById("mini-leaderboard-container").innerHTML = "";
+}
+
+function renderSlabsProgressBarList(metrics) {
+  const container = document.getElementById("dash-slabs-progress-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const currency = state.branding.currency;
+  const activeSlabs = state.slabs.filter(s => s.enabled).sort((a,b) => a.rate - b.rate);
+
+  if (activeSlabs.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:0.8rem;">No active slabs.</div>`;
+    return;
+  }
+
+  activeSlabs.forEach(slab => {
+    const isUnlocked = metrics.completed >= slab.minDemos && metrics.conversion >= slab.minConversion;
+    const lockIcon = isUnlocked ? "🔓" : "🔒";
+    
+    const demoProgress = Math.min(100, Math.round((metrics.completed / slab.minDemos) * 100));
+    const convProgress = Math.min(100, Math.round((metrics.conversion / slab.minConversion) * 100));
+    const progressAvg = Math.round((demoProgress + convProgress) / 2);
+
+    const box = document.createElement("div");
+    box.className = "slab-progress-box";
+    box.innerHTML = `
+      <div class="slab-progress-header">
+        <span>${lockIcon} ${currency}${slab.rate} per converted demo</span>
+        <span style="color:${isUnlocked ? 'var(--color-success)' : 'var(--text-muted)'}; font-weight:700;">
+          ${isUnlocked ? 'Eligible' : 'Locked'}
+        </span>
+      </div>
+      <div class="slab-progress-meta">
+        <span>Demos (${metrics.completed}/${slab.minDemos})</span>
+        <span>Conv (${metrics.conversion.toFixed(1)}%/${slab.minConversion}%)</span>
+      </div>
+      <div class="slab-progress-bar-container">
+        <div class="slab-progress-bar ${isUnlocked ? '' : 'locked'}" style="width: ${progressAvg}%;"></div>
+      </div>
+    `;
+    container.appendChild(box);
+  });
+}
+
+function renderMiniLeaderboard() {
+  const container = document.getElementById("mini-leaderboard-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const demos = getMonthYearFilteredDemos();
+  const list = state.tutors.map(t => {
+    const m = calculateTutorMetrics(t.id, demos);
+    return { name: t.name, conversion: m.conversion, completed: m.completed, incentive: m.incentive };
+  }).sort((a,b) => b.conversion - a.conversion || b.completed - a.completed);
+
+  list.slice(0, 5).forEach((t, i) => {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.fontSize = "0.78rem";
+    row.style.padding = "6px 8px";
+    row.style.borderBottom = "1px solid var(--border-color)";
+    row.style.fontWeight = "600";
+    
+    if (i === 0) row.style.color = "var(--brand-secondary)";
+
+    row.innerHTML = `
+      <span>${i+1}. ${t.name}</span>
+      <span style="color: var(--text-muted);">${t.conversion.toFixed(1)}% Conv (${t.completed} Demos)</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// --- Predictor ---
+function updatePredictor() {
+  const simDemosVal = document.getElementById("sim-demos-val");
+  const simConvVal = document.getElementById("sim-conversion-val");
+  const simSlab = document.getElementById("sim-projected-slab");
+  const simIncentive = document.getElementById("sim-projected-incentive");
+  const simTip = document.getElementById("sim-projected-tip");
+
+  const dSlider = document.getElementById("sim-demos");
+  const cSlider = document.getElementById("sim-conversion");
+
+  if (!dSlider || !cSlider) return;
+
+  const demos = parseInt(dSlider.value);
+  const conv = parseInt(cSlider.value);
+  const currency = state.branding.currency;
+
+  simDemosVal.textContent = demos;
+  simConvVal.textContent = `${conv}%`;
+
+  const activeSlabs = state.slabs.filter(s => s.enabled);
+  const eligible = getEligibleSlab(demos, conv, activeSlabs);
+  const rate = eligible ? eligible.rate : 0;
+  
+  const converted = Math.round((demos * conv) / 100);
+  const incentive = converted * rate;
+
+  simSlab.textContent = eligible ? `${currency}${rate}/demo` : "None";
+  simIncentive.textContent = `${currency}${incentive.toLocaleString()}`;
+
+  let tipText = "";
+  if (eligible) {
+    const nextSlabs = activeSlabs.filter(s => s.rate > eligible.rate).sort((a,b) => a.rate - b.rate);
+    const next = nextSlabs[0];
+    if (next) {
+      const dDiff = Math.max(0, next.minDemos - demos);
+      const cDiff = Math.max(0, next.minConversion - conv);
+      if (dDiff > 0) {
+        tipText = `Simulate completing **${dDiff} more demos** to unlock the higher **${currency}${next.rate}** slab.`;
+      } else if (cDiff > 0) {
+        tipText = `Convert **${Math.ceil((next.minConversion * demos) / 100) - converted} more demos** to reach ${next.minConversion}% conversion and unlock **${currency}${next.rate}** slab.`;
+      }
+    } else {
+      tipText = "Simulating the highest eligible slab rate! Keep up the work.";
+    }
+  } else {
+    const first = activeSlabs.sort((a,b) => a.rate - b.rate)[0];
+    if (first) {
+      const dDiff = Math.max(0, first.minDemos - demos);
+      tipText = `Achieve **${dDiff} completed demos** and **${first.minConversion}% conversion** to unlock the first slab (**${currency}${first.rate}**).`;
+    }
+  }
+  simTip.innerHTML = tipText || "Adjust sliders to run predictions.";
+}
+
+// --- VIEW: DEMOS LIST ---
+function renderDemosTable() {
+  const head = document.getElementById("demos-table-head");
+  const body = document.getElementById("demos-table-body");
+  
+  if (!head || !body) return;
+
+  const isTutor = isTutorPage;
+  const demos = getMonthYearFilteredDemos();
+
+  if (isAdminPage) {
+    head.innerHTML = `
+      <tr>
+        <th style="width:40px;"><input type="checkbox" id="bulk-select-all"></th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Slot</th>
+        <th>Tutor Name</th>
+        <th>Student Name</th>
+        <th>Age</th>
+        <th>Language</th>
+        <th>Level</th>
+        <th>Agent Name</th>
+        <th>Location</th>
+        <th>Mobile Number</th>
+        <th>Feedback / Notes</th>
+        <th>Status</th>
+        <th style="width:100px;">Actions</th>
+      </tr>
+    `;
+
+    const searchQuery = document.getElementById("demo-search-input").value.toLowerCase();
+    const statusQuery = document.getElementById("demo-filter-status").value;
+
+    const filteredDemos = demos.filter(d => {
+      const matchesSearch = d.studentName.toLowerCase().includes(searchQuery) || 
+                            d.tutorName.toLowerCase().includes(searchQuery) ||
+                            (d.agentName && d.agentName.toLowerCase().includes(searchQuery));
+      const matchesStatus = statusQuery === "ALL" || d.status === statusQuery;
+      return matchesSearch && matchesStatus;
+    });
+
+    const countLabel = document.getElementById("demo-logs-count");
+    if (countLabel) countLabel.textContent = `(${filteredDemos.length} logs)`;
+
+    body.innerHTML = "";
+    if (filteredDemos.length === 0) {
+      body.innerHTML = `<tr><td colspan="15" style="text-align:center;color:var(--text-muted);padding:40px;">No matching demos found.</td></tr>`;
+      return;
+    }
+
+    filteredDemos.forEach(demo => {
+      const tr = document.createElement("tr");
+      
+      let statusClass = "status-not-done";
+      if (demo.status === "Demo Done") statusClass = "status-done";
+      else if (demo.status === "Converted") statusClass = "status-converted";
+      else if (demo.status === "Cancelled") statusClass = "status-cancelled";
+
+      const isChecked = state.bulkSelectedDemoIds.includes(demo.id) ? "checked" : "";
+
+      tr.innerHTML = `
+        <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
+        <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
+        <td>${demo.time || '-'}</td>
+        <td>${demo.slot || '-'}</td>
+        <td><strong>${demo.tutorName}</strong></td>
+        <td>${demo.studentName}</td>
+        <td>${demo.age}</td>
+        <td>${demo.language}</td>
+        <td>${demo.level || '-'}</td>
+        <td>${demo.agentName || '-'}</td>
+        <td>${demo.location || '-'}</td>
+        <td>${demo.mobileNumber || '-'}</td>
+        <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${demo.feedback || 'No feedback'}">
+          ${demo.feedback || '<span style="color:var(--text-muted);font-style:italic;">No feedback</span>'}
+        </td>
+        <td>
+          <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
+            <option value="Demo Not Done" ${demo.status === 'Demo Not Done' ? 'selected' : ''}>Demo Not Done</option>
+            <option value="Demo Done" ${demo.status === 'Demo Done' ? 'selected' : ''}>Demo Done</option>
+            <option value="Converted" ${demo.status === 'Converted' ? 'selected' : ''}>Converted</option>
+            <option value="Cancelled" ${demo.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+          </select>
+        </td>
+        <td>
+          <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
+          <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+
+  } else {
+    // Tutor view Demos
+    const tutorMetrics = calculateTutorMetrics(state.currentUser.id, demos);
+    document.getElementById("tutor-demos-total").textContent = tutorMetrics.total;
+    document.getElementById("tutor-demos-completed").textContent = tutorMetrics.completed;
+    document.getElementById("tutor-demos-converted").textContent = tutorMetrics.converted;
+    document.getElementById("tutor-demos-conversion").textContent = `${tutorMetrics.conversion.toFixed(1)}%`;
+
+    head.innerHTML = `
+      <tr>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Slot</th>
+        <th>Student Name</th>
+        <th>Age</th>
+        <th>Language</th>
+        <th>Level</th>
+        <th>Feedback / Notes</th>
+        <th>Status</th>
+      </tr>
+    `;
+
+    const tutorDemos = demos.filter(d => d.tutorId === state.currentUser.id);
+
+    body.innerHTML = "";
+    if (tutorDemos.length === 0) {
+      body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
+      return;
+    }
+
+    tutorDemos.forEach(demo => {
+      const tr = document.createElement("tr");
+
+      let statusClass = "status-not-done";
+      if (demo.status === "Demo Done") statusClass = "status-done";
+      else if (demo.status === "Converted") statusClass = "status-converted";
+      else if (demo.status === "Cancelled") statusClass = "status-cancelled";
+
+      const noteText = demo.feedback
+        ? `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+             <span style="font-size:0.8rem;">${demo.feedback}</span>
+             <button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}" style="padding: 2px 6px;">✏️</button>
+           </div>`
+        : `<button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}">[+] Add note</button>`;
+
+      // Tutors can only toggle between Demo Not Done and Demo Done
+      let tutorStatusOptions = `
+        <option value="Demo Not Done" ${demo.status === 'Demo Not Done' ? 'selected' : ''}>Demo Not Done</option>
+        <option value="Demo Done" ${demo.status === 'Demo Done' ? 'selected' : ''}>Demo Done</option>
+      `;
+      // If admin has set the demo to Converted or Cancelled, display it as a locked, disabled selection
+      if (demo.status === 'Converted') {
+        tutorStatusOptions += `<option value="Converted" selected disabled>Converted (Closed)</option>`;
+      } else if (demo.status === 'Cancelled') {
+        tutorStatusOptions += `<option value="Cancelled" selected disabled>Cancelled (Closed)</option>`;
+      }
+
+      tr.innerHTML = `
+        <td>${demo.date || demo.dateTime || '-'}</td>
+        <td>${demo.time || '-'}</td>
+        <td>${demo.slot || '-'}</td>
+        <td><strong>${demo.studentName}</strong></td>
+        <td>${demo.age}</td>
+        <td>${demo.language}</td>
+        <td>${demo.level || '-'}</td>
+        <td>${noteText}</td>
+        <td>
+          <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
+            ${tutorStatusOptions}
+          </select>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+
+// --- VIEW: LEADERBOARD ---
+function renderLeaderboard() {
+  const container = document.getElementById("leaderboard-rows-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const demos = getMonthYearFilteredDemos();
+
+  const leaderboardList = state.tutors.map(tutor => {
+    const stats = calculateTutorMetrics(tutor.id, demos);
+    return {
+      tutor,
+      ...stats
+    };
+  });
+
+  leaderboardList.sort((a,b) => {
+    let keyA, keyB;
+    if (state.leaderboardSortKey === "conversion") {
+      keyA = a.conversion; keyB = b.conversion;
+    } else if (state.leaderboardSortKey === "incentive") {
+      keyA = a.incentive; keyB = b.incentive;
+    } else if (state.leaderboardSortKey === "completed") {
+      keyA = a.completed; keyB = b.completed;
+    } else if (state.leaderboardSortKey === "converted") {
+      keyA = a.converted; keyB = b.converted;
+    }
+    return keyB - keyA || b.completed - a.completed;
+  });
+
+  leaderboardList.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    
+    let rankLabel = `${i + 1}`;
+    if (i === 0) rankLabel = "🏆";
+    else if (i === 1) rankLabel = "🥈";
+    else if (i === 2) rankLabel = "🥉";
+
+    const starBadge = row.conversion === 100 && row.completed > 0 ? " ⭐" : "";
+
+    tr.innerHTML = `
+      <td><span style="font-size: 1.1rem; font-weight:700;">${rankLabel}</span></td>
+      <td>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="${row.tutor.avatar}" style="width:28px; height:28px; border-radius:50%; background:#e5e7eb;">
+          <strong style="font-size: 0.88rem;">${row.tutor.name}${starBadge}</strong>
+        </div>
+      </td>
+      <td><strong>${row.completed}</strong></td>
+      <td>${row.converted}</td>
+      <td style="color:var(--brand-secondary); font-weight:700;">${row.conversion.toFixed(1)}%</td>
+      <td><strong style="color:var(--color-success);">${state.branding.currency}${row.incentive.toLocaleString()}</strong></td>
+    `;
+    container.appendChild(tr);
+  });
+}
+
+// --- VIEW: SLABS ---
+function renderAdminSlabs() {
+  const container = document.getElementById("admin-slabs-list");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const currency = state.branding.currency;
+
+  const sorted = [...state.slabs].sort((a,b) => a.minDemos - b.minDemos);
+
+  if (sorted.length === 0) {
+    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px;">No slabs.</div>`;
+    return;
+  }
+
+  sorted.forEach((slab, index) => {
+    const item = document.createElement("div");
+    item.className = "slab-progress-box";
+    item.style.display = "flex";
+    item.style.justifyContent = "space-between";
+    item.style.alignItems = "center";
+    item.style.marginBottom = "10px";
+
+    item.innerHTML = `
+      <div>
+        <strong style="font-size:0.95rem;">${currency}${slab.rate} Slab</strong>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+          Requires: <strong>${slab.minDemos}+ Completed Demos</strong> & <strong>${slab.minConversion}%+ Conversion</strong>
+          | Enabled: <strong>${slab.enabled ? 'Yes' : 'No'}</strong>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="action-btn slab-up-el" data-id="${slab.id}" ${index === 0 ? 'disabled style="opacity:0.2;"' : ''}>▲</button>
+        <button class="action-btn slab-down-el" data-id="${slab.id}" ${index === sorted.length - 1 ? 'disabled style="opacity:0.2;"' : ''}>▼</button>
+        <button class="btn btn-sm edit-slab-btn-el" data-id="${slab.id}">Edit</button>
+        <button class="btn btn-sm btn-danger delete-slab-btn-el" data-id="${slab.id}">Delete</button>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// --- VIEW: ADMIN BRANDING ---
+function renderAdminBranding() {
+  const branding = state.branding;
+
+  document.getElementById("brand-name").value = branding.companyName;
+  document.getElementById("brand-currency").value = branding.currency;
+  document.getElementById("brand-sheets-url").value = branding.sheetsUrl || "";
+  document.getElementById("color-primary").value = branding.themeColors.primary;
+  document.getElementById("color-secondary").value = branding.themeColors.secondary;
+}
+
+// --- VIEW: ADMIN TUTORS ---
+function renderAdminTutors() {
+  const tbody = document.getElementById("admin-tutors-table-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (state.tutors.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:30px;">No tutors.</td></tr>`;
+    return;
+  }
+
+  state.tutors.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="${t.avatar}" style="width:26px; height:26px; border-radius:50%; background:#e5e7eb;">
+          <strong>${t.name}</strong>
+        </div>
+      </td>
+      <td><code>${t.accessCode}</code></td>
+      <td>${t.email || '-'}</td>
+      <td>
+        <button class="btn btn-sm edit-tutor-btn-el" data-id="${t.id}">Edit</button>
+        <button class="btn btn-sm btn-danger delete-tutor-btn-el" data-id="${t.id}">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// --- Toast notifications ---
+function showToast(message, type = "success") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span>⚡</span>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    toast.style.transition = "all 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// --- CRUD Actions ---
+
+// Slabs CRUD
+function openSlabModal(slabId = null) {
+  const modal = document.getElementById("slab-modal");
+  const title = document.getElementById("slab-modal-title");
+  
+  document.getElementById("slab-form").reset();
+  
+  if (slabId) {
+    title.textContent = "Edit Incentive Slab";
+    const slab = state.slabs.find(s => s.id === slabId);
+    if (slab) {
+      document.getElementById("slab-id").value = slab.id;
+      document.getElementById("slab-rate").value = slab.rate;
+      document.getElementById("slab-min-demos").value = slab.minDemos;
+      document.getElementById("slab-min-conversion").value = slab.minConversion;
+      document.getElementById("slab-enabled").checked = slab.enabled;
+    }
+  } else {
+    title.textContent = "Add Incentive Slab";
+    document.getElementById("slab-id").value = "";
+    document.getElementById("slab-enabled").checked = true;
+  }
+  
+  modal.classList.add("open");
+}
+
+async function handleSlabSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById("slab-id").value;
+  const rate = parseInt(document.getElementById("slab-rate").value);
+  const minDemos = parseInt(document.getElementById("slab-min-demos").value);
+  const minConversion = parseInt(document.getElementById("slab-min-conversion").value);
+  const enabled = document.getElementById("slab-enabled").checked;
+
+  const slabData = { rate, minDemos, minConversion, enabled };
+
+  if (id) {
+    const idx = state.slabs.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      state.slabs[idx] = { id, ...slabData };
+      await writeToSheets("updateSlab", { id, ...slabData });
+      showToast("Slab updated.");
+    }
+  } else {
+    const newId = `slab_${Date.now()}`;
+    state.slabs.push({ id: newId, ...slabData });
+    await writeToSheets("addSlab", { id: newId, ...slabData });
+    showToast("Slab added.");
+  }
+
+  saveToLocalStorage();
+  document.getElementById("slab-modal").classList.remove("open");
+  updateViews();
+}
+
+async function deleteSlab(slabId) {
+  if (confirm("Delete this slab?")) {
+    state.slabs = state.slabs.filter(s => s.id !== slabId);
+    await writeToSheets("deleteSlab", { id: slabId });
+    saveToLocalStorage();
+    updateViews();
+    showToast("Slab deleted.", "warning");
+  }
+}
+
+// Tutors CRUD
+function openTutorModal(tutorId = null) {
+  const modal = document.getElementById("tutor-modal");
+  const title = document.getElementById("tutor-modal-title");
+  document.getElementById("tutor-form").reset();
+
+  if (tutorId) {
+    title.textContent = "Edit Tutor Profile";
+    const tutor = state.tutors.find(t => t.id === tutorId);
+    if (tutor) {
+      document.getElementById("tutor-form-id").value = tutor.id;
+      document.getElementById("tutor-form-name").value = tutor.name;
+      document.getElementById("tutor-form-code").value = tutor.accessCode;
+      document.getElementById("tutor-form-email").value = tutor.email || "";
+    }
+  } else {
+    title.textContent = "Add Tutor Profile";
+    document.getElementById("tutor-form-id").value = "";
+  }
+  modal.classList.add("open");
+}
+
+async function handleTutorSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById("tutor-form-id").value;
+  const name = document.getElementById("tutor-form-name").value.trim();
+  const accessCode = document.getElementById("tutor-form-code").value.trim();
+  const email = document.getElementById("tutor-form-email").value.trim();
+
+  const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+  const tutorData = { name, accessCode, email, avatar };
+
+  if (id) {
+    const idx = state.tutors.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      state.tutors[idx] = { id, ...tutorData };
+      await writeToSheets("updateTutor", { id, ...tutorData });
+      showToast("Tutor updated.");
+    }
+  } else {
+    const newId = `tutor_${Date.now()}`;
+    state.tutors.push({ id: newId, ...tutorData });
+    await writeToSheets("addTutor", { id: newId, ...tutorData });
+    showToast("Tutor added.");
+  }
+
+  saveToLocalStorage();
+  document.getElementById("tutor-modal").classList.remove("open");
+  updateViews();
+}
+
+async function deleteTutor(tutorId) {
+  if (confirm("Delete this tutor profile?")) {
+    state.tutors = state.tutors.filter(t => t.id !== tutorId);
+    await writeToSheets("deleteTutor", { id: tutorId });
+    saveToLocalStorage();
+    updateViews();
+    showToast("Tutor deleted.", "warning");
+  }
+}
+
+// Demos CRUD
+function openDemoModal(demoId = null) {
+  const modal = document.getElementById("demo-modal");
+  const title = document.getElementById("demo-modal-title");
+  const select = document.getElementById("demo-tutor-select");
+  
+  select.innerHTML = "";
+  state.tutors.forEach(t => {
+    const op = document.createElement("option");
+    op.value = t.id;
+    op.textContent = t.name;
+    select.appendChild(op);
+  });
+
+  document.getElementById("demo-form").reset();
+  
+  if (demoId) {
+    title.textContent = "Edit Demo Details";
+    const demo = state.demos.find(d => d.id === demoId);
+    if (demo) {
+      document.getElementById("demo-id").value = demo.id;
+      document.getElementById("demo-tutor-select").value = demo.tutorId;
+      document.getElementById("demo-student-name").value = demo.studentName;
+      document.getElementById("demo-date-input").value = demo.date || demo.dateTime || "15 Jul 26";
+      document.getElementById("demo-time-input").value = demo.time || "10:00 AM";
+      document.getElementById("demo-slot").value = demo.slot || "";
+      document.getElementById("demo-status-select").value = demo.status;
+      document.getElementById("demo-age").value = demo.age || "";
+      document.getElementById("demo-language").value = demo.language || "";
+      document.getElementById("demo-level").value = demo.level || "";
+      document.getElementById("demo-agent-name").value = demo.agentName || "";
+      document.getElementById("demo-location").value = demo.location || "";
+      document.getElementById("demo-mobile-number").value = demo.mobileNumber || "";
+      document.getElementById("demo-feedback").value = demo.feedback || "";
+    }
+  } else {
+    title.textContent = "Add Demo Log";
+    document.getElementById("demo-id").value = "";
+    document.getElementById("demo-date-input").value = "15 Jul 26";
+    document.getElementById("demo-time-input").value = "10:00 AM";
+    document.getElementById("demo-slot").value = "Slot 1";
+    document.getElementById("demo-level").value = "";
+    document.getElementById("demo-agent-name").value = "";
+    document.getElementById("demo-location").value = "";
+    document.getElementById("demo-mobile-number").value = "";
+  }
+
+  modal.classList.add("open");
+}
+
+async function handleDemoSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById("demo-id").value;
+  const tutorId = document.getElementById("demo-tutor-select").value;
+  const studentName = document.getElementById("demo-student-name").value.trim();
+  const date = document.getElementById("demo-date-input").value.trim();
+  const time = document.getElementById("demo-time-input").value.trim();
+  const slot = document.getElementById("demo-slot").value.trim();
+  const status = document.getElementById("demo-status-select").value;
+  const age = document.getElementById("demo-age").value.trim() || "-";
+  const language = document.getElementById("demo-language").value.trim() || "-";
+  const level = document.getElementById("demo-level").value.trim() || "-";
+  const agentName = document.getElementById("demo-agent-name").value.trim() || "-";
+  const location = document.getElementById("demo-location").value.trim() || "-";
+  const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
+  const feedback = document.getElementById("demo-feedback").value.trim() || "";
+
+  const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unknown" };
+  const demoData = {
+    tutorId,
+    tutorName: tutor.name,
+    studentName,
+    date,
+    time,
+    dateTime: `${date} ${time}`,
+    slot,
+    status,
+    age,
+    language,
+    level,
+    agentName,
+    location,
+    mobileNumber,
+    feedback
+  };
+
+  if (id) {
+    const idx = state.demos.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      state.demos[idx] = { id, ...demoData };
+      await writeToSheets("updateDemo", { id, ...demoData });
+      showToast("Demo log updated.");
+    }
+  } else {
+    const newId = `demo_${Date.now()}`;
+    state.demos.push({ id: newId, ...demoData });
+    await writeToSheets("addDemo", { id: newId, ...demoData });
+    showToast("Demo log registered.");
+  }
+
+  saveToLocalStorage();
+  document.getElementById("demo-modal").classList.remove("open");
+  updateViews();
+}
+
+async function deleteDemo(demoId) {
+  if (confirm("Are you sure you want to delete this demo?")) {
+    state.demos = state.demos.filter(d => d.id !== demoId);
+    await writeToSheets("deleteDemo", { id: demoId });
+    saveToLocalStorage();
+    updateViews();
+    showToast("Demo deleted.", "warning");
+  }
+}
+
+// Tutor Feedback edit popup
+function openFeedbackModal(demoId) {
+  const modal = document.getElementById("feedback-modal");
+  const demo = state.demos.find(d => d.id === demoId);
+  if (!demo) return;
+
+  document.getElementById("feedback-demo-id").value = demo.id;
+  document.getElementById("feedback-student-label").textContent = `Student: ${demo.studentName}`;
+  document.getElementById("feedback-info-label").textContent = `Date: ${demo.dateTime} | Slot: ${demo.slot}`;
+  document.getElementById("feedback-notes-input").value = demo.feedback || "";
+  
+  modal.classList.add("open");
+}
+
+async function handleFeedbackSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById("feedback-demo-id").value;
+  const feedback = document.getElementById("feedback-notes-input").value.trim();
+
+  const idx = state.demos.findIndex(d => d.id === id);
+  if (idx !== -1) {
+    state.demos[idx].feedback = feedback;
+    await writeToSheets("updateDemoFeedback", { id, feedback });
+    saveToLocalStorage();
+    document.getElementById("feedback-modal").classList.remove("open");
+    renderDemosTable();
+    showToast("Feedback saved.");
+  }
+}
+
+// Brand settings submit
+async function handleBrandingSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById("brand-name").value.trim();
+  const currency = document.getElementById("brand-currency").value.trim();
+  const sheetsUrl = document.getElementById("brand-sheets-url").value.trim();
+  const primary = document.getElementById("color-primary").value;
+  const secondary = document.getElementById("color-secondary").value;
+
+  state.branding.companyName = name;
+  state.branding.currency = currency;
+  state.branding.sheetsUrl = sheetsUrl;
+  state.branding.themeColors.primary = primary;
+  state.branding.themeColors.secondary = secondary;
+
+  saveToLocalStorage();
+  applyBranding();
+  await writeToSheets("updateBranding", state.branding);
+  
+  if (sheetsUrl) {
+    await syncFullState();
+  }
+
+  updateViews();
+  showToast("Branding options updated.");
+}
+
+function handleBrandingReset() {
+  if (confirm("Reset branding to defaults?")) {
+    state.branding = { ...window.DEFAULT_BRANDING };
+    saveToLocalStorage();
+    applyBranding();
+    updateViews();
+    showToast("Branding reset.", "info");
+  }
+}
+
+// --- Initialize Event Listeners ---
+function initEventListeners() {
+  
+  const loginForm = document.getElementById("login-form");
+  if (loginForm) loginForm.addEventListener("submit", handleLogin);
+
+  const signoutBtn = document.getElementById("sidebar-signout-btn");
+  if (signoutBtn) signoutBtn.addEventListener("click", handleSignout);
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      state.activeTab = item.getAttribute("data-tab");
+      updateViews();
+    });
+  });
+
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  document.getElementById("date-switcher-prev")?.addEventListener("click", () => {
+    state.selectedMonth--;
+    if (state.selectedMonth < 0) {
+      state.selectedMonth = 11;
+      state.selectedYear--;
+    }
+    const monthEl = document.getElementById("date-switcher-month");
+    if (monthEl) monthEl.textContent = `${months[state.selectedMonth]} ${state.selectedYear}`;
+    updateViews();
+  });
+
+  document.getElementById("date-switcher-next")?.addEventListener("click", () => {
+    state.selectedMonth++;
+    if (state.selectedMonth > 11) {
+      state.selectedMonth = 0;
+      state.selectedYear++;
+    }
+    const monthEl = document.getElementById("date-switcher-month");
+    if (monthEl) monthEl.textContent = `${months[state.selectedMonth]} ${state.selectedYear}`;
+    updateViews();
+  });
+
+  // Predictor
+  const dSlider = document.getElementById("sim-demos");
+  const cSlider = document.getElementById("sim-conversion");
+  if (dSlider) {
+    dSlider.addEventListener("input", () => {
+      dSlider.dataset.dirty = "true";
+      updatePredictor();
+    });
+  }
+  if (cSlider) {
+    cSlider.addEventListener("input", () => {
+      cSlider.dataset.dirty = "true";
+      updatePredictor();
+    });
+  }
+
+  // Leaderboard filters
+  const pills = document.querySelectorAll("#leaderboard-tab-pills .tab-pill");
+  pills.forEach(pill => {
+    pill.addEventListener("click", () => {
+      pills.forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      state.leaderboardSortKey = pill.getAttribute("data-sort");
+      renderLeaderboard();
+    });
+  });
+
+  // Modals cancellation buttons
+  document.getElementById("slab-modal-close")?.addEventListener("click", () => document.getElementById("slab-modal").classList.remove("open"));
+  document.getElementById("slab-modal-cancel")?.addEventListener("click", () => document.getElementById("slab-modal").classList.remove("open"));
+  
+  document.getElementById("demo-modal-close")?.addEventListener("click", () => document.getElementById("demo-modal").classList.remove("open"));
+  document.getElementById("demo-modal-cancel")?.addEventListener("click", () => document.getElementById("demo-modal").classList.remove("open"));
+  
+  document.getElementById("tutor-modal-close")?.addEventListener("click", () => document.getElementById("tutor-modal").classList.remove("open"));
+  document.getElementById("tutor-modal-cancel")?.addEventListener("click", () => document.getElementById("tutor-modal").classList.remove("open"));
+  
+  document.getElementById("feedback-modal-close")?.addEventListener("click", () => document.getElementById("feedback-modal").classList.remove("open"));
+  document.getElementById("feedback-modal-cancel")?.addEventListener("click", () => document.getElementById("feedback-modal").classList.remove("open"));
+
+  // Forms submit triggers
+  document.getElementById("slab-form")?.addEventListener("submit", handleSlabSubmit);
+  document.getElementById("tutor-form")?.addEventListener("submit", handleTutorSubmit);
+  document.getElementById("demo-form")?.addEventListener("submit", handleDemoSubmit);
+  document.getElementById("feedback-form")?.addEventListener("submit", handleFeedbackSubmit);
+  document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
+  document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
+
+  // Download Payroll CSV Exporter
+  const downloadPayrollBtn = document.getElementById("download-payroll-btn");
+  if (downloadPayrollBtn) {
+    downloadPayrollBtn.addEventListener("click", () => {
+      const demos = getMonthYearFilteredDemos();
+      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const monthName = months[state.selectedMonth];
+      const currency = state.branding.currency;
+
+      let csvContent = "Tutor Name,Completed Demos,Converted Demos,Conversion Rate,Eligible Slab Rate,Total Incentive Earned\n";
+      
+      state.tutors.forEach(t => {
+        const m = calculateTutorMetrics(t.id, demos);
+        const slabRate = m.eligibleSlab ? `${currency}${m.eligibleSlab.rate}` : "None";
+        csvContent += `"${t.name}",${m.completed},${m.converted},${m.conversion.toFixed(1)}%,${slabRate},${currency}${m.incentive}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `payroll_report_${monthName.toLowerCase()}_${state.selectedYear}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`Payroll report downloaded for ${monthName} ${state.selectedYear}.`);
+    });
+  }
+
+  // Google Sheets Connection Tester
+  const testConnectionBtn = document.getElementById("test-connection-btn");
+  if (testConnectionBtn) {
+    testConnectionBtn.addEventListener("click", async () => {
+      const urlInput = document.getElementById("brand-sheets-url").value.trim();
+      const statusMsg = document.getElementById("connection-status-msg");
+      
+      if (!statusMsg) return;
+
+      if (!urlInput) {
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "⚠️ Enter a Google Sheet URL first.";
+        return;
+      }
+
+      statusMsg.style.color = "#4b5563"; // muted gray
+      statusMsg.textContent = "⏳ Pinging Sheets API...";
+
+      try {
+        const response = await fetch(`${urlInput}?action=readAll`, {
+          method: "GET",
+          mode: "cors"
+        });
+        const result = await response.json();
+        
+        if (result && result.status === "success") {
+          statusMsg.style.color = "#16a34a"; // green
+          statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
+          showToast("Sheets API response verified.", "success");
+        } else {
+          statusMsg.style.color = "#dc2626"; // red
+          statusMsg.textContent = "❌ Connection failed. Check script settings.";
+        }
+      } catch (err) {
+        console.error("Sheets connection test failed:", err);
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "❌ Network error. Check URL or CORS settings.";
+      }
+    });
+  }
+  
+  document.getElementById("clear-database-btn")?.addEventListener("click", async () => {
+    if (confirm("WARNING: This will wipe ALL tutor profiles and demo logs from local storage. Are you sure you want to start fresh?")) {
+      state.tutors = [];
+      state.demos = [];
+      saveToLocalStorage();
+      
+      // Send wipe command to Google Sheets if linked
+      await writeToSheets("clearDatabase", {});
+      
+      // Force reload select selectors
+      const selects = document.querySelectorAll(".tutor-select-el");
+      selects.forEach(select => {
+        select.innerHTML = "";
+      });
+
+      updateViews();
+      showToast("Tutor profiles and demo logs wiped.", "warning");
+    }
+  });
+
+  // Admin page layout controls
+  document.getElementById("add-demo-btn")?.addEventListener("click", () => openDemoModal());
+  document.getElementById("admin-add-slab-btn")?.addEventListener("click", () => openSlabModal());
+  document.getElementById("admin-add-tutor-btn")?.addEventListener("click", () => openTutorModal());
+
+  // Search filter and status queries inside Admin Demos List
+  const searchInput = document.getElementById("demo-search-input");
+  const filterSelect = document.getElementById("demo-filter-status");
+  if (searchInput) searchInput.addEventListener("input", renderDemosTable);
+  if (filterSelect) filterSelect.addEventListener("change", renderDemosTable);
+
+  // Selector swap triggers
+  const swapper = document.getElementById("tutor-profile-select");
+  if (swapper) {
+    swapper.addEventListener("change", () => renderDashboard());
+  }
+
+  // Local System Image Upload Reader (Logo upload)
+  const logoFileField = document.getElementById("brand-logo-file");
+  if (logoFileField) {
+    logoFileField.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          state.branding.logoUrl = evt.target.result; // Base64 encoding
+          applyBranding();
+          showToast("Logo loaded. Save settings to persist.", "info");
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Bulk Import Tutors from CSV
+  const bulkTutorsBtn = document.getElementById("bulk-import-tutors-btn");
+  if (bulkTutorsBtn) {
+    bulkTutorsBtn.addEventListener("click", async () => {
+      const raw = prompt("Paste comma-separated tutor rows (Name, AccessCode, Email):");
+      if (raw) {
+        const lines = raw.split("\n");
+        let added = 0;
+        lines.forEach(line => {
+          const parts = line.split(",");
+          if (parts.length >= 2) {
+            const name = parts[0].trim();
+            const accessCode = parts[1].trim();
+            const email = parts[2]?.trim() || "";
+            
+            if (name && accessCode) {
+              const id = `tutor_${Date.now()}_${added}`;
+              const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+              const tutorData = { id, name, accessCode, email, avatar };
+              
+              state.tutors.push(tutorData);
+              // Async write back
+              writeToSheets("addTutor", tutorData);
+              added++;
+            }
+          }
+        });
+        if (added > 0) {
+          saveToLocalStorage();
+          renderAdminTutors();
+          showToast(`Imported ${added} tutors.`);
+        }
+      }
+    });
+  }
+
+  // Delegate click events on dynamically generated buttons
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+
+    if (target.classList.contains("edit-slab-btn-el")) openSlabModal(target.dataset.id);
+    if (target.classList.contains("delete-slab-btn-el")) deleteSlab(target.dataset.id);
+    
+    if (target.classList.contains("edit-tutor-btn-el")) openTutorModal(target.dataset.id);
+    if (target.classList.contains("delete-tutor-btn-el")) deleteTutor(target.dataset.id);
+
+    if (target.classList.contains("edit-demo-btn-el")) openDemoModal(target.dataset.id);
+    if (target.classList.contains("delete-demo-btn-el")) deleteDemo(target.dataset.id);
+
+    if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
+
+    if (target.classList.contains("slab-up-el") || target.classList.contains("slab-down-el")) {
+      const id = target.dataset.id;
+      const direction = target.classList.contains("slab-up-el") ? "up" : "down";
+      const idx = state.slabs.findIndex(s => s.id === id);
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      
+      if (targetIdx >= 0 && targetIdx < state.slabs.length) {
+        const temp = state.slabs[idx];
+        state.slabs[idx] = state.slabs[targetIdx];
+        state.slabs[targetIdx] = temp;
+        saveToLocalStorage();
+        updateViews();
+      }
+    }
+  });
+
+  // Table status dropdown update dispatches
+  document.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (target.classList.contains("admin-status-select") || target.classList.contains("tutor-status-select")) {
+      const id = target.dataset.id;
+      const status = target.value;
+
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].status = status;
+        await writeToSheets("updateDemoStatus", { id, status });
+        saveToLocalStorage();
+        renderDemosTable();
+        renderDashboard();
+        showToast("Outcome status updated.");
+      }
+    }
+  });
+
+  // Bulk selector checkbox triggers
+  document.addEventListener("change", (e) => {
+    const target = e.target;
+    if (target.id === "bulk-select-all") {
+      const checkboxes = document.querySelectorAll(".demo-bulk-checkbox");
+      state.bulkSelectedDemoIds = [];
+      checkboxes.forEach(cb => {
+        cb.checked = target.checked;
+        if (target.checked) state.bulkSelectedDemoIds.push(cb.dataset.id);
+      });
+    }
+    if (target.classList.contains("demo-bulk-checkbox")) {
+      const id = target.dataset.id;
+      if (target.checked) {
+        if (!state.bulkSelectedDemoIds.includes(id)) state.bulkSelectedDemoIds.push(id);
+      } else {
+        state.bulkSelectedDemoIds = state.bulkSelectedDemoIds.filter(bid => bid !== id);
+      }
+      
+      const selectAll = document.getElementById("bulk-select-all");
+      if (selectAll) {
+        const checkboxes = document.querySelectorAll(".demo-bulk-checkbox");
+        selectAll.checked = state.bulkSelectedDemoIds.length === checkboxes.length;
+      }
+    }
+  });
+
+  // Bulk import demos from CSV
+  const bulkBtn = document.getElementById("bulk-import-btn");
+  if (bulkBtn) {
+    bulkBtn.addEventListener("click", () => {
+      const raw = prompt("Paste demo rows copy-pasted from your Google Sheet (Status, SlotNumber, Date, Time, TutorName, StudentName, Age, Language, AgentName, Location, MobileNumber, Level):");
+      if (raw) {
+        const lines = raw.split("\n");
+        let addedCount = 0;
+        lines.forEach(line => {
+          if (!line.trim()) return;
+          const parts = line.split("\t").length > 1 ? line.split("\t") : line.split(","); // Supports both Tab and Comma formats
+          if (parts.length >= 6) {
+            const status = parts[0]?.trim() || "Demo Not Done";
+            const slot = parts[1]?.trim() || "Slot 1";
+            const date = parts[2]?.trim() || "15 Jul 26";
+            const time = parts[3]?.trim() || "10:00 AM";
+            const tutorName = parts[4]?.trim() || "Unknown";
+            const studentName = parts[5]?.trim() || "Unknown";
+            const age = parts[6]?.trim() || "-";
+            const language = parts[7]?.trim() || "-";
+            const agentName = parts[8]?.trim() || "-";
+            const location = parts[9]?.trim() || "-";
+            const mobileNumber = parts[10]?.trim() || "-";
+            const level = parts[11]?.trim() || "-";
+            
+            const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorName.toLowerCase()) || state.tutors[0] || { id: "tutor_1", name: tutorName };
+            const demoData = {
+              id: `demo_${Date.now()}_${addedCount}`,
+              tutorId: tutor.id,
+              tutorName: tutor.name,
+              studentName,
+              date,
+              time,
+              dateTime: `${date} ${time}`,
+              slot,
+              status,
+              age,
+              language,
+              agentName,
+              location,
+              mobileNumber,
+              level,
+              feedback: ""
+            };
+            state.demos.push(demoData);
+            // Async write
+            writeToSheets("addDemo", demoData);
+            addedCount++;
+          }
+        });
+        saveToLocalStorage();
+        updateViews();
+        showToast(`Imported ${addedCount} demos.`);
+      }
+    });
+  }
+}
+
+// --- App Entry Point ---
+document.addEventListener("DOMContentLoaded", () => {
+  loadFromLocalStorage();
+  applyBranding();
+  initEventListeners();
+
+  // Load select option dropdowns in admin layout
+  const selects = document.querySelectorAll(".tutor-select-el");
+  selects.forEach(select => {
+    select.innerHTML = "";
+    state.tutors.forEach(t => {
+      const op = document.createElement("option");
+      op.value = t.id;
+      op.textContent = t.name;
+      select.appendChild(op);
+    });
+  });
+
+  if (state.currentUser) {
+    // Session exists
+    // Verify if page match is valid (tutor on admin page or vice versa)
+    if (isTutorPage && state.currentUser.role !== "tutor") {
+      // Redirect or force logout
+      sessionStorage.removeItem("CHESS_PORTAL_SESSION");
+      state.currentUser = null;
+      window.location.reload();
+      return;
+    }
+    if (isAdminPage && state.currentUser.role !== "admin") {
+      sessionStorage.removeItem("CHESS_PORTAL_SESSION");
+      state.currentUser = null;
+      window.location.reload();
+      return;
+    }
+
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-container").style.display = "flex";
+    updateViews();
+    syncFullState().then(() => updateViews());
+  } else {
+    // Require Login
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("app-container").style.display = "none";
+  }
+});
