@@ -5,6 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eight Times Eight Chess Academy - Admin Portal</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    window.addEventListener('error', function(e) {
+      let errorDiv = document.getElementById('global-error-banner');
+      if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'global-error-banner';
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.backgroundColor = '#dc2626';
+        errorDiv.style.color = '#ffffff';
+        errorDiv.style.padding = '12px 20px';
+        errorDiv.style.fontSize = '0.85rem';
+        errorDiv.style.fontWeight = '700';
+        errorDiv.style.zIndex = '99999';
+        errorDiv.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+        document.body.prepend(errorDiv);
+      }
+      errorDiv.textContent = '⚠️ JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+    });
+  </script>
 </head>
 <body>
 

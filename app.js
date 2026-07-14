@@ -280,7 +280,12 @@ function loadFromLocalStorage() {
   } else {
     state.branding = { ...window.DEFAULT_BRANDING };
   }
-  state.slabs = localSlabs ? JSON.parse(localSlabs) : [ ...window.DEFAULT_SLABS ];
+  try {
+    state.slabs = localSlabs ? JSON.parse(localSlabs) : [ ...window.DEFAULT_SLABS ];
+  } catch (e) {
+    console.error("Failed to parse slabs from local storage:", e);
+    state.slabs = [ ...window.DEFAULT_SLABS ];
+  }
   
   // Wipes old mock data from local cache if it is detected on launch
   const hasDummyTutors = localTutors && (localTutors.includes("Rahul Sharma") || localTutors.includes("Rahul"));
@@ -307,7 +312,13 @@ function loadFromLocalStorage() {
   }
   
   if (sessionUser) {
-    state.currentUser = JSON.parse(sessionUser);
+    try {
+      state.currentUser = JSON.parse(sessionUser);
+    } catch (e) {
+      console.error("Failed to parse session user:", e);
+      state.currentUser = null;
+      sessionStorage.removeItem("CHESS_PORTAL_SESSION");
+    }
   }
   
   // Initialize Supabase DB client if credentials exist
