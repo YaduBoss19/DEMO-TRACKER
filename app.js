@@ -53,7 +53,7 @@ function mapAppDemoToSheet(a) {
 }
 
 // --- Supabase Database Integration ---
-let supabase = null;
+let supabaseClient = null;
 
 function initSupabase() {
   const url = state.branding.supabaseUrl;
@@ -64,10 +64,10 @@ function initSupabase() {
       return;
     }
     try {
-      supabase = window.supabase.createClient(url, key);
+      supabaseClient = window.supabase.createClient(url, key);
       
       // Subscribe to real-time updates from Postgres
-      supabase
+      supabaseClient
         .channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public' }, () => {
           console.log("Supabase Realtime update detected!");
@@ -85,17 +85,17 @@ async function fetchFromSheets() {
   const key = state.branding.supabaseKey;
   if (!url || !key) return false;
 
-  if (!supabase) {
+  if (!supabaseClient) {
     initSupabase();
   }
-  if (!supabase) return false;
+  if (!supabaseClient) return false;
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
 
   try {
     // 1. Fetch Branding options
-    const { data: brandingData, error: bErr } = await supabase.from('branding').select('*').eq('id', 'default').maybeSingle();
+    const { data: brandingData, error: bErr } = await supabaseClient.from('branding').select('*').eq('id', 'default').maybeSingle();
     if (bErr) throw bErr;
     if (brandingData) {
       state.branding = {
@@ -111,7 +111,7 @@ async function fetchFromSheets() {
     }
 
     // 2. Fetch Slabs configurations
-    const { data: slabsData, error: sErr } = await supabase.from('slabs').select('*');
+    const { data: slabsData, error: sErr } = await supabaseClient.from('slabs').select('*');
     if (sErr) throw sErr;
     if (slabsData && slabsData.length > 0) {
       state.slabs = slabsData.map(s => ({
@@ -124,14 +124,14 @@ async function fetchFromSheets() {
     }
 
     // 3. Fetch Tutors configurations
-    const { data: tutorsData, error: tErr } = await supabase.from('tutors').select('*');
+    const { data: tutorsData, error: tErr } = await supabaseClient.from('tutors').select('*');
     if (tErr) throw tErr;
     if (tutorsData && tutorsData.length > 0) {
       state.tutors = tutorsData;
     }
 
     // 4. Fetch Demos configurations
-    const { data: demosData, error: dErr } = await supabase.from('demos').select('*');
+    const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
     if (dErr) throw dErr;
     if (demosData) {
       state.demos = demosData.map(mapSheetDemoToApp);
@@ -153,10 +153,10 @@ async function writeToSheets(action, payload) {
   const key = state.branding.supabaseKey;
   if (!url || !key) return false;
 
-  if (!supabase) {
+  if (!supabaseClient) {
     initSupabase();
   }
-  if (!supabase) return false;
+  if (!supabaseClient) return false;
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
@@ -171,73 +171,73 @@ async function writeToSheets(action, payload) {
           currency: payload.currency,
           themeColors: payload.themeColors
         };
-        const { error: bErr } = await supabase.from('branding').upsert(bPayload);
+        const { error: bErr } = await supabaseClient.from('branding').upsert(bPayload);
         if (bErr) throw bErr;
         break;
 
       case "addSlab":
-        const { error: sAddErr } = await supabase.from('slabs').insert([payload]);
+        const { error: sAddErr } = await supabaseClient.from('slabs').insert([payload]);
         if (sAddErr) throw sAddErr;
         break;
 
       case "updateSlab":
-        const { error: sUpErr } = await supabase.from('slabs').upsert(payload);
+        const { error: sUpErr } = await supabaseClient.from('slabs').upsert(payload);
         if (sUpErr) throw sUpErr;
         break;
 
       case "deleteSlab":
-        const { error: sDelErr } = await supabase.from('slabs').delete().eq('id', payload.id);
+        const { error: sDelErr } = await supabaseClient.from('slabs').delete().eq('id', payload.id);
         if (sDelErr) throw sDelErr;
         break;
 
       case "addTutor":
-        const { error: tAddErr } = await supabase.from('tutors').insert([payload]);
+        const { error: tAddErr } = await supabaseClient.from('tutors').insert([payload]);
         if (tAddErr) throw tAddErr;
         break;
 
       case "updateTutor":
-        const { error: tUpErr } = await supabase.from('tutors').upsert(payload);
+        const { error: tUpErr } = await supabaseClient.from('tutors').upsert(payload);
         if (tUpErr) throw tUpErr;
         break;
 
       case "deleteTutor":
-        const { error: tDelErr } = await supabase.from('tutors').delete().eq('id', payload.id);
+        const { error: tDelErr } = await supabaseClient.from('tutors').delete().eq('id', payload.id);
         if (tDelErr) throw tDelErr;
         break;
 
       case "addDemo":
-        const { error: dAddErr } = await supabase.from('demos').insert([payload]);
+        const { error: dAddErr } = await supabaseClient.from('demos').insert([payload]);
         if (dAddErr) throw dAddErr;
         break;
 
       case "updateDemo":
-        const { error: dUpErr } = await supabase.from('demos').upsert(payload);
+        const { error: dUpErr } = await supabaseClient.from('demos').upsert(payload);
         if (dUpErr) throw dUpErr;
         break;
 
       case "deleteDemo":
-        const { error: dDelErr } = await supabase.from('demos').delete().eq('id', payload.id);
+        const { error: dDelErr } = await supabaseClient.from('demos').delete().eq('id', payload.id);
         if (dDelErr) throw dDelErr;
         break;
 
       case "updateDemoStatus":
-        const { error: dStatErr } = await supabase.from('demos').update({ status: payload.status }).eq('id', payload.id);
+        const { error: dStatErr } = await supabaseClient.from('demos').update({ status: payload.status }).eq('id', payload.id);
         if (dStatErr) throw dStatErr;
         break;
 
       case "updateDemoFeedback":
-        const { error: dFeedErr } = await supabase.from('demos').update({ feedback: payload.feedback }).eq('id', payload.id);
+        const { error: dFeedErr } = await supabaseClient.from('demos').update({ feedback: payload.feedback }).eq('id', payload.id);
         if (dFeedErr) throw dFeedErr;
         break;
 
       case "addDemosBulk":
-        const { error: dBulkErr } = await supabase.from('demos').insert(payload);
+        const { error: dBulkErr } = await supabaseClient.from('demos').insert(payload);
         if (dBulkErr) throw dBulkErr;
         break;
 
       case "clearDatabase":
-        const { error: clearDemosErr } = await supabase.from('demos').delete().neq('id', 'non-existent');
-        const { error: clearTutorsErr } = await supabase.from('tutors').delete().neq('id', 'non-existent');
+        const { error: clearDemosErr } = await supabaseClient.from('demos').delete().neq('id', 'non-existent');
+        const { error: clearTutorsErr } = await supabaseClient.from('tutors').delete().neq('id', 'non-existent');
         if (clearDemosErr) throw clearDemosErr;
         if (clearTutorsErr) throw clearTutorsErr;
         break;
