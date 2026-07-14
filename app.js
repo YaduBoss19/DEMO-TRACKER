@@ -188,9 +188,23 @@ function saveToLocalStorage() {
     localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
     localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
     localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
-    localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
+    
+    // If a Google Sheets URL is configured, clear local demos cache to save domain storage quota!
+    if (state.branding.sheetsUrl) {
+      localStorage.removeItem("CHESS_PORTAL_DEMOS");
+    } else {
+      localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
+    }
   } catch (e) {
-    console.warn("Storage quota exceeded. Skipping local browser caching. Data syncs directly to Google Sheet.", e);
+    console.warn("Storage quota exceeded. Clearing local demos cache and trying again...", e);
+    try {
+      localStorage.removeItem("CHESS_PORTAL_DEMOS");
+      localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
+      localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
+      localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
+    } catch (err) {
+      console.error("Critical: Failed to save brand configurations to local storage.", err);
+    }
   }
 }
 
@@ -344,6 +358,78 @@ function getMonthYearFilteredDemos() {
 
     return hasYear && hasMonthSegment;
   });
+}
+
+function parseDateString(dateStr) {
+  if (!dateStr) return new Date(0);
+  const clean = String(dateStr).trim();
+  // Try standard parsing
+  let d = new Date(clean);
+  if (!isNaN(d.getTime())) return d;
+  
+  // Handle custom formats like "15 Jul 26" or "15 July 2026"
+  const parts = clean.split(/[^a-zA-Z0-9]/).filter(Boolean);
+  if (parts.length >= 3) {
+    const day = parseInt(parts[0]);
+    const monthStr = parts[1].toLowerCase();
+    let year = parseInt(parts[2]);
+    if (year < 100) year += 2000; // e.g. 26 -> 2026
+    
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    let monthIdx = -1;
+    months.forEach((m, idx) => {
+      if (monthStr.startsWith(m)) monthIdx = idx;
+    });
+    
+    if (monthIdx !== -1 && !isNaN(day) && !isNaN(year)) {
+      return new Date(year, monthIdx, day);
+    }
+  }
+  return new Date(0);
+}
+
+function getFilteredDemosByRange() {
+  const rangeSelectorId = isAdminPage ? "demo-filter-range" : "tutor-filter-range";
+  const rangeEl = document.getElementById(rangeSelectorId);
+  const range = rangeEl ? rangeEl.value : "MONTH";
+  
+  if (range === "ALL") {
+    return state.demos; // No date filter
+  }
+  
+  if (range === "MONTH") {
+    return getMonthYearFilteredDemos(); // Month/Year calendar switcher
+  }
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (range === "DAY") {
+    return state.demos.filter(d => {
+      const dateObj = parseDateString(d.date || d.dateTime);
+      return dateObj.getDate() === today.getDate() && 
+             dateObj.getMonth() === today.getMonth() && 
+             dateObj.getFullYear() === today.getFullYear();
+    });
+  }
+  
+  if (range === "WEEK") {
+    // Current Week Sunday -> Saturday
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    return state.demos.filter(d => {
+      const dateObj = parseDateString(d.date || d.dateTime);
+      return dateObj >= startOfWeek && dateObj <= endOfWeek;
+    });
+  }
+  
+  return getMonthYearFilteredDemos();
 }
 
 function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
@@ -695,7 +781,7 @@ function renderDemosTable() {
   if (!head || !body) return;
 
   const isTutor = isTutorPage;
-  const demos = getMonthYearFilteredDemos();
+  const demos = getFilteredDemosByRange();
 
   if (isAdminPage) {
     head.innerHTML = `
@@ -1515,8 +1601,13 @@ function initEventListeners() {
   // Search filter and status queries inside Admin Demos List
   const searchInput = document.getElementById("demo-search-input");
   const filterSelect = document.getElementById("demo-filter-status");
+  const rangeSelect = document.getElementById("demo-filter-range");
+  const tutorRangeSelect = document.getElementById("tutor-filter-range");
+  
   if (searchInput) searchInput.addEventListener("input", renderDemosTable);
   if (filterSelect) filterSelect.addEventListener("change", renderDemosTable);
+  if (rangeSelect) rangeSelect.addEventListener("change", renderDemosTable);
+  if (tutorRangeSelect) tutorRangeSelect.addEventListener("change", renderDemosTable);
 
   // Selector swap triggers
   const swapper = document.getElementById("tutor-profile-select");
@@ -1752,8 +1843,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-container").style.display = "flex";
-    updateViews();
     syncFullState().then(() => updateViews());
+
+    // Auto-refresh background poll (every 30 seconds) to fetch external updates from Google Sheet
+    setInterval(async () => {
+      if (state.branding.sheetsUrl) {
+        const updated = await fetchFromSheets();
+        if (updated) {
+          updateViews();
+        }
+      }
+    }, 30000);
   } else {
     // Require Login
     document.getElementById("login-screen").style.display = "flex";
