@@ -15,8 +15,8 @@ let state = {
 };
 
 // Check page scope
-const isTutorPage = window.location.pathname.toLowerCase().includes("tutor.html");
-const isAdminPage = window.location.pathname.toLowerCase().includes("admin.html");
+const isTutorPage = window.location.pathname.toLowerCase().includes("tutor");
+const isAdminPage = window.location.pathname.toLowerCase().includes("admin");
 
 function mapSheetDemoToApp(s) {
   return {
@@ -283,8 +283,18 @@ function loadFromLocalStorage() {
     state.tutors = [ ...window.DEFAULT_TUTORS ]; // Empty array []
     state.demos = [ ...window.DEFAULT_DEMOS ]; // Empty array []
   } else {
-    state.tutors = localTutors ? JSON.parse(localTutors) : [ ...window.DEFAULT_TUTORS ];
-    state.demos = localDemos ? JSON.parse(localDemos) : [ ...window.DEFAULT_DEMOS ];
+    try {
+      state.tutors = localTutors ? JSON.parse(localTutors) : [ ...window.DEFAULT_TUTORS ];
+    } catch (e) {
+      console.error("Failed to parse tutors from local storage:", e);
+      state.tutors = [ ...window.DEFAULT_TUTORS ];
+    }
+    try {
+      state.demos = localDemos ? JSON.parse(localDemos) : [ ...window.DEFAULT_DEMOS ];
+    } catch (e) {
+      console.error("Failed to parse demos from local storage:", e);
+      state.demos = [ ...window.DEFAULT_DEMOS ];
+    }
   }
   
   if (sessionUser) {
