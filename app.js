@@ -313,11 +313,32 @@ function applyBranding() {
 // --- Calculations ---
 function getMonthYearFilteredDemos() {
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const filterString = `${months[state.selectedMonth]} ${state.selectedYear % 100}`;
   
+  const targetMonthIndex = state.selectedMonth; // 0-11
+  const targetYearLong = state.selectedYear; // e.g. 2026
+  const targetYearShort = String(targetYearLong).slice(-2); // "26"
+  const targetMonthNumTwoDigit = String(targetMonthIndex + 1).padStart(2, "0"); // "07"
+  const targetMonthNumOneDigit = String(targetMonthIndex + 1); // "7"
+  
+  const textMonthLong = months[targetMonthIndex].toLowerCase();
+  const textMonthShort = textMonthLong.slice(0, 3);
+
   return state.demos.filter(d => {
-    return d.dateTime.toLowerCase().includes(filterString.toLowerCase()) || 
-           d.dateTime.toLowerCase().includes(`${months[state.selectedMonth].slice(0,3)} ${state.selectedYear % 100}`.toLowerCase());
+    const val = (d.date || d.dateTime || "").toLowerCase().trim();
+    if (!val) return false;
+
+    // 1. Check textual matches (e.g. "15 Jul 26" or "15 July 2026")
+    const matchesText = val.includes(textMonthShort) && 
+                        (val.includes(String(targetYearLong)) || val.includes(targetYearShort));
+    if (matchesText) return true;
+
+    // 2. Check slash/hyphen matches (e.g. "15/07/2026", "2026-07-15", "7/15/26")
+    // Split by non-alphanumeric characters to parse components
+    const segments = val.split(/[^a-zA-Z0-9]/).map(s => s.trim());
+    const hasYear = val.includes(String(targetYearLong)) || val.includes(targetYearShort);
+    const hasMonthSegment = segments.includes(targetMonthNumTwoDigit) || segments.includes(targetMonthNumOneDigit);
+
+    return hasYear && hasMonthSegment;
   });
 }
 
