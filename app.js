@@ -1756,35 +1756,64 @@ function parseCSV(text) {
 }
 
 function processImportedRows(rows) {
-  if (rows.length === 0) {
+  if (!rows || rows.length === 0) {
     showToast("The file is empty or has no data.", "warning");
     return;
   }
   
-  // Detect if first row is a header row
-  const firstRowStr = rows[0].map(c => String(c).toUpperCase().trim());
-  const hasHeaders = firstRowStr.includes("STUDENT NAME") || firstRowStr.includes("DATE") || firstRowStr.includes("TUTOR NAME");
+  // Clean headers list safely, converting each cell to uppercase string
+  const firstRowStr = (rows[0] || []).map(c => c !== undefined && c !== null ? String(c).toUpperCase().trim() : "");
+  const hasHeaders = firstRowStr.some(h => h.includes("STUDENT") || h.includes("DATE") || h.includes("TUTOR") || h.includes("STATUS") || h.includes("SLOT"));
   
   let startIndex = hasHeaders ? 1 : 0;
   
-  // Header indexes lookup defaults
-  let statusIdx = 0, slotIdx = 1, dateIdx = 2, timeIdx = 3, tutorNameIdx = 4, studentNameIdx = 5;
-  let ageIdx = 6, languageIdx = 7, agentNameIdx = 8, locationIdx = 9, mobileNumberIdx = 10, levelIdx = 11;
+  // Header indexes lookup with fallback
+  let statusIdx = -1, slotIdx = -1, dateIdx = -1, timeIdx = -1, tutorNameIdx = -1, studentNameIdx = -1;
+  let ageIdx = -1, languageIdx = -1, agentNameIdx = -1, locationIdx = -1, mobileNumberIdx = -1, levelIdx = -1;
   
   if (hasHeaders) {
-    statusIdx = firstRowStr.indexOf("DEMO STATUS");
-    slotIdx = firstRowStr.indexOf("SLOT NUMBER");
-    dateIdx = firstRowStr.indexOf("DATE");
-    timeIdx = firstRowStr.indexOf("TIME");
-    tutorNameIdx = firstRowStr.indexOf("TUTOR NAME");
-    studentNameIdx = firstRowStr.indexOf("STUDENT NAME");
-    ageIdx = firstRowStr.indexOf("AGE");
-    languageIdx = firstRowStr.indexOf("LANGUAGE");
-    agentNameIdx = firstRowStr.indexOf("AGENT NAME");
-    locationIdx = firstRowStr.indexOf("LOCATION");
-    mobileNumberIdx = firstRowStr.indexOf("MOBILE NUMBER");
-    levelIdx = firstRowStr.indexOf("LEVEL");
+    firstRowStr.forEach((header, idx) => {
+      if (header.includes("STUDENT") || (header.includes("NAME") && !header.includes("TUTOR") && !header.includes("AGENT"))) {
+        studentNameIdx = idx;
+      } else if (header.includes("TUTOR")) {
+        tutorNameIdx = idx;
+      } else if (header.includes("STATUS")) {
+        statusIdx = idx;
+      } else if (header.includes("SLOT")) {
+        slotIdx = idx;
+      } else if (header.includes("DATE")) {
+        dateIdx = idx;
+      } else if (header.includes("TIME")) {
+        timeIdx = idx;
+      } else if (header.includes("AGE")) {
+        ageIdx = idx;
+      } else if (header.includes("LANG")) {
+        languageIdx = idx;
+      } else if (header.includes("AGENT")) {
+        agentNameIdx = idx;
+      } else if (header.includes("LOC")) {
+        locationIdx = idx;
+      } else if (header.includes("MOB") || header.includes("PHONE") || header.includes("CONTACT")) {
+        mobileNumberIdx = idx;
+      } else if (header.includes("LEV")) {
+        levelIdx = idx;
+      }
+    });
   }
+  
+  // Index positions fallbacks if headers were not parsed or mapped
+  if (statusIdx === -1) statusIdx = 0;
+  if (slotIdx === -1) slotIdx = 1;
+  if (dateIdx === -1) dateIdx = 2;
+  if (timeIdx === -1) timeIdx = 3;
+  if (tutorNameIdx === -1) tutorNameIdx = 4;
+  if (studentNameIdx === -1) studentNameIdx = 5;
+  if (ageIdx === -1) ageIdx = 6;
+  if (languageIdx === -1) languageIdx = 7;
+  if (agentNameIdx === -1) agentNameIdx = 8;
+  if (locationIdx === -1) locationIdx = 9;
+  if (mobileNumberIdx === -1) mobileNumberIdx = 10;
+  if (levelIdx === -1) levelIdx = 11;
   
   let addedCount = 0;
   
@@ -1793,21 +1822,21 @@ function processImportedRows(rows) {
     if (!row || row.length === 0) continue;
     
     // Ensure we have a valid student name
-    const studentNameVal = (studentNameIdx !== -1 && row[studentNameIdx]) ? String(row[studentNameIdx]).trim() : "";
+    const studentNameVal = (row[studentNameIdx] !== undefined && row[studentNameIdx] !== null) ? String(row[studentNameIdx]).trim() : "";
     if (!studentNameVal) continue;
     
-    const status = (statusIdx !== -1 && row[statusIdx]) ? String(row[statusIdx]).trim() : "Demo Not Done";
-    const slot = (slotIdx !== -1 && row[slotIdx]) ? String(row[slotIdx]).trim() : "Slot 1";
-    const date = (dateIdx !== -1 && row[dateIdx]) ? String(row[dateIdx]).trim() : "15 Jul 26";
-    const time = (timeIdx !== -1 && row[timeIdx]) ? String(row[timeIdx]).trim() : "10:00 AM";
-    const tutorName = (tutorNameIdx !== -1 && row[tutorNameIdx]) ? String(row[tutorNameIdx]).trim() : "Unknown";
+    const status = (row[statusIdx] !== undefined && row[statusIdx] !== null) ? String(row[statusIdx]).trim() : "Demo Not Done";
+    const slot = (row[slotIdx] !== undefined && row[slotIdx] !== null) ? String(row[slotIdx]).trim() : "Slot 1";
+    const date = (row[dateIdx] !== undefined && row[dateIdx] !== null) ? String(row[dateIdx]).trim() : "15 Jul 26";
+    const time = (row[timeIdx] !== undefined && row[timeIdx] !== null) ? String(row[timeIdx]).trim() : "10:00 AM";
+    const tutorName = (row[tutorNameIdx] !== undefined && row[tutorNameIdx] !== null) ? String(row[tutorNameIdx]).trim() : "Unknown";
     const studentName = studentNameVal;
-    const age = (ageIdx !== -1 && row[ageIdx]) ? String(row[ageIdx]).trim() : "-";
-    const language = (languageIdx !== -1 && row[languageIdx]) ? String(row[languageIdx]).trim() : "-";
-    const agentName = (agentNameIdx !== -1 && row[agentNameIdx]) ? String(row[agentNameIdx]).trim() : "-";
-    const location = (locationIdx !== -1 && row[locationIdx]) ? String(row[locationIdx]).trim() : "-";
-    const mobileNumber = (mobileNumberIdx !== -1 && row[mobileNumberIdx]) ? String(row[mobileNumberIdx]).trim() : "-";
-    const level = (levelIdx !== -1 && row[levelIdx]) ? String(row[levelIdx]).trim() : "-";
+    const age = (row[ageIdx] !== undefined && row[ageIdx] !== null) ? String(row[ageIdx]).trim() : "-";
+    const language = (row[languageIdx] !== undefined && row[languageIdx] !== null) ? String(row[languageIdx]).trim() : "-";
+    const agentName = (row[agentNameIdx] !== undefined && row[agentNameIdx] !== null) ? String(row[agentNameIdx]).trim() : "-";
+    const location = (row[locationIdx] !== undefined && row[locationIdx] !== null) ? String(row[locationIdx]).trim() : "-";
+    const mobileNumber = (row[mobileNumberIdx] !== undefined && row[mobileNumberIdx] !== null) ? String(row[mobileNumberIdx]).trim() : "-";
+    const level = (row[levelIdx] !== undefined && row[levelIdx] !== null) ? String(row[levelIdx]).trim() : "-";
 
     const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorName.toLowerCase()) || state.tutors[0] || { id: "tutor_1", name: tutorName };
     const demoData = {
