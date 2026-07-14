@@ -122,7 +122,7 @@ async function writeToSheets(action, payload) {
       method: "POST",
       mode: "cors",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "text/plain"
       },
       body: JSON.stringify({ action: finalAction, data: mappedPayload })
     });
@@ -1665,29 +1665,44 @@ function initEventListeners() {
       const fileName = file.name.toLowerCase();
       const reader = new FileReader();
       
-      if (fileName.endsWith(".csv")) {
-        reader.onload = function(evt) {
-          const text = evt.target.result;
-          const rows = parseCSV(text);
-          processImportedRows(rows);
-        };
-        reader.readAsText(file);
-      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-        if (typeof XLSX === "undefined") {
-          showToast("Excel reader library not loaded. Check internet connection.", "danger");
-          return;
+      try {
+        if (fileName.endsWith(".csv")) {
+          reader.onload = function(evt) {
+            try {
+              const text = evt.target.result;
+              const rows = parseCSV(text);
+              processImportedRows(rows);
+            } catch (err) {
+              console.error(err);
+              showToast(`CSV parse error: ${err.message}`, "danger");
+            }
+          };
+          reader.readAsText(file);
+        } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+          if (typeof XLSX === "undefined") {
+            showToast("Excel reader library not loaded. Check internet connection.", "danger");
+            return;
+          }
+          reader.onload = function(evt) {
+            try {
+              const data = new Uint8Array(evt.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              processImportedRows(rows);
+            } catch (err) {
+              console.error(err);
+              showToast(`Excel parse error: ${err.message}`, "danger");
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          showToast("Unsupported file format. Please upload a .csv, .xlsx, or .xls file.", "danger");
         }
-        reader.onload = function(evt) {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          processImportedRows(rows);
-        };
-        reader.readAsArrayBuffer(file);
-      } else {
-        showToast("Unsupported file format. Please upload a .csv, .xlsx, or .xls file.", "danger");
+      } catch (err) {
+        console.error(err);
+        showToast(`File read error: ${err.message}`, "danger");
       }
       
       // Reset input value to allow uploading the same file name again
