@@ -5,7 +5,8 @@ const DEFAULT_BRANDING = {
   companyLogo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: var(--brand-primary);"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`,
   logoUrl: "", // For image URL customization
   currency: "₹",
-  sheetsUrl: "", // Google Sheets Apps Script Web App URL
+  supabaseUrl: "", // Supabase Project URL
+  supabaseKey: "", // Supabase public anon API key
   themeColors: {
     primary: "#111827", // Dark Gray/Black from screenshots
     secondary: "#e07a5f", // Peach/Accent color

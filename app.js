@@ -18,118 +18,223 @@ let state = {
 const isTutorPage = window.location.pathname.toLowerCase().includes("tutor.html");
 const isAdminPage = window.location.pathname.toLowerCase().includes("admin.html");
 
-// --- Google Sheets Mapping Translators ---
 function mapSheetDemoToApp(s) {
   return {
-    id: s.id || `demo_${Date.now()}_${Math.random()}`,
+    id: s.id,
     tutorId: s.tutorId || "",
-    tutorName: s["TUTOR NAME"] || s.tutorName || "",
-    studentName: s["STUDENT NAME"] || s.studentName || "",
-    date: s["DATE"] || s.date || "",
-    time: s["TIME"] || s.time || "",
-    dateTime: (s["DATE"] || s.date || "") + " " + (s["TIME"] || s.time || ""),
-    slot: s["SLOT NUMBER"] || s.slot || "",
-    status: s["DEMO STATUS"] || s.status || "Demo Not Done",
-    age: s["AGE"] || s.age || "-",
-    language: s["LANGUAGE"] || s.language || "-",
-    agentName: s["AGENT NAME"] || s.agentName || "-",
-    location: s["LOCATION"] || s.location || "-",
-    mobileNumber: s["MOBILE NUMBER"] || s.mobileNumber || "-",
-    level: s["LEVEL"] || s.level || "-",
-    feedback: s.feedback || s["FEEDBACK/NOTES"] || ""
+    tutorName: s.tutorName || s["TUTOR NAME"] || "",
+    studentName: s.studentName || s["STUDENT NAME"] || "",
+    date: s.date || s["DATE"] || "",
+    time: s.time || s["TIME"] || "",
+    dateTime: s.dateTime || ((s.date || s["DATE"] || "") + " " + (s.time || s["TIME"] || "")),
+    slot: s.slot || s["SLOT NUMBER"] || "",
+    status: s.status || s["DEMO STATUS"] || "Demo Not Done",
+    age: s.age || s["AGE"] || "-",
+    language: s.language || s["LANGUAGE"] || "-",
+    agentName: s.agentName || s["AGENT NAME"] || "-",
+    location: s.location || s["LOCATION"] || "-",
+    mobileNumber: s.mobileNumber || s["MOBILE NUMBER"] || "-",
+    level: s.level || s["LEVEL"] || "-",
+    feedback: s.feedback || ""
   };
 }
 
 function mapAppDemoToSheet(a) {
-  return {
-    id: a.id,
-    tutorId: a.tutorId,
-    "TUTOR NAME": a.tutorName,
-    "STUDENT NAME": a.studentName,
-    "DATE": a.date,
-    "TIME": a.time,
-    "SLOT NUMBER": a.slot,
-    "DEMO STATUS": a.status,
-    "AGE": a.age,
-    "LANGUAGE": a.language,
-    "AGENT NAME": a.agentName,
-    "LOCATION": a.location,
-    "MOBILE NUMBER": a.mobileNumber,
-    "LEVEL": a.level,
-    feedback: a.feedback
-  };
+  return a;
 }
 
-// --- Google Sheets Sync Engine ---
+// --- Supabase Database Integration ---
+let supabase = null;
+
+function initSupabase() {
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (url && key) {
+    try {
+      supabase = window.supabase.createClient(url, key);
+      
+      // Subscribe to real-time updates from Postgres
+      supabase
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          console.log("Supabase Realtime update detected!");
+          fetchFromSheets().then(() => updateViews());
+        })
+        .subscribe();
+    } catch (e) {
+      console.error("Failed to initialize Supabase client:", e);
+    }
+  }
+}
+
 async function fetchFromSheets() {
-  const url = state.branding.sheetsUrl;
-  if (!url) return false;
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (!url || !key) return false;
+
+  if (!supabase) {
+    initSupabase();
+  }
+  if (!supabase) return false;
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
 
   try {
-    const response = await fetch(`${url}?action=readAll`, {
-      method: "GET",
-      mode: "cors"
-    });
-    const result = await response.json();
-    
-    if (result && result.status === "success" && result.data) {
-      const data = result.data;
-      if (data.branding) state.branding = { ...state.branding, ...data.branding };
-      if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
-      if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
-      if (data.demos && data.demos.length > 0) {
-        state.demos = data.demos.map(mapSheetDemoToApp);
-      }
-      
-      saveToLocalStorage();
-      return true;
+    // 1. Fetch Branding options
+    const { data: brandingData, error: bErr } = await supabase.from('branding').select('*').eq('id', 'default').maybeSingle();
+    if (bErr) throw bErr;
+    if (brandingData) {
+      state.branding = {
+        ...state.branding,
+        companyName: brandingData.name,
+        logoUrl: brandingData.logo,
+        currency: brandingData.currency,
+        themeColors: {
+          ...state.branding.themeColors,
+          ...(brandingData.themeColors || {})
+        }
+      };
     }
+
+    // 2. Fetch Slabs configurations
+    const { data: slabsData, error: sErr } = await supabase.from('slabs').select('*');
+    if (sErr) throw sErr;
+    if (slabsData && slabsData.length > 0) {
+      state.slabs = slabsData.map(s => ({
+        id: s.id,
+        minDemos: s.minDemos,
+        minConversion: parseFloat(s.minConversion),
+        rate: parseFloat(s.rate),
+        enabled: s.enabled
+      }));
+    }
+
+    // 3. Fetch Tutors configurations
+    const { data: tutorsData, error: tErr } = await supabase.from('tutors').select('*');
+    if (tErr) throw tErr;
+    if (tutorsData && tutorsData.length > 0) {
+      state.tutors = tutorsData;
+    }
+
+    // 4. Fetch Demos configurations
+    const { data: demosData, error: dErr } = await supabase.from('demos').select('*');
+    if (dErr) throw dErr;
+    if (demosData) {
+      state.demos = demosData.map(mapSheetDemoToApp);
+    }
+
+    saveToLocalStorage();
+    return true;
   } catch (err) {
-    console.error("Failed to fetch from Google Sheets: ", err);
-    showToast("Sheets sync failed. Running in Offline Mode.", "warning");
+    console.error("Failed to fetch from Supabase: ", err);
+    showToast("Supabase sync failed. Running in Offline Mode.", "warning");
+    return false;
   } finally {
     if (statusIndicator) statusIndicator.style.display = "none";
   }
-  return false;
 }
 
 async function writeToSheets(action, payload) {
-  const url = state.branding.sheetsUrl;
-  if (!url) return false;
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (!url || !key) return false;
+
+  if (!supabase) {
+    initSupabase();
+  }
+  if (!supabase) return false;
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
 
-  let mappedPayload = payload;
-  let finalAction = action;
-
-  // Intercept and translate payloads/actions for sheet layout compatibility
-  if (action === "addDemo" || action === "updateDemo") {
-    mappedPayload = mapAppDemoToSheet(payload);
-  } else if (action === "updateDemoStatus") {
-    finalAction = "updateDemoCell";
-    mappedPayload = { id: payload.id, columnName: "DEMO STATUS", value: payload.status };
-  } else if (action === "updateDemoFeedback") {
-    finalAction = "updateDemoCell";
-    mappedPayload = { id: payload.id, columnName: "feedback", value: payload.feedback };
-  }
-
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      mode: "cors",
-      headers: {
-        "Content-Type": "text/plain"
-      },
-      body: JSON.stringify({ action: finalAction, data: mappedPayload })
-    });
-    const result = await response.json();
-    return result && result.status === "success";
+    switch (action) {
+      case "updateBranding":
+        const bPayload = {
+          id: 'default',
+          name: payload.companyName,
+          logo: payload.logoUrl,
+          currency: payload.currency,
+          themeColors: payload.themeColors
+        };
+        const { error: bErr } = await supabase.from('branding').upsert(bPayload);
+        if (bErr) throw bErr;
+        break;
+
+      case "addSlab":
+        const { error: sAddErr } = await supabase.from('slabs').insert([payload]);
+        if (sAddErr) throw sAddErr;
+        break;
+
+      case "updateSlab":
+        const { error: sUpErr } = await supabase.from('slabs').upsert(payload);
+        if (sUpErr) throw sUpErr;
+        break;
+
+      case "deleteSlab":
+        const { error: sDelErr } = await supabase.from('slabs').delete().eq('id', payload.id);
+        if (sDelErr) throw sDelErr;
+        break;
+
+      case "addTutor":
+        const { error: tAddErr } = await supabase.from('tutors').insert([payload]);
+        if (tAddErr) throw tAddErr;
+        break;
+
+      case "updateTutor":
+        const { error: tUpErr } = await supabase.from('tutors').upsert(payload);
+        if (tUpErr) throw tUpErr;
+        break;
+
+      case "deleteTutor":
+        const { error: tDelErr } = await supabase.from('tutors').delete().eq('id', payload.id);
+        if (tDelErr) throw tDelErr;
+        break;
+
+      case "addDemo":
+        const { error: dAddErr } = await supabase.from('demos').insert([payload]);
+        if (dAddErr) throw dAddErr;
+        break;
+
+      case "updateDemo":
+        const { error: dUpErr } = await supabase.from('demos').upsert(payload);
+        if (dUpErr) throw dUpErr;
+        break;
+
+      case "deleteDemo":
+        const { error: dDelErr } = await supabase.from('demos').delete().eq('id', payload.id);
+        if (dDelErr) throw dDelErr;
+        break;
+
+      case "updateDemoStatus":
+        const { error: dStatErr } = await supabase.from('demos').update({ status: payload.status }).eq('id', payload.id);
+        if (dStatErr) throw dStatErr;
+        break;
+
+      case "updateDemoFeedback":
+        const { error: dFeedErr } = await supabase.from('demos').update({ feedback: payload.feedback }).eq('id', payload.id);
+        if (dFeedErr) throw dFeedErr;
+        break;
+
+      case "addDemosBulk":
+        const { error: dBulkErr } = await supabase.from('demos').insert(payload);
+        if (dBulkErr) throw dBulkErr;
+        break;
+
+      case "clearDatabase":
+        const { error: clearDemosErr } = await supabase.from('demos').delete().neq('id', 'non-existent');
+        const { error: clearTutorsErr } = await supabase.from('tutors').delete().neq('id', 'non-existent');
+        if (clearDemosErr) throw clearDemosErr;
+        if (clearTutorsErr) throw clearTutorsErr;
+        break;
+
+      default:
+        console.warn("Unknown write action:", action);
+    }
+    return true;
   } catch (err) {
-    console.error("Failed to write to Google Sheets: ", err);
+    console.error("Failed to write to Supabase: ", err);
     showToast("Write failed. Saved locally.", "warning");
     return false;
   } finally {
@@ -181,6 +286,9 @@ function loadFromLocalStorage() {
   if (sessionUser) {
     state.currentUser = JSON.parse(sessionUser);
   }
+  
+  // Initialize Supabase DB client if credentials exist
+  initSupabase();
 }
 
 function saveToLocalStorage() {
@@ -189,8 +297,8 @@ function saveToLocalStorage() {
     localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
     localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
     
-    // If a Google Sheets URL is configured, clear local demos cache to save domain storage quota!
-    if (state.branding.sheetsUrl) {
+    // If Supabase database is connected, clear local demos cache to save domain storage quota!
+    if (state.branding.supabaseUrl) {
       localStorage.removeItem("CHESS_PORTAL_DEMOS");
     } else {
       localStorage.setItem("CHESS_PORTAL_DEMOS", JSON.stringify(state.demos));
@@ -1048,7 +1156,8 @@ function renderAdminBranding() {
 
   document.getElementById("brand-name").value = branding.companyName;
   document.getElementById("brand-currency").value = branding.currency;
-  document.getElementById("brand-sheets-url").value = branding.sheetsUrl || "";
+  document.getElementById("brand-supabase-url").value = branding.supabaseUrl || "";
+  document.getElementById("brand-supabase-key").value = branding.supabaseKey || "";
   document.getElementById("color-primary").value = branding.themeColors.primary;
   document.getElementById("color-secondary").value = branding.themeColors.secondary;
 }
@@ -1381,21 +1490,26 @@ async function handleBrandingSubmit(e) {
   e.preventDefault();
   const name = document.getElementById("brand-name").value.trim();
   const currency = document.getElementById("brand-currency").value.trim();
-  const sheetsUrl = document.getElementById("brand-sheets-url").value.trim();
+  const supabaseUrl = document.getElementById("brand-supabase-url").value.trim();
+  const supabaseKey = document.getElementById("brand-supabase-key").value.trim();
   const primary = document.getElementById("color-primary").value;
   const secondary = document.getElementById("color-secondary").value;
 
   state.branding.companyName = name;
   state.branding.currency = currency;
-  state.branding.sheetsUrl = sheetsUrl;
+  state.branding.supabaseUrl = supabaseUrl;
+  state.branding.supabaseKey = supabaseKey;
   state.branding.themeColors.primary = primary;
   state.branding.themeColors.secondary = secondary;
+
+  // Re-initialize Supabase client with new credentials
+  initSupabase();
 
   saveToLocalStorage();
   applyBranding();
   await writeToSheets("updateBranding", state.branding);
   
-  if (sheetsUrl) {
+  if (supabaseUrl && supabaseKey) {
     await syncFullState();
   }
 
@@ -1532,43 +1646,43 @@ function initEventListeners() {
     });
   }
 
-  // Google Sheets Connection Tester
+  // Supabase Connection Tester
   const testConnectionBtn = document.getElementById("test-connection-btn");
   if (testConnectionBtn) {
     testConnectionBtn.addEventListener("click", async () => {
-      const urlInput = document.getElementById("brand-sheets-url").value.trim();
+      const urlInput = document.getElementById("brand-supabase-url").value.trim();
+      const keyInput = document.getElementById("brand-supabase-key").value.trim();
       const statusMsg = document.getElementById("connection-status-msg");
       
       if (!statusMsg) return;
 
-      if (!urlInput) {
+      if (!urlInput || !keyInput) {
         statusMsg.style.color = "#dc2626"; // red
-        statusMsg.textContent = "⚠️ Enter a Google Sheet URL first.";
+        statusMsg.textContent = "⚠️ Enter URL and public anon key first.";
         return;
       }
 
       statusMsg.style.color = "#4b5563"; // muted gray
-      statusMsg.textContent = "⏳ Pinging Sheets API...";
+      statusMsg.textContent = "⏳ Testing Supabase API connection...";
 
       try {
-        const response = await fetch(`${urlInput}?action=readAll`, {
-          method: "GET",
-          mode: "cors"
-        });
-        const result = await response.json();
+        // Initialize a temporary client to test credentials
+        const testClient = window.supabase.createClient(urlInput, keyInput);
         
-        if (result && result.status === "success") {
-          statusMsg.style.color = "#16a34a"; // green
-          statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
-          showToast("Sheets API response verified.", "success");
-        } else {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "❌ Connection failed. Check script settings.";
+        // Attempt to read from the branding table to verify credentials and schemas
+        const { data, error } = await testClient.from('branding').select('id').limit(1);
+        
+        if (error) {
+          throw error;
         }
+        
+        statusMsg.style.color = "#16a34a"; // green
+        statusMsg.textContent = "✔️ Connected successfully! Schema verified.";
+        showToast("Supabase connection verified successfully.", "success");
       } catch (err) {
-        console.error("Sheets connection test failed:", err);
+        console.error("Supabase connection test failed:", err);
         statusMsg.style.color = "#dc2626"; // red
-        statusMsg.textContent = "❌ Network error. Check URL or CORS settings.";
+        statusMsg.textContent = `❌ Failed: ${err.message || "Check URL and Keys."}`;
       }
     });
   }
@@ -1845,9 +1959,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("app-container").style.display = "flex";
     syncFullState().then(() => updateViews());
 
-    // Auto-refresh background poll (every 30 seconds) to fetch external updates from Google Sheet
+    // Auto-refresh background poll (every 30 seconds) to fetch external updates from Supabase
     setInterval(async () => {
-      if (state.branding.sheetsUrl) {
+      if (state.branding.supabaseUrl) {
         const updated = await fetchFromSheets();
         if (updated) {
           updateViews();

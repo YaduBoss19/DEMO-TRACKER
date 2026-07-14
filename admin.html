@@ -461,8 +461,12 @@
               </div>
 
               <div class="form-group" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                <label for="brand-sheets-url" style="color:var(--color-info)">🔗 Google Sheet Web App Deployment URL</label>
-                <input type="text" id="brand-sheets-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                <label for="brand-supabase-url" style="color:var(--color-info)">⚡ Supabase Project URL</label>
+                <input type="text" id="brand-supabase-url" class="form-control" placeholder="https://xyz.supabase.co">
+              </div>
+              <div class="form-group" style="margin-top: 10px;">
+                <label for="brand-supabase-key" style="color:var(--color-info)">🔑 Supabase Anon public API Key</label>
+                <input type="text" id="brand-supabase-key" class="form-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
                 <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
                   <button type="button" class="btn btn-sm" id="test-connection-btn">🔌 Test Connection</button>
                   <span id="connection-status-msg" style="font-size: 0.8rem; font-weight: 700;"></span>
@@ -682,6 +686,8 @@
     </div>
   </div>
 
+  <!-- Supabase Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Excel Spreadsheet Reader library (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="mockData.js"></script>
