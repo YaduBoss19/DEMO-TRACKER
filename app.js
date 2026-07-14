@@ -15,8 +15,17 @@ let state = {
 };
 
 // Check page scope
-const isTutorPage = window.location.pathname.toLowerCase().includes("tutor");
-const isAdminPage = window.location.pathname.toLowerCase().includes("admin");
+let isTutorPage = window.location.pathname.toLowerCase().includes("tutor");
+let isAdminPage = window.location.pathname.toLowerCase().includes("admin");
+
+// Fallback page detection based on DOM elements if path matches failed (e.g. on root index redirects)
+if (!isTutorPage && !isAdminPage) {
+  if (document.getElementById("bulk-import-btn") || document.getElementById("admin-tutors-table-body")) {
+    isAdminPage = true;
+  } else if (document.getElementById("demos-table-body") && !document.getElementById("admin-tutors-table-body")) {
+    isTutorPage = true;
+  }
+}
 
 function mapSheetDemoToApp(s) {
   return {
