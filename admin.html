@@ -337,6 +337,7 @@
               <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Central database log containing tutor sessions</p>
             </div>
             <div style="display:flex; gap:10px;">
+              <input type="file" id="demo-file-input" accept=".csv, .xlsx, .xls" style="display:none;">
               <button class="btn" id="bulk-import-btn">Bulk Import Demos</button>
               <button class="btn btn-primary" id="add-demo-btn">+ Add Demo</button>
             </div>
@@ -682,6 +683,8 @@
     </div>
   </div>
 
+  <!-- Excel Spreadsheet Reader library (SheetJS) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="mockData.js"></script>
   <script src="app.js"></script>
 </body>

@@ -1653,60 +1653,49 @@ function initEventListeners() {
     }
   });
 
-  // Bulk import demos from CSV
+  // Bulk import demos from file (Excel or CSV)
   const bulkBtn = document.getElementById("bulk-import-btn");
-  if (bulkBtn) {
+  const fileInput = document.getElementById("demo-file-input");
+  
+  if (bulkBtn && fileInput) {
     bulkBtn.addEventListener("click", () => {
-      const raw = prompt("Paste demo rows copy-pasted from your Google Sheet (Status, SlotNumber, Date, Time, TutorName, StudentName, Age, Language, AgentName, Location, MobileNumber, Level):");
-      if (raw) {
-        const lines = raw.split("\n");
-        let addedCount = 0;
-        lines.forEach(line => {
-          if (!line.trim()) return;
-          const parts = line.split("\t").length > 1 ? line.split("\t") : line.split(","); // Supports both Tab and Comma formats
-          if (parts.length >= 6) {
-            const status = parts[0]?.trim() || "Demo Not Done";
-            const slot = parts[1]?.trim() || "Slot 1";
-            const date = parts[2]?.trim() || "15 Jul 26";
-            const time = parts[3]?.trim() || "10:00 AM";
-            const tutorName = parts[4]?.trim() || "Unknown";
-            const studentName = parts[5]?.trim() || "Unknown";
-            const age = parts[6]?.trim() || "-";
-            const language = parts[7]?.trim() || "-";
-            const agentName = parts[8]?.trim() || "-";
-            const location = parts[9]?.trim() || "-";
-            const mobileNumber = parts[10]?.trim() || "-";
-            const level = parts[11]?.trim() || "-";
-            
-            const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorName.toLowerCase()) || state.tutors[0] || { id: "tutor_1", name: tutorName };
-            const demoData = {
-              id: `demo_${Date.now()}_${addedCount}`,
-              tutorId: tutor.id,
-              tutorName: tutor.name,
-              studentName,
-              date,
-              time,
-              dateTime: `${date} ${time}`,
-              slot,
-              status,
-              age,
-              language,
-              agentName,
-              location,
-              mobileNumber,
-              level,
-              feedback: ""
-            };
-            state.demos.push(demoData);
-            // Async write
-            writeToSheets("addDemo", demoData);
-            addedCount++;
-          }
-        });
-        saveToLocalStorage();
-        updateViews();
-        showToast(`Imported ${addedCount} demos.`);
+      fileInput.click();
+    });
+    
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const fileName = file.name.toLowerCase();
+      const reader = new FileReader();
+      
+      if (fileName.endsWith(".csv")) {
+        reader.onload = function(evt) {
+          const text = evt.target.result;
+          const rows = parseCSV(text);
+          processImportedRows(rows);
+        };
+        reader.readAsText(file);
+      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        if (typeof XLSX === "undefined") {
+          showToast("Excel reader library not loaded. Check internet connection.", "danger");
+          return;
+        }
+        reader.onload = function(evt) {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          processImportedRows(rows);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        showToast("Unsupported file format. Please upload a .csv, .xlsx, or .xls file.", "danger");
       }
+      
+      // Reset input value to allow uploading the same file name again
+      fileInput.value = "";
     });
   }
 }
@@ -1756,3 +1745,104 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("app-container").style.display = "none";
   }
 });
+
+// --- File Importer Helper Functions ---
+function parseCSV(text) {
+  const lines = text.split("\n");
+  return lines.map(line => {
+    if (!line.trim()) return [];
+    // Basic CSV splitting (supporting commas and tabs)
+    const delimiter = line.split("\t").length > 1 ? "\t" : ",";
+    return line.split(delimiter).map(cell => {
+      return cell.trim().replace(/^["']|["']$/g, "");
+    });
+  }).filter(row => row.length > 0);
+}
+
+function processImportedRows(rows) {
+  if (rows.length === 0) {
+    showToast("The file is empty or has no data.", "warning");
+    return;
+  }
+  
+  // Detect if first row is a header row
+  const firstRowStr = rows[0].map(c => String(c).toUpperCase().trim());
+  const hasHeaders = firstRowStr.includes("STUDENT NAME") || firstRowStr.includes("DATE") || firstRowStr.includes("TUTOR NAME");
+  
+  let startIndex = hasHeaders ? 1 : 0;
+  
+  // Header indexes lookup defaults
+  let statusIdx = 0, slotIdx = 1, dateIdx = 2, timeIdx = 3, tutorNameIdx = 4, studentNameIdx = 5;
+  let ageIdx = 6, languageIdx = 7, agentNameIdx = 8, locationIdx = 9, mobileNumberIdx = 10, levelIdx = 11;
+  
+  if (hasHeaders) {
+    statusIdx = firstRowStr.indexOf("DEMO STATUS");
+    slotIdx = firstRowStr.indexOf("SLOT NUMBER");
+    dateIdx = firstRowStr.indexOf("DATE");
+    timeIdx = firstRowStr.indexOf("TIME");
+    tutorNameIdx = firstRowStr.indexOf("TUTOR NAME");
+    studentNameIdx = firstRowStr.indexOf("STUDENT NAME");
+    ageIdx = firstRowStr.indexOf("AGE");
+    languageIdx = firstRowStr.indexOf("LANGUAGE");
+    agentNameIdx = firstRowStr.indexOf("AGENT NAME");
+    locationIdx = firstRowStr.indexOf("LOCATION");
+    mobileNumberIdx = firstRowStr.indexOf("MOBILE NUMBER");
+    levelIdx = firstRowStr.indexOf("LEVEL");
+  }
+  
+  let addedCount = 0;
+  
+  for (let i = startIndex; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+    
+    // Ensure we have a valid student name
+    const studentNameVal = (studentNameIdx !== -1 && row[studentNameIdx]) ? String(row[studentNameIdx]).trim() : "";
+    if (!studentNameVal) continue;
+    
+    const status = (statusIdx !== -1 && row[statusIdx]) ? String(row[statusIdx]).trim() : "Demo Not Done";
+    const slot = (slotIdx !== -1 && row[slotIdx]) ? String(row[slotIdx]).trim() : "Slot 1";
+    const date = (dateIdx !== -1 && row[dateIdx]) ? String(row[dateIdx]).trim() : "15 Jul 26";
+    const time = (timeIdx !== -1 && row[timeIdx]) ? String(row[timeIdx]).trim() : "10:00 AM";
+    const tutorName = (tutorNameIdx !== -1 && row[tutorNameIdx]) ? String(row[tutorNameIdx]).trim() : "Unknown";
+    const studentName = studentNameVal;
+    const age = (ageIdx !== -1 && row[ageIdx]) ? String(row[ageIdx]).trim() : "-";
+    const language = (languageIdx !== -1 && row[languageIdx]) ? String(row[languageIdx]).trim() : "-";
+    const agentName = (agentNameIdx !== -1 && row[agentNameIdx]) ? String(row[agentNameIdx]).trim() : "-";
+    const location = (locationIdx !== -1 && row[locationIdx]) ? String(row[locationIdx]).trim() : "-";
+    const mobileNumber = (mobileNumberIdx !== -1 && row[mobileNumberIdx]) ? String(row[mobileNumberIdx]).trim() : "-";
+    const level = (levelIdx !== -1 && row[levelIdx]) ? String(row[levelIdx]).trim() : "-";
+
+    const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorName.toLowerCase()) || state.tutors[0] || { id: "tutor_1", name: tutorName };
+    const demoData = {
+      id: `demo_${Date.now()}_${addedCount}`,
+      tutorId: tutor.id,
+      tutorName: tutor.name,
+      studentName,
+      date,
+      time,
+      dateTime: `${date} ${time}`,
+      slot,
+      status,
+      age,
+      language,
+      agentName,
+      location,
+      mobileNumber,
+      level,
+      feedback: ""
+    };
+    
+    state.demos.push(demoData);
+    writeToSheets("addDemo", demoData);
+    addedCount++;
+  }
+  
+  if (addedCount > 0) {
+    saveToLocalStorage();
+    updateViews();
+    showToast(`Successfully imported ${addedCount} demos.`);
+  } else {
+    showToast("No valid rows were found. Make sure Student Name is populated.", "warning");
+  }
+}
