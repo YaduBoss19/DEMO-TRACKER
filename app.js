@@ -1960,6 +1960,51 @@ function initEventListeners() {
       fileInput.value = "";
     });
   }
+
+  // Export demos to Excel spreadsheet
+  const exportBtn = document.getElementById("export-demos-btn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportDemosToExcel);
+  }
+}
+
+function exportDemosToExcel() {
+  if (state.demos.length === 0) {
+    showToast("No demo records to export.", "warning");
+    return;
+  }
+  
+  if (typeof XLSX === "undefined") {
+    showToast("Excel exporter library not loaded. Check internet connection.", "danger");
+    return;
+  }
+
+  // Map demos to clean column names for export
+  const exportData = state.demos.map(d => ({
+    "Demo ID": d.id,
+    "Tutor ID": d.tutorId,
+    "Tutor Name": d.tutorName,
+    "Student Name": d.studentName,
+    "Date": d.date,
+    "Time": d.time,
+    "Slot": d.slot,
+    "Status": d.status,
+    "Age": d.age || "",
+    "Language": d.language || "",
+    "Agent Name": d.agentName || "",
+    "Location": d.location || "",
+    "Mobile Number": d.mobileNumber || "",
+    "Level": d.level || "",
+    "Feedback": d.feedback || ""
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Demos Log");
+  
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(workbook, `Demos_Export_${dateStr}.xlsx`);
+  showToast("Demos exported to Excel successfully!");
 }
 
 // --- App Entry Point ---
