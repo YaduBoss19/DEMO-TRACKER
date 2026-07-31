@@ -978,9 +978,18 @@ function renderDemosTable() {
       const tr = document.createElement("tr");
       
       let statusClass = "status-not-done";
-      if (demo.status === "Demo Done") statusClass = "status-done";
-      else if (demo.status === "Converted") statusClass = "status-converted";
-      else if (demo.status === "Cancelled") statusClass = "status-cancelled";
+      let rowClass = "row-status-not-done";
+      if (demo.status === "Demo Done") {
+        statusClass = "status-done";
+        rowClass = "row-status-done";
+      } else if (demo.status === "Converted") {
+        statusClass = "status-converted";
+        rowClass = "row-status-converted";
+      } else if (demo.status === "Cancelled") {
+        statusClass = "status-cancelled";
+        rowClass = "row-status-cancelled";
+      }
+      tr.className = rowClass;
 
       const isChecked = state.bulkSelectedDemoIds.includes(demo.id) ? "checked" : "";
 
@@ -1016,6 +1025,10 @@ function renderDemosTable() {
       body.appendChild(tr);
     });
 
+    if (typeof updateBulkDeleteButton === "function") {
+      updateBulkDeleteButton();
+    }
+
   } else {
     // Tutor view Demos
     const tutorMetrics = calculateTutorMetrics(state.currentUser.id, demos);
@@ -1050,9 +1063,18 @@ function renderDemosTable() {
       const tr = document.createElement("tr");
 
       let statusClass = "status-not-done";
-      if (demo.status === "Demo Done") statusClass = "status-done";
-      else if (demo.status === "Converted") statusClass = "status-converted";
-      else if (demo.status === "Cancelled") statusClass = "status-cancelled";
+      let rowClass = "row-status-not-done";
+      if (demo.status === "Demo Done") {
+        statusClass = "status-done";
+        rowClass = "row-status-done";
+      } else if (demo.status === "Converted") {
+        statusClass = "status-converted";
+        rowClass = "row-status-converted";
+      } else if (demo.status === "Cancelled") {
+        statusClass = "status-cancelled";
+        rowClass = "row-status-cancelled";
+      }
+      tr.className = rowClass;
 
       const noteText = demo.feedback
         ? `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
@@ -1883,6 +1905,7 @@ function initEventListeners() {
         cb.checked = target.checked;
         if (target.checked) state.bulkSelectedDemoIds.push(cb.dataset.id);
       });
+      updateBulkDeleteButton();
     }
     if (target.classList.contains("demo-bulk-checkbox")) {
       const id = target.dataset.id;
@@ -1897,8 +1920,46 @@ function initEventListeners() {
         const checkboxes = document.querySelectorAll(".demo-bulk-checkbox");
         selectAll.checked = state.bulkSelectedDemoIds.length === checkboxes.length;
       }
+      updateBulkDeleteButton();
     }
   });
+
+  // Click listener for bulk delete button
+  const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener("click", async () => {
+      const count = state.bulkSelectedDemoIds.length;
+      if (count === 0) return;
+      if (confirm(`Are you sure you want to permanently delete the ${count} selected demos from the database?`)) {
+        const deletedIds = [...state.bulkSelectedDemoIds];
+        
+        // 1. Delete from Supabase in bulk
+        if (state.branding.supabaseUrl && state.branding.supabaseKey) {
+          if (!supabaseClient) {
+            initSupabase();
+          }
+          if (supabaseClient) {
+            const { error } = await supabaseClient.from('demos').delete().in('id', deletedIds);
+            if (error) {
+              console.error("Bulk delete failed in Supabase:", error);
+              showToast("Failed to delete from Supabase.", "danger");
+              return;
+            }
+          }
+        }
+        
+        // 2. Delete locally
+        state.demos = state.demos.filter(d => !deletedIds.includes(d.id));
+        state.bulkSelectedDemoIds = [];
+        saveToLocalStorage();
+        
+        // 3. Update views
+        updateBulkDeleteButton();
+        updateViews();
+        showToast(`Successfully deleted ${count} demos.`, "warning");
+      }
+    });
+  }
 
   // Bulk import demos from file (Excel or CSV)
   const bulkBtn = document.getElementById("bulk-import-btn");
@@ -2005,6 +2066,18 @@ function exportDemosToExcel() {
   const dateStr = new Date().toISOString().slice(0, 10);
   XLSX.writeFile(workbook, `Demos_Export_${dateStr}.xlsx`);
   showToast("Demos exported to Excel successfully!");
+}
+
+function updateBulkDeleteButton() {
+  const btn = document.getElementById("bulk-delete-btn");
+  if (!btn) return;
+  const count = state.bulkSelectedDemoIds.length;
+  if (count > 0) {
+    btn.style.display = "inline-flex";
+    btn.textContent = `🗑️ Delete Selected (${count})`;
+  } else {
+    btn.style.display = "none";
+  }
 }
 
 // --- App Entry Point ---

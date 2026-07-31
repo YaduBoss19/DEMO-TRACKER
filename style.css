@@ -664,6 +664,35 @@ header {
   color: #991b1b;
 }
 
+/* Table Row status coloring */
+.custom-table tbody tr.row-status-converted {
+  background-color: #ecfdf5 !important; /* Subtle Light Green */
+}
+.custom-table tbody tr.row-status-converted:hover {
+  background-color: #d1fae5 !important;
+}
+
+.custom-table tbody tr.row-status-cancelled {
+  background-color: #fef2f2 !important; /* Subtle Light Red */
+}
+.custom-table tbody tr.row-status-cancelled:hover {
+  background-color: #fee2e2 !important;
+}
+
+.custom-table tbody tr.row-status-not-done {
+  background-color: #f9fafb !important; /* Subtle Light Grey */
+}
+.custom-table tbody tr.row-status-not-done:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.custom-table tbody tr.row-status-done {
+  background-color: #fffaf0 !important; /* Subtle Light Orange */
+}
+.custom-table tbody tr.row-status-done:hover {
+  background-color: #ffedd5 !important;
+}
+
 /* Action button styles in tables */
 .action-btn {
   background: none;
