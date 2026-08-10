@@ -1555,12 +1555,27 @@ async function deleteTutor(tutorId) {
 }
 
 // Demos CRUD
+function formatDateForPicker(dateStr) {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+  } catch (e) {}
+  
+  return new Date().toISOString().split('T')[0];
+}
+
+// Demos CRUD
 function openDemoModal(demoId = null) {
   const modal = document.getElementById("demo-modal");
   const title = document.getElementById("demo-modal-title");
   const select = document.getElementById("demo-tutor-select");
   
-  select.innerHTML = "";
+  select.innerHTML = '<option value="">-- Assign Later / Optional --</option>';
   state.tutors.forEach(t => {
     const op = document.createElement("option");
     op.value = t.id;
@@ -1575,12 +1590,11 @@ function openDemoModal(demoId = null) {
     const demo = state.demos.find(d => d.id === demoId);
     if (demo) {
       document.getElementById("demo-id").value = demo.id;
-      document.getElementById("demo-tutor-select").value = demo.tutorId;
+      document.getElementById("demo-tutor-select").value = demo.tutorId || "";
       document.getElementById("demo-student-name").value = demo.studentName;
-      document.getElementById("demo-date-input").value = demo.date || demo.dateTime || "15 Jul 26";
+      document.getElementById("demo-date-input").value = formatDateForPicker(demo.date || demo.dateTime);
       document.getElementById("demo-time-input").value = demo.time || "10:00 AM";
       document.getElementById("demo-slot").value = demo.slot || "";
-      document.getElementById("demo-status-select").value = demo.status;
       document.getElementById("demo-age").value = demo.age || "";
       document.getElementById("demo-language").value = demo.language || "";
       document.getElementById("demo-level").value = demo.level || "";
@@ -1592,7 +1606,7 @@ function openDemoModal(demoId = null) {
   } else {
     title.textContent = "Add Demo Log";
     document.getElementById("demo-id").value = "";
-    document.getElementById("demo-date-input").value = "15 Jul 26";
+    document.getElementById("demo-date-input").value = new Date().toISOString().split('T')[0];
     document.getElementById("demo-time-input").value = "10:00 AM";
     document.getElementById("demo-slot").value = "Slot 1";
     document.getElementById("demo-level").value = "";
@@ -1612,7 +1626,7 @@ async function handleDemoSubmit(e) {
   const date = document.getElementById("demo-date-input").value.trim();
   const time = document.getElementById("demo-time-input").value.trim();
   const slot = document.getElementById("demo-slot").value.trim();
-  const status = document.getElementById("demo-status-select").value;
+  
   const age = document.getElementById("demo-age").value.trim() || "-";
   const language = document.getElementById("demo-language").value.trim() || "-";
   const level = document.getElementById("demo-level").value.trim() || "-";
@@ -1621,9 +1635,15 @@ async function handleDemoSubmit(e) {
   const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
   const feedback = document.getElementById("demo-feedback").value.trim() || "";
 
-  const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unknown" };
+  let status = "Demo Not Done";
+  if (id) {
+    const oldDemo = state.demos.find(d => d.id === id);
+    if (oldDemo) status = oldDemo.status || "Demo Not Done";
+  }
+
+  const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unassigned" };
   const demoData = {
-    tutorId,
+    tutorId: tutorId || "",
     tutorName: tutor.name,
     studentName,
     date,
