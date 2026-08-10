@@ -966,6 +966,11 @@ header {
   transition: var(--transition-smooth);
 }
 
+.form-control option {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
 .form-control:focus {
   border-color: var(--brand-secondary);
 }

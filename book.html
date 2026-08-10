@@ -172,6 +172,11 @@
       padding-right: 40px;
     }
 
+    select.form-control option {
+      background-color: #1a1e29;
+      color: #ffffff;
+    }
+
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
@@ -402,7 +407,27 @@
           </div>
           <div class="form-group">
             <label for="demo-slot">Preferred Time / Slot</label>
-            <input type="text" id="demo-slot" class="form-control" placeholder="e.g. 5:00 PM" required>
+            <select id="demo-slot" class="form-control" required>
+              <option value="" disabled selected>-- Select Slot --</option>
+              <option value="Slot 9">Slot 9</option>
+              <option value="Slot 10">Slot 10</option>
+              <option value="Slot 11">Slot 11</option>
+              <option value="Slot 12">Slot 12</option>
+              <option value="Slot 13">Slot 13</option>
+              <option value="Slot 14">Slot 14</option>
+              <option value="Slot 15">Slot 15</option>
+              <option value="Slot 16">Slot 16</option>
+              <option value="Slot 17">Slot 17</option>
+              <option value="Slot 18">Slot 18</option>
+              <option value="Slot 19">Slot 19</option>
+              <option value="Slot 20">Slot 20</option>
+              <option value="Slot 21">Slot 21</option>
+              <option value="Slot 22">Slot 22</option>
+              <option value="Slot 23">Slot 23</option>
+              <option value="Slot 24">Slot 24</option>
+              <option value="Slot 25">Slot 25</option>
+              <option value="Slot 26">Slot 26</option>
+            </select>
           </div>
         </div>
 
@@ -442,6 +467,10 @@
           <span class="detail-val" id="res-mobile">-</span>
         </div>
       </div>
+
+      <button id="send-whatsapp-invite-btn" class="btn" style="background: #25d366; color: white; border: none; margin-top: 20px; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span>💬 Send WhatsApp Confirmation</span>
+      </button>
     </div>
   </div>
 
@@ -537,7 +566,7 @@
         date: date,
         time: slot,
         dateTime: `${date} ${slot}`,
-        slot: "Slot 1", // Fallback slot name
+        slot: slot, // Use chosen slot dropdown name (e.g. Slot 9)
         status: "Demo Not Done",
         age: age,
         language: language,
@@ -557,6 +586,9 @@
         document.getElementById("res-level").textContent = level;
         document.getElementById("res-mobile").textContent = mobileNumber;
 
+        // Store for WhatsApp share handler
+        window.lastBookedDemo = demoPayload;
+
         document.getElementById("form-panel").style.display = "none";
         document.getElementById("success-panel").style.display = "flex";
       } else {
@@ -564,6 +596,58 @@
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>Schedule Free Demo</span>`;
       }
+    });
+
+    // Helper to resolve Zoom Link dynamically based on Slot name (either from sheet branding or fallback)
+    function getZoomLinkForSlot(slotName) {
+      if (!slotName) return "https://zoom.us/j/default-meeting";
+      const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+      
+      // Look up in the branding config from sheet
+      const link = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName];
+      if (link) return link;
+      
+      // Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
+      const defaultLinks = {
+        "slot 9": "https://zoom.us/j/default-slot9",
+        "slot 10": "https://zoom.us/j/default-slot10",
+        "slot 11": "https://zoom.us/j/default-slot11",
+        "slot 12": "https://zoom.us/j/default-slot12",
+        "slot 13": "https://zoom.us/j/default-slot13",
+        "slot 14": "https://zoom.us/j/default-slot14",
+        "slot 15": "https://zoom.us/j/default-slot15",
+        "slot 16": "https://zoom.us/j/default-slot16",
+        "slot 17": "https://zoom.us/j/default-slot17",
+        "slot 18": "https://zoom.us/j/default-slot18",
+        "slot 19": "https://zoom.us/j/default-slot19",
+        "slot 20": "https://zoom.us/j/default-slot20",
+        "slot 21": "https://zoom.us/j/default-slot21",
+        "slot 22": "https://zoom.us/j/default-slot22",
+        "slot 23": "https://zoom.us/j/default-slot23",
+        "slot 24": "https://zoom.us/j/default-slot24",
+        "slot 25": "https://zoom.us/j/default-slot25",
+        "slot 26": "https://zoom.us/j/default-slot26"
+      };
+      return defaultLinks[slotName.toLowerCase()] || "https://zoom.us/j/default-meeting";
+    }
+
+    // WhatsApp invite confirmation handler
+    document.getElementById("send-whatsapp-invite-btn").addEventListener("click", () => {
+      const demo = window.lastBookedDemo;
+      if (!demo) return;
+      
+      const zoomLink = getZoomLinkForSlot(demo.slot);
+      const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : "";
+      const text = `Hello *${demo.studentName}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${demo.date}\n⚡ *Slot:* ${demo.slot}\n🗣️ *Language:* ${demo.language}\n📈 *Level:* ${demo.level}\n🎥 *Zoom Join Link:* ${zoomLink}\n\nLooking forward to seeing you in the class!`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Invitation details copied to clipboard! Opening WhatsApp Web/App...");
+        const url = `https://api.whatsapp.com/send?phone=${mobile}&text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+      }).catch(() => {
+        const url = `https://api.whatsapp.com/send?phone=${mobile}&text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+      });
     });
 
     // Helper: Dynamic DB writer

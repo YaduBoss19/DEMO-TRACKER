@@ -1717,6 +1717,39 @@ async function deleteDemo(demoId) {
   }
 }
 
+function getZoomLinkForSlot(slotName) {
+  if (!slotName) return "https://zoom.us/j/default-meeting";
+  const branding = state.branding || {};
+  const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+  
+  // Look up in the branding config from sheet
+  const link = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName];
+  if (link) return link;
+  
+  // Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
+  const defaultLinks = {
+    "slot 9": "https://zoom.us/j/default-slot9",
+    "slot 10": "https://zoom.us/j/default-slot10",
+    "slot 11": "https://zoom.us/j/default-slot11",
+    "slot 12": "https://zoom.us/j/default-slot12",
+    "slot 13": "https://zoom.us/j/default-slot13",
+    "slot 14": "https://zoom.us/j/default-slot14",
+    "slot 15": "https://zoom.us/j/default-slot15",
+    "slot 16": "https://zoom.us/j/default-slot16",
+    "slot 17": "https://zoom.us/j/default-slot17",
+    "slot 18": "https://zoom.us/j/default-slot18",
+    "slot 19": "https://zoom.us/j/default-slot19",
+    "slot 20": "https://zoom.us/j/default-slot20",
+    "slot 21": "https://zoom.us/j/default-slot21",
+    "slot 22": "https://zoom.us/j/default-slot22",
+    "slot 23": "https://zoom.us/j/default-slot23",
+    "slot 24": "https://zoom.us/j/default-slot24",
+    "slot 25": "https://zoom.us/j/default-slot25",
+    "slot 26": "https://zoom.us/j/default-slot26"
+  };
+  return defaultLinks[slotName.toLowerCase()] || "https://zoom.us/j/default-meeting";
+}
+
 function sendDemoInvite(demoId) {
   const demo = state.demos.find(d => d.id === demoId);
   if (!demo) return;
@@ -1729,8 +1762,9 @@ function sendDemoInvite(demoId) {
   const level = demo.level || "-";
   const language = demo.language || "English";
   const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : ""; // clean digits only
+  const zoomLink = getZoomLinkForSlot(slot);
   
-  const text = `Hello *${student}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${date}\n⏰ *Time:* ${time}\n⚡ *Slot:* ${slot}\n🗣️ *Language:* ${language}\n📈 *Level:* ${level}\n👤 *Tutor:* ${tutor}\n\nLooking forward to seeing you in the session!`;
+  const text = `Hello *${student}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${date}\n⚡ *Slot:* ${slot}\n🗣️ *Language:* ${language}\n📈 *Level:* ${level}\n👤 *Tutor:* ${tutor}\n🎥 *Zoom Join Link:* ${zoomLink}\n\nLooking forward to seeing you in the session!`;
   
   // Copy to clipboard first
   navigator.clipboard.writeText(text).then(() => {
