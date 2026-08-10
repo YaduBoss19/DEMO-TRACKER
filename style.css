@@ -820,11 +820,11 @@ header {
 }
 
 .login-brand-logo {
-  width: 72px;
-  height: 72px;
+  width: 100px;
+  height: 100px;
   background-color: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
