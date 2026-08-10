@@ -156,7 +156,7 @@
         <div>
           <div class="entrance-icon">♟️</div>
           <h2>Tutor Portal</h2>
-          <p>Sign in using your tutor credentials to track your completed demos, conversion metrics, feedback notes, and incentive slab achievements.</p>
+          <p>Access your dashboard, log feedback, and view slabs.</p>
         </div>
         <a href="tutor.html" class="login-btn" style="text-decoration: none;">
           Enter Tutor Portal
@@ -168,7 +168,7 @@
         <div>
           <div class="entrance-icon">🎯</div>
           <h2>Book a Free Demo</h2>
-          <p>Schedule your free chess trial demo lesson instantly. Enter your details, choose your date and slot, and get assigned to a trial session.</p>
+          <p>Schedule a free trial demo lesson instantly.</p>
         </div>
         <a href="book.html" class="login-btn" style="text-decoration: none; background: #e07a5f; color: white; border: none;">
           Book Free Demo
@@ -180,7 +180,7 @@
         <div>
           <div class="entrance-icon">👑</div>
           <h2>Admin Portal</h2>
-          <p>Log in using your manager credentials to coordinate tutors, edit incentive slab requirements, configure branding theme options, and manage sheets sync.</p>
+          <p>Coordinate tutors, edit branding, and manage sync.</p>
         </div>
         <a href="admin.html" class="login-btn" style="text-decoration: none;">
           Enter Admin Portal
@@ -192,22 +192,85 @@
 
   <script src="mockData.js"></script>
   <script>
-    // Load custom branding options on launch
-    document.addEventListener("DOMContentLoaded", () => {
+    // Helper to dynamically load script
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    // Dynamic brand loading for all users
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Initial local fallback
       const localBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
+      let branding = window.DEFAULT_BRANDING || {
+        companyName: "Eight Times Eight Chess Academy",
+        themeColors: { primary: "#111827", secondary: "#e07a5f" }
+      };
       if (localBranding) {
-        const branding = JSON.parse(localBranding);
-        
-        // Update brand text
+        try { branding = { ...branding, ...JSON.parse(localBranding) }; } catch(e) {}
+      }
+
+      function updateUI() {
         document.getElementById("entrance-brand-name").textContent = branding.companyName;
-        
-        // Update logo
+        document.title = branding.companyName;
+
+        if (branding.themeColors) {
+          document.documentElement.style.setProperty('--brand-primary', branding.themeColors.primary);
+          document.documentElement.style.setProperty('--brand-secondary', branding.themeColors.secondary);
+        }
+
         const logoSlot = document.getElementById("entrance-logo-slot");
         if (logoSlot) {
-          logoSlot.innerHTML = branding.logoUrl
-            ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
-            : branding.companyLogo;
+          if (branding.logoUrl) {
+            logoSlot.innerHTML = `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`;
+            logoSlot.style.backgroundColor = "transparent";
+            logoSlot.style.border = "none";
+          } else {
+            logoSlot.innerHTML = branding.companyLogo || `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`;
+            logoSlot.style.backgroundColor = "#1e293b";
+            logoSlot.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+          }
         }
+      }
+
+      updateUI();
+
+      // 2. Fetch live config from database (Google Sheets or Supabase)
+      const connector = branding.connectorType || "sheets";
+      if (connector === "supabase" && branding.supabaseUrl && branding.supabaseKey) {
+        try {
+          if (typeof window.supabase === "undefined") {
+            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+          }
+          const client = window.supabase.createClient(branding.supabaseUrl, branding.supabaseKey);
+          const { data } = await client.from('branding').select('*').eq('id', 'default').maybeSingle();
+          if (data) {
+            branding.companyName = data.name || branding.companyName;
+            branding.logoUrl = data.logo || branding.logoUrl;
+            if (data.themeColors) branding.themeColors = { ...branding.themeColors, ...data.themeColors };
+            updateUI();
+          }
+        } catch(e) { console.warn("Supabase fetch failed", e); }
+      } else if (connector === "sheets" && branding.sheetsUrl) {
+        try {
+          const res = await fetch(`${branding.sheetsUrl}?action=readAll`);
+          const json = await res.json();
+          if (json && json.status === "success" && json.data && json.data.branding) {
+            const b = json.data.branding;
+            branding.companyName = b.name || b.companyName || branding.companyName;
+            branding.logoUrl = b.logo || b.logoUrl || branding.logoUrl;
+            if (b.themeColors) {
+              const colors = typeof b.themeColors === "string" ? JSON.parse(b.themeColors) : b.themeColors;
+              branding.themeColors = { ...branding.themeColors, ...colors };
+            }
+            updateUI();
+          }
+        } catch(e) { console.warn("Sheets fetch failed", e); }
       }
     });
   </script>

@@ -585,9 +585,36 @@ function applyBranding() {
     ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
     : branding.companyLogo;
 
-  if (logoSlot1) logoSlot1.innerHTML = logoMarkup;
-  if (logoSlot2) logoSlot2.innerHTML = logoMarkup;
-  if (logoSlot3) logoSlot3.innerHTML = logoMarkup;
+  if (logoSlot1) {
+    logoSlot1.innerHTML = logoMarkup;
+    if (branding.logoUrl) {
+      logoSlot1.style.backgroundColor = "transparent";
+      logoSlot1.style.border = "none";
+    } else {
+      logoSlot1.style.backgroundColor = "#1e293b";
+      logoSlot1.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+    }
+  }
+  if (logoSlot2) {
+    logoSlot2.innerHTML = logoMarkup;
+    if (branding.logoUrl) {
+      logoSlot2.style.backgroundColor = "transparent";
+      logoSlot2.style.border = "none";
+    } else {
+      logoSlot2.style.backgroundColor = "#1e293b";
+      logoSlot2.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+    }
+  }
+  if (logoSlot3) {
+    logoSlot3.innerHTML = logoMarkup;
+    if (branding.logoUrl) {
+      logoSlot3.style.backgroundColor = "transparent";
+      logoSlot3.style.border = "none";
+    } else {
+      logoSlot3.style.backgroundColor = "#1e293b";
+      logoSlot3.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+    }
+  }
 
   document.querySelectorAll(".currency-symbol").forEach(el => {
     el.textContent = branding.currency;
