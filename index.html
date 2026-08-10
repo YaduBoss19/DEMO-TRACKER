@@ -22,6 +22,35 @@
       background-size: 80px 80px;
       background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
       padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* ♟️ Floating Chess Pieces Animation */
+    .floating-piece {
+      position: absolute;
+      font-size: 7.5rem;
+      color: rgba(255, 255, 255, 0.02);
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.03);
+      pointer-events: none;
+      z-index: 1;
+      user-select: none;
+    }
+
+    @keyframes float-slow {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-25px) rotate(6deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    @keyframes float-medium {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-18px) rotate(-8deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    @keyframes float-fast {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(12deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
     }
     
     .entrance-grid {
@@ -31,6 +60,8 @@
       width: 100%;
       max-width: 960px;
       margin-top: 40px;
+      position: relative;
+      z-index: 10;
     }
     
     @media (max-width: 600px) {
@@ -48,17 +79,30 @@
       padding: 35px 24px;
       text-align: center;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       height: 320px;
     }
-    
-    .entrance-card:hover {
-      transform: translateY(-5px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+
+    /* Colored glows for card hovers */
+    .entrance-card.tutor-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(139, 92, 246, 0.4); /* Purple glow */
+      box-shadow: 0 15px 35px rgba(139, 92, 246, 0.15);
+    }
+
+    .entrance-card.book-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(224, 122, 95, 0.5); /* Peach/Orange glow */
+      box-shadow: 0 15px 35px rgba(224, 122, 95, 0.18);
+    }
+
+    .entrance-card.admin-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(245, 158, 11, 0.4); /* Gold/Amber glow */
+      box-shadow: 0 15px 35px rgba(245, 158, 11, 0.15);
     }
     
     .entrance-card h2 {
@@ -78,13 +122,25 @@
     .entrance-icon {
       font-size: 2.5rem;
       margin-bottom: 16px;
+      transition: transform 0.3s ease;
+    }
+
+    .entrance-card:hover .entrance-icon {
+      transform: scale(1.15) rotate(5deg);
     }
   </style>
 </head>
 <body>
 
   <div class="entrance-container">
-    <div class="login-header-group" style="margin-bottom: 10px;">
+    <!-- Ambient Floating Chess Pieces -->
+    <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite;">♞</div>
+    <div class="floating-piece" style="top: 62%; left: 4%; animation: float-medium 10s ease-in-out infinite; animation-delay: -2s;">♟</div>
+    <div class="floating-piece" style="top: 14%; right: 8%; animation: float-fast 8s ease-in-out infinite; animation-delay: -4s;">♛</div>
+    <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
+    <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
+
+    <div class="login-header-group" style="margin-bottom: 10px; position: relative; z-index: 10;">
       <div class="login-brand-logo" id="entrance-logo-slot">
         <!-- Logo SVG -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
@@ -96,7 +152,7 @@
     <div class="entrance-grid">
       
       <!-- Tutor Portal Route Card -->
-      <div class="entrance-card">
+      <div class="entrance-card tutor-card">
         <div>
           <div class="entrance-icon">♟️</div>
           <h2>Tutor Portal</h2>
@@ -108,7 +164,7 @@
       </div>
 
       <!-- Client Booking Portal Card -->
-      <div class="entrance-card">
+      <div class="entrance-card book-card">
         <div>
           <div class="entrance-icon">🎯</div>
           <h2>Book a Free Demo</h2>
@@ -120,7 +176,7 @@
       </div>
 
       <!-- Admin Portal Route Card -->
-      <div class="entrance-card">
+      <div class="entrance-card admin-card">
         <div>
           <div class="entrance-icon">👑</div>
           <h2>Admin Portal</h2>
