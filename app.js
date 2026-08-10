@@ -2000,6 +2000,16 @@ function initEventListeners() {
   });
 
   // Admin page layout controls
+  document.getElementById("copy-booking-link-btn")?.addEventListener("click", () => {
+    const bookingUrl = `${window.location.origin}/book`;
+    navigator.clipboard.writeText(bookingUrl).then(() => {
+      showToast("Booking page link copied to clipboard!", "success");
+    }).catch(err => {
+      console.error("Failed to copy link:", err);
+      showToast("Could not copy link automatically. Please copy the URL from address bar.", "warning");
+    });
+  });
+
   document.getElementById("add-demo-btn")?.addEventListener("click", () => openDemoModal());
   document.getElementById("admin-add-slab-btn")?.addEventListener("click", () => openSlabModal());
   document.getElementById("admin-add-tutor-btn")?.addEventListener("click", () => openTutorModal());
