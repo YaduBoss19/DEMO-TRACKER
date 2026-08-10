@@ -1144,6 +1144,7 @@ function renderDemosTable() {
         <td>
           <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
           <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
+          <button class="action-btn share-demo-btn-el" data-id="${demo.id}" title="Share Invite on WhatsApp" style="background-color: #25d366; color: white;">💬</button>
         </td>
       `;
       body.appendChild(tr);
@@ -1689,6 +1690,43 @@ async function deleteDemo(demoId) {
   }
 }
 
+function sendDemoInvite(demoId) {
+  const demo = state.demos.find(d => d.id === demoId);
+  if (!demo) return;
+  
+  const student = demo.studentName;
+  const date = demo.date || demo.dateTime;
+  const time = demo.time;
+  const slot = demo.slot || "Slot 1";
+  const tutor = demo.tutorName || "Assigning soon";
+  const level = demo.level || "-";
+  const language = demo.language || "English";
+  const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : ""; // clean digits only
+  
+  const text = `Hello *${student}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${date}\n⏰ *Time:* ${time}\n⚡ *Slot:* ${slot}\n🗣️ *Language:* ${language}\n📈 *Level:* ${level}\n👤 *Tutor:* ${tutor}\n\nLooking forward to seeing you in the session!`;
+  
+  // Copy to clipboard first
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("Invitation message copied to clipboard!", "success");
+    
+    // Then open WhatsApp Web/App if mobile number is present
+    if (mobile) {
+      setTimeout(() => {
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${mobile}&text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank');
+      }, 800);
+    } else {
+      showToast("No mobile number provided to open WhatsApp.", "warning");
+    }
+  }).catch(err => {
+    console.error("Failed to copy:", err);
+    if (mobile) {
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${mobile}&text=${encodeURIComponent(text)}`;
+      window.open(whatsappUrl, '_blank');
+    }
+  });
+}
+
 // Tutor Feedback edit popup
 function openFeedbackModal(demoId) {
   const modal = document.getElementById("feedback-modal");
@@ -2095,6 +2133,7 @@ function initEventListeners() {
 
     if (target.classList.contains("edit-demo-btn-el")) openDemoModal(target.dataset.id);
     if (target.classList.contains("delete-demo-btn-el")) deleteDemo(target.dataset.id);
+    if (target.classList.contains("share-demo-btn-el")) sendDemoInvite(target.dataset.id);
 
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
 
