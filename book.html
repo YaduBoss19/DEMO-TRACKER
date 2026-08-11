@@ -474,6 +474,54 @@
       scrollbar-width: none;
     }
 
+    /* Sticky Frozen Header and Time Column */
+    .calendar-grid-table thead th {
+      position: sticky;
+      top: 0;
+      background: #111827 !important; /* matches dark container background */
+      z-index: 30;
+      box-shadow: 0 1.5px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .calendar-grid-table tbody td:first-child {
+      position: sticky;
+      left: 0;
+      background: #111827 !important;
+      z-index: 20;
+      box-shadow: 1.5px 0 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .calendar-grid-table thead th:first-child {
+      position: sticky;
+      left: 0;
+      top: 0;
+      background: #1f2937 !important;
+      z-index: 40;
+      box-shadow: 1.5px 1.5px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* Fullscreen Mode Styling */
+    .calendar-layout-wide.fullscreen-active {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      z-index: 99999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      padding: 20px !important;
+      background: #090d16 !important;
+    }
+    
+    .calendar-layout-wide.fullscreen-active .table-container {
+      flex-grow: 1 !important;
+      max-height: calc(100vh - 120px) !important;
+    }
+
     .calendar-header-nav {
       display: flex;
       justify-content: space-between;
@@ -551,12 +599,18 @@
         <button type="button" class="btn-nav" id="next-week-btn" style="margin: 0; min-width: 100px;">Next Week ›</button>
       </div>
       <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Timezone:</span>
-        <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
-          <option value="IST" selected>IST (India)</option>
-          <option value="GMT">GMT/UTC (UK/Europe)</option>
-        </select>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Timezone:</span>
+          <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+            <option value="IST" selected>IST (India)</option>
+            <option value="GMT">GMT/UTC (UK/Europe)</option>
+          </select>
+        </div>
+        <button type="button" id="fullscreen-btn" class="btn-nav" style="margin: 0; min-width: unset; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span>Fullscreen</span>
+        </button>
       </div>
     </div>
     
@@ -1030,6 +1084,30 @@
 
     document.getElementById("timezone-selector")?.addEventListener("change", () => {
       renderTimetableGrid();
+    });
+
+    document.getElementById("fullscreen-btn")?.addEventListener("click", () => {
+      const container = document.querySelector(".calendar-layout-wide");
+      const btn = document.getElementById("fullscreen-btn");
+      if (container) {
+        container.classList.toggle("fullscreen-active");
+        const isActive = container.classList.contains("fullscreen-active");
+        
+        // Update button text and icon based on state
+        if (btn) {
+          if (isActive) {
+            btn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/></svg>
+              <span>Exit Fullscreen</span>
+            `;
+          } else {
+            btn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              <span>Fullscreen</span>
+            `;
+          }
+        }
+      }
     });
 
     document.getElementById("booking-modal-close")?.addEventListener("click", () => {
