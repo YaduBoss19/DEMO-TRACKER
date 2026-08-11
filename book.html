@@ -659,31 +659,66 @@
         return;
       }
       
-      const timetable = window.timetable || [];
-      timetable.forEach(slot => {
-        const booked = isSlotBooked(selectedDate, slot.name);
+      const defaultSlots = generateDefaultTimetable();
+      const tutors = window.tutorsList || [];
+      
+      let renderedCount = 0;
+      
+      defaultSlots.forEach(slot => {
+        // Find all tutors who checked they are available for this slot ID
+        const availableTutors = tutors.filter(t => t.availability && t.availability.includes(slot.id));
+        
+        // If no tutor has selected availability for this slot, do not display it!
+        if (availableTutors.length === 0) return;
+        
+        // Find if there is an available tutor who doesn't have a booked demo at this slot/time on this date
+        const freeTutor = availableTutors.find(t => {
+          return !window.allDemos || !window.allDemos.some(d => {
+            const dDate = d.date || d.dateTime || "";
+            return dDate.includes(selectedDate) && d.tutorId === t.id && (d.slot === slot.name || d.time === slot.time);
+          });
+        });
+        
+        // If all tutors who are available for this slot are already booked on this date/time, then it's Booked!
+        const booked = !freeTutor;
+        const assignedTutor = freeTutor || availableTutors[0];
+        
+        // Read custom tutor Zoom link if they set it up, otherwise fallback to slot zoom link
+        const zoomLink = (assignedTutor.zoomLinks && assignedTutor.zoomLinks[slot.id]) || slot.zoomLink;
+        
         const pill = document.createElement("div");
         pill.className = `slot-pill ${booked ? 'booked' : 'available'}`;
         pill.dataset.slot = slot.name;
         
         pill.innerHTML = `
           <div class="slot-pill-time">${slot.time}</div>
-          <div class="slot-pill-desc">${slot.tutorName !== "Unassigned" ? slot.tutorName : 'No Tutor'} (${slot.language})</div>
+          <div class="slot-pill-desc">${assignedTutor.name} (${slot.language})</div>
         `;
         
         if (!booked) {
           pill.addEventListener("click", () => {
             document.querySelectorAll(".slot-pill").forEach(p => p.classList.remove("selected"));
             pill.classList.add("selected");
-            document.getElementById("demo-slot").value = slot.name;
+            
+            const demoSlotInput = document.getElementById("demo-slot");
+            demoSlotInput.value = slot.name;
+            demoSlotInput.dataset.tutorId = assignedTutor.id;
+            demoSlotInput.dataset.tutorName = assignedTutor.name;
+            demoSlotInput.dataset.time = slot.time;
+            demoSlotInput.dataset.zoomLink = zoomLink;
           });
         } else {
-          pill.title = "This slot is already booked for this date";
+          pill.title = "All available tutors are booked for this slot";
           pill.innerHTML += `<div style="font-size:0.6rem; color:#ef4444; font-weight:bold; margin-top:2px;">Booked</div>`;
         }
         
         container.appendChild(pill);
+        renderedCount++;
       });
+      
+      if (renderedCount === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">No slots available on this date. Tutors have not set availability.</div>`;
+      }
     }
 
     async function loadLiveConfigs() {
@@ -715,6 +750,24 @@
           if (dData) {
             window.allDemos = dData;
           }
+          const { data: tData } = await client.from('tutors').select('*');
+          if (tData) {
+            window.tutorsList = tData.map(t => {
+              let availability = [];
+              if (t.availability) {
+                try {
+                  availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
+                } catch(e) {}
+              }
+              let zoomLinks = {};
+              if (t.zoomLinks) {
+                try {
+                  zoomLinks = typeof t.zoomLinks === "string" ? JSON.parse(t.zoomLinks) : t.zoomLinks;
+                } catch(e) {}
+              }
+              return { ...t, availability, zoomLinks };
+            });
+          }
           applyBranding();
           renderTimetableGrid();
         } catch(e) { console.warn("Supabase fetch failed", e); }
@@ -741,6 +794,23 @@
             }
             if (json.data.demos) {
               window.allDemos = json.data.demos;
+            }
+            if (json.data.tutors) {
+              window.tutorsList = json.data.tutors.map(t => {
+                let availability = [];
+                if (t.availability) {
+                  try {
+                    availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
+                  } catch(e) {}
+                }
+                let zoomLinks = {};
+                if (t.zoomLinks) {
+                  try {
+                    zoomLinks = typeof t.zoomLinks === "string" ? JSON.parse(t.zoomLinks) : t.zoomLinks;
+                  } catch(e) {}
+                }
+                return { ...t, availability, zoomLinks };
+              });
             }
             applyBranding();
             renderTimetableGrid();

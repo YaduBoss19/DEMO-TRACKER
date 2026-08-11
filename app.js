@@ -861,6 +861,7 @@ function updateViews() {
   if (state.activeTab === "admin-branding") renderAdminBranding();
   if (state.activeTab === "admin-tutors") renderAdminTutors();
   if (state.activeTab === "admin-timetable") renderAdminTimetable();
+  if (state.activeTab === "tutor-slots") renderTutorSlots();
 }
 
 // --- VIEW: DASHBOARD ---
@@ -1518,6 +1519,40 @@ function renderAdminTimetable() {
   });
 }
 
+function renderTutorSlots() {
+  const tbody = document.getElementById("tutor-slots-rows");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  if (!state.currentUser) return;
+
+  const tutor = state.tutors.find(t => t.id === state.currentUser.id);
+  if (!tutor) return;
+
+  const availability = tutor.availability || [];
+  const zoomLinks = tutor.zoomLinks || {};
+
+  const defaultSlots = generateDefaultTimetable();
+
+  defaultSlots.forEach(slot => {
+    const tr = document.createElement("tr");
+    const isActive = availability.includes(slot.id) ? "checked" : "";
+    const currentZoom = zoomLinks[slot.id] || "";
+
+    tr.innerHTML = `
+      <td>
+        <input type="checkbox" class="tutor-slot-active-cb" data-id="${slot.id}" ${isActive} style="width: 18px; height: 18px; cursor: pointer;">
+      </td>
+      <td><strong>${slot.name}</strong></td>
+      <td>${slot.time}</td>
+      <td>
+        <input type="url" class="form-control tutor-slot-zoom-input" data-id="${slot.id}" placeholder="https://zoom.us/j/..." value="${currentZoom}" style="padding: 6px 12px; font-size: 0.8rem;">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 // --- Toast notifications ---
 function showToast(message, type = "success") {
   const container = document.getElementById("toast-container");
@@ -2134,6 +2169,59 @@ function initEventListeners() {
 
     saveBtn.disabled = false;
     saveBtn.textContent = "Save Timetable Changes";
+  });
+
+  document.getElementById("save-tutor-slots-btn")?.addEventListener("click", async () => {
+    const saveBtn = document.getElementById("save-tutor-slots-btn");
+    if (!saveBtn) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving to cloud...";
+
+    const tutor = state.tutors.find(t => t.id === state.currentUser.id);
+    if (!tutor) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save My Settings";
+      return;
+    }
+
+    const availability = [];
+    const zoomLinks = {};
+
+    document.querySelectorAll(".tutor-slot-active-cb").forEach(cb => {
+      if (cb.checked) {
+        availability.push(cb.dataset.id);
+      }
+    });
+
+    document.querySelectorAll(".tutor-slot-zoom-input").forEach(input => {
+      const val = input.value.trim();
+      if (val) {
+        zoomLinks[input.dataset.id] = val;
+      }
+    });
+
+    tutor.availability = availability;
+    tutor.zoomLinks = zoomLinks;
+
+    saveToLocalStorage();
+
+    // Write to Sheets / Supabase
+    const payload = {
+      ...tutor,
+      availability: JSON.stringify(availability),
+      zoomLinks: JSON.stringify(zoomLinks)
+    };
+
+    const success = await writeToSheets("updateTutor", payload);
+
+    if (success) {
+      showToast("Availability and Zoom links saved successfully!");
+    } else {
+      showToast("Failed to save to database. Saved locally.", "warning");
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save My Settings";
   });
 
   // Download Payroll CSV Exporter
