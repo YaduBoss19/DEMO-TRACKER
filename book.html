@@ -1346,14 +1346,16 @@
         time: timeVal,
         dateTime: `${date} ${timeVal}`,
         slot: slot, // Chosen slot name (e.g. Slot 9)
-        status: "Demo Not Done",
+        status: "DEMO NOT DONE",
         age: age,
         language: language || "English",
         agentName: agentName,
         location: location,
         mobileNumber: mobileNumber,
         level: level,
-        feedback: ""
+        feedback: "",
+        revision: "-",
+        topicToStart: "-"
       };
 
       const success = await writeToDatabase("addDemo", demoPayload);

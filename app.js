@@ -56,7 +56,7 @@ function mapSheetDemoToApp(s) {
     time: s.time || s["TIME"] || "",
     dateTime: s.dateTime || ((s.date || s["DATE"] || "") + " " + (s.time || s["TIME"] || "")),
     slot: s.slot || s["SLOT NUMBER"] || "",
-    status: s.status || s["DEMO STATUS"] || "Demo Not Done",
+    status: s.status || s["DEMO STATUS"] || "DEMO NOT DONE",
     age: s.age || s["AGE"] || "-",
     language: s.language || s["LANGUAGE"] || "-",
     agentName: s.agentName || s["AGENT NAME"] || "-",
@@ -64,7 +64,9 @@ function mapSheetDemoToApp(s) {
     mobileNumber: s.mobileNumber || s["MOBILE NUMBER"] || "-",
     level: s.level || s["LEVEL"] || "-",
     feedback: s.feedback || "",
-    zoomLink: s.zoomLink || s["ZOOM LINK"] || s["CLASS LINK"] || ""
+    zoomLink: s.zoomLink || s["ZOOM LINK"] || s["CLASS LINK"] || "",
+    revision: s.revision || s["REVISION"] || "-",
+    topicToStart: s.topicToStart || s["TOPIC TO START"] || "-"
   };
 }
 
@@ -85,7 +87,9 @@ function mapAppDemoToSheet(a) {
     "MOBILE NUMBER": a.mobileNumber,
     "LEVEL": a.level,
     feedback: a.feedback,
-    "ZOOM LINK": a.zoomLink || ""
+    "ZOOM LINK": a.zoomLink || "",
+    "REVISION": a.revision || "-",
+    "TOPIC TO START": a.topicToStart || "-"
   };
 }
 
@@ -852,10 +856,16 @@ function getFilteredDemosByRange() {
 
 function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
   const tutorDemos = demosList.filter(d => d.tutorId === tutorId);
-  const completed = tutorDemos.filter(d => d.status === "Demo Done" || d.status === "Converted").length;
-  const converted = tutorDemos.filter(d => d.status === "Converted").length;
-  const pending = tutorDemos.filter(d => d.status === "Demo Not Done").length;
-  const cancelled = tutorDemos.filter(d => d.status === "Cancelled").length;
+  const completed = tutorDemos.filter(d => {
+    const s = (d.status || "").toUpperCase();
+    return s === "DEMO DONE" || s === "CONVERTED";
+  }).length;
+  const converted = tutorDemos.filter(d => (d.status || "").toUpperCase() === "CONVERTED").length;
+  const pending = tutorDemos.filter(d => {
+    const s = (d.status || "").toUpperCase();
+    return s === "DEMO NOT DONE" || s === "";
+  }).length;
+  const cancelled = tutorDemos.filter(d => (d.status || "").toUpperCase() === "CANCELLED").length;
   const total = tutorDemos.length;
 
   const conversion = completed > 0 ? (converted / completed) * 100 : 0;
@@ -1207,19 +1217,22 @@ function renderDemosTable() {
     head.innerHTML = `
       <tr>
         <th style="width:40px;"><input type="checkbox" id="bulk-select-all"></th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Slot</th>
-        <th>Tutor Name</th>
-        <th>Student Name</th>
-        <th>Age</th>
-        <th>Language</th>
-        <th>Level</th>
-        <th>Agent Name</th>
-        <th>Location</th>
-        <th>Mobile Number</th>
-        <th>Feedback / Notes</th>
-        <th>Status</th>
+        <th>SL.NO</th>
+        <th>DATE</th>
+        <th>TIME</th>
+        <th>SLOT NUMBER</th>
+        <th>TUTOR NAME</th>
+        <th>STUDENT NAME</th>
+        <th>DEMO STATUS</th>
+        <th>AGE</th>
+        <th>LANGUAGE</th>
+        <th>AGENT NAME</th>
+        <th>LOCATION</th>
+        <th>MOBILE NUMBER</th>
+        <th>LEVEL</th>
+        <th>feedback</th>
+        <th>REVISION</th>
+        <th>TOPIC TO START</th>
         <th style="width:100px;">Actions</th>
       </tr>
     `;
@@ -1240,24 +1253,28 @@ function renderDemosTable() {
 
     body.innerHTML = "";
     if (filteredDemos.length === 0) {
-      body.innerHTML = `<tr><td colspan="15" style="text-align:center;color:var(--text-muted);padding:40px;">No matching demos found.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="18" style="text-align:center;color:var(--text-muted);padding:40px;">No matching demos found.</td></tr>`;
       return;
     }
 
-    filteredDemos.forEach(demo => {
+    filteredDemos.forEach((demo, idx) => {
       const tr = document.createElement("tr");
       
       let statusClass = "status-not-done";
       let rowClass = "row-status-not-done";
-      if (demo.status === "Demo Done") {
+      const st = (demo.status || "").toUpperCase();
+      if (st === "DEMO DONE") {
         statusClass = "status-done";
         rowClass = "row-status-done";
-      } else if (demo.status === "Converted") {
+      } else if (st === "CONVERTED") {
         statusClass = "status-converted";
         rowClass = "row-status-converted";
-      } else if (demo.status === "Cancelled") {
+      } else if (st === "CANCELLED") {
         statusClass = "status-cancelled";
         rowClass = "row-status-cancelled";
+      } else if (st === "RESCHEDULE") {
+        statusClass = "status-reschedule";
+        rowClass = "row-status-reschedule";
       }
       tr.className = rowClass;
 
@@ -1266,28 +1283,32 @@ function renderDemosTable() {
 
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
+        <td><strong>${idx + 1}</strong></td>
         <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
         <td>${demo.time || '-'}</td>
         <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.tutorName}</strong></td>
         <td>${demo.studentName}</td>
+        <td>
+          <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
+            <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
+            <option value="DEMO DONE" ${st === 'DEMO DONE' ? 'selected' : ''}>DEMO DONE</option>
+            <option value="CONVERTED" ${st === 'CONVERTED' ? 'selected' : ''}>CONVERTED</option>
+            <option value="CANCELLED" ${st === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+            <option value="RESCHEDULE" ${st === 'RESCHEDULE' ? 'selected' : ''}>RESCHEDULE</option>
+          </select>
+        </td>
         <td>${demo.age}</td>
         <td>${demo.language}</td>
-        <td>${demo.level || '-'}</td>
         <td>${demo.agentName || '-'}</td>
         <td>${demo.location || '-'}</td>
         <td>${demo.mobileNumber || '-'}</td>
+        <td>${demo.level || '-'}</td>
         <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${demo.feedback || 'No feedback'}">
           ${demo.feedback || '<span style="color:var(--text-muted);font-style:italic;">No feedback</span>'}
         </td>
-        <td>
-          <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
-            <option value="Demo Not Done" ${demo.status === 'Demo Not Done' ? 'selected' : ''}>Demo Not Done</option>
-            <option value="Demo Done" ${demo.status === 'Demo Done' ? 'selected' : ''}>Demo Done</option>
-            <option value="Converted" ${demo.status === 'Converted' ? 'selected' : ''}>Converted</option>
-            <option value="Cancelled" ${demo.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-          </select>
-        </td>
+        <td>${demo.revision || '-'}</td>
+        <td>${demo.topicToStart || '-'}</td>
         <td>
           <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
           <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
@@ -1311,15 +1332,18 @@ function renderDemosTable() {
 
     head.innerHTML = `
       <tr>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Slot</th>
-        <th>Student Name</th>
-        <th>Age</th>
-        <th>Language</th>
-        <th>Level</th>
-        <th>Feedback / Notes</th>
-        <th>Status</th>
+        <th>SL.NO</th>
+        <th>DATE</th>
+        <th>TIME</th>
+        <th>SLOT NUMBER</th>
+        <th>STUDENT NAME</th>
+        <th>AGE</th>
+        <th>LANGUAGE</th>
+        <th>LEVEL</th>
+        <th>feedback</th>
+        <th>REVISION</th>
+        <th>TOPIC TO START</th>
+        <th>DEMO STATUS</th>
       </tr>
     `;
 
@@ -1327,24 +1351,28 @@ function renderDemosTable() {
 
     body.innerHTML = "";
     if (tutorDemos.length === 0) {
-      body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
       return;
     }
 
-    tutorDemos.forEach(demo => {
+    tutorDemos.forEach((demo, idx) => {
       const tr = document.createElement("tr");
 
       let statusClass = "status-not-done";
       let rowClass = "row-status-not-done";
-      if (demo.status === "Demo Done") {
+      const st = (demo.status || "").toUpperCase();
+      if (st === "DEMO DONE") {
         statusClass = "status-done";
         rowClass = "row-status-done";
-      } else if (demo.status === "Converted") {
+      } else if (st === "CONVERTED") {
         statusClass = "status-converted";
         rowClass = "row-status-converted";
-      } else if (demo.status === "Cancelled") {
+      } else if (st === "CANCELLED") {
         statusClass = "status-cancelled";
         rowClass = "row-status-cancelled";
+      } else if (st === "RESCHEDULE") {
+        statusClass = "status-reschedule";
+        rowClass = "row-status-reschedule";
       }
       tr.className = rowClass;
 
@@ -1355,20 +1383,23 @@ function renderDemosTable() {
            </div>`
         : `<button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}">[+] Add note</button>`;
 
-      // Tutors can only toggle between Demo Not Done and Demo Done
+      // Tutors can only toggle between DEMO NOT DONE and DEMO DONE
       let tutorStatusOptions = `
-        <option value="Demo Not Done" ${demo.status === 'Demo Not Done' ? 'selected' : ''}>Demo Not Done</option>
-        <option value="Demo Done" ${demo.status === 'Demo Done' ? 'selected' : ''}>Demo Done</option>
+        <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
+        <option value="DEMO DONE" ${st === 'DEMO DONE' ? 'selected' : ''}>DEMO DONE</option>
       `;
-      // If admin has set the demo to Converted or Cancelled, display it as a locked, disabled selection
-      if (demo.status === 'Converted') {
-        tutorStatusOptions += `<option value="Converted" selected disabled>Converted (Closed)</option>`;
-      } else if (demo.status === 'Cancelled') {
-        tutorStatusOptions += `<option value="Cancelled" selected disabled>Cancelled (Closed)</option>`;
+      // If admin has set the demo to CONVERTED, CANCELLED, or RESCHEDULE, display it as a locked, disabled selection
+      if (st === 'CONVERTED') {
+        tutorStatusOptions += `<option value="CONVERTED" selected disabled>CONVERTED (Closed)</option>`;
+      } else if (st === 'CANCELLED') {
+        tutorStatusOptions += `<option value="CANCELLED" selected disabled>CANCELLED (Closed)</option>`;
+      } else if (st === 'RESCHEDULE') {
+        tutorStatusOptions += `<option value="RESCHEDULE" selected disabled>RESCHEDULE (Closed)</option>`;
       }
 
       const zoomLink = getZoomLinkForSlot(demo.slot);
       tr.innerHTML = `
+        <td><strong>${idx + 1}</strong></td>
         <td>${demo.date || demo.dateTime || '-'}</td>
         <td>${demo.time || '-'}</td>
         <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
@@ -1377,6 +1408,8 @@ function renderDemosTable() {
         <td>${demo.language}</td>
         <td>${demo.level || '-'}</td>
         <td>${noteText}</td>
+        <td>${demo.revision || '-'}</td>
+        <td>${demo.topicToStart || '-'}</td>
         <td>
           <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
             ${tutorStatusOptions}
@@ -1874,6 +1907,8 @@ function openDemoModal(demoId = null) {
       document.getElementById("demo-age").value = demo.age || "";
       document.getElementById("demo-language").value = demo.language || "";
       document.getElementById("demo-level").value = demo.level || "";
+      document.getElementById("demo-revision").value = demo.revision || "";
+      document.getElementById("demo-topic-start").value = demo.topicToStart || "";
       document.getElementById("demo-agent-name").value = demo.agentName || "";
       document.getElementById("demo-location").value = demo.location || "";
       document.getElementById("demo-mobile-number").value = demo.mobileNumber || "";
@@ -1886,6 +1921,8 @@ function openDemoModal(demoId = null) {
     document.getElementById("demo-time-input").value = "10:00 AM";
     document.getElementById("demo-slot").value = "Slot 1";
     document.getElementById("demo-level").value = "";
+    document.getElementById("demo-revision").value = "";
+    document.getElementById("demo-topic-start").value = "";
     document.getElementById("demo-agent-name").value = "";
     document.getElementById("demo-location").value = "";
     document.getElementById("demo-mobile-number").value = "";
@@ -1906,15 +1943,17 @@ async function handleDemoSubmit(e) {
   const age = document.getElementById("demo-age").value.trim() || "-";
   const language = document.getElementById("demo-language").value.trim() || "-";
   const level = document.getElementById("demo-level").value.trim() || "-";
+  const revision = document.getElementById("demo-revision").value.trim() || "-";
+  const topicToStart = document.getElementById("demo-topic-start").value.trim() || "-";
   const agentName = document.getElementById("demo-agent-name").value.trim() || "-";
   const location = document.getElementById("demo-location").value.trim() || "-";
   const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
   const feedback = document.getElementById("demo-feedback").value.trim() || "";
 
-  let status = "Demo Not Done";
+  let status = "DEMO NOT DONE";
   if (id) {
     const oldDemo = state.demos.find(d => d.id === id);
-    if (oldDemo) status = oldDemo.status || "Demo Not Done";
+    if (oldDemo) status = oldDemo.status || "DEMO NOT DONE";
   }
 
   const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unassigned", zoomLink: "" };
@@ -1930,6 +1969,8 @@ async function handleDemoSubmit(e) {
     age,
     language,
     level,
+    revision,
+    topicToStart,
     agentName,
     location,
     mobileNumber,

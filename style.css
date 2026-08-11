@@ -706,11 +706,17 @@ header {
   background-color: #fee2e2 !important;
 }
 
-.custom-table tbody tr.row-status-not-done {
-  background-color: #f9fafb !important; /* Subtle Light Grey */
+/* Status: Reschedule (Light Yellow/Orange) */
+.status-pill-select.status-reschedule {
+  background-color: #fef3c7;
+  color: #92400e;
 }
-.custom-table tbody tr.row-status-not-done:hover {
-  background-color: #f3f4f6 !important;
+
+.custom-table tbody tr.row-status-reschedule {
+  background-color: #fffbeb !important;
+}
+.custom-table tbody tr.row-status-reschedule:hover {
+  background-color: #fef3c7 !important;
 }
 
 .custom-table tbody tr.row-status-done {
