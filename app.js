@@ -1680,6 +1680,10 @@ function openDemoModal(demoId = null) {
       op.textContent = `Slot ${i}`;
       slotSelect.appendChild(op);
     }
+    const customOp = document.createElement("option");
+    customOp.value = "CUSTOM";
+    customOp.textContent = "-- Type Custom Slot --";
+    slotSelect.appendChild(customOp);
   }
 
   document.getElementById("demo-form").reset();
@@ -1693,7 +1697,28 @@ function openDemoModal(demoId = null) {
       document.getElementById("demo-student-name").value = demo.studentName;
       document.getElementById("demo-date-input").value = formatDateForPicker(demo.date || demo.dateTime);
       document.getElementById("demo-time-input").value = demo.time || "10:00 AM";
-      document.getElementById("demo-slot").value = demo.slot || "";
+      
+      const slotVal = demo.slot || "";
+      let isStandard = false;
+      for (let i = 1; i <= 48; i++) {
+        if (slotVal === `Slot ${i}`) {
+          isStandard = true;
+          break;
+        }
+      }
+      const customContainer = document.getElementById("demo-slot-custom-container");
+      const customInput = document.getElementById("demo-slot-custom");
+      
+      if (slotVal && !isStandard) {
+        slotSelect.value = "CUSTOM";
+        if (customContainer) customContainer.style.display = "block";
+        if (customInput) customInput.value = slotVal;
+      } else {
+        slotSelect.value = slotVal;
+        if (customContainer) customContainer.style.display = "none";
+        if (customInput) customInput.value = "";
+      }
+      
       document.getElementById("demo-age").value = demo.age || "";
       document.getElementById("demo-language").value = demo.language || "";
       document.getElementById("demo-level").value = demo.level || "";
@@ -1709,7 +1734,13 @@ function openDemoModal(demoId = null) {
     document.getElementById("demo-id").value = "";
     document.getElementById("demo-date-input").value = new Date().toISOString().split('T')[0];
     document.getElementById("demo-time-input").value = "10:00 AM";
-    document.getElementById("demo-slot").value = "Slot 1";
+    slotSelect.value = "Slot 1";
+    
+    const customContainer = document.getElementById("demo-slot-custom-container");
+    const customInput = document.getElementById("demo-slot-custom");
+    if (customContainer) customContainer.style.display = "none";
+    if (customInput) customInput.value = "";
+    
     document.getElementById("demo-level").value = "";
     document.getElementById("demo-revision").value = "";
     document.getElementById("demo-topic-start").value = "";
@@ -1728,7 +1759,14 @@ async function handleDemoSubmit(e) {
   const studentName = document.getElementById("demo-student-name").value.trim();
   const date = document.getElementById("demo-date-input").value.trim();
   const time = document.getElementById("demo-time-input").value.trim();
-  const slot = document.getElementById("demo-slot").value.trim();
+  let slot = document.getElementById("demo-slot").value.trim();
+  if (slot === "CUSTOM") {
+    slot = document.getElementById("demo-slot-custom").value.trim();
+    if (!slot) {
+      alert("Please enter a custom slot name.");
+      return;
+    }
+  }
   
   const age = document.getElementById("demo-age").value.trim() || "-";
   const language = document.getElementById("demo-language").value.trim() || "-";
@@ -2087,6 +2125,12 @@ function initEventListeners() {
   document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
   document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
   document.getElementById("save-slot-links-btn")?.addEventListener("click", handleSaveSlotLinks);
+  document.getElementById("demo-slot")?.addEventListener("change", (e) => {
+    const customContainer = document.getElementById("demo-slot-custom-container");
+    if (customContainer) {
+      customContainer.style.display = e.target.value === "CUSTOM" ? "block" : "none";
+    }
+  });
 
   document.getElementById("slot-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
