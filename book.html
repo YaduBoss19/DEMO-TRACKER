@@ -583,6 +583,13 @@
           <input type="hidden" id="demo-date" required>
           <input type="hidden" id="demo-slot" required>
 
+          <div class="form-group" id="tutor-selection-container" style="margin-bottom: 15px;">
+            <label for="booking-tutor-select" style="font-weight: 700; color: var(--brand-secondary);">Select Tutor for Demo</label>
+            <select id="booking-tutor-select" class="form-control" style="background-color: rgba(255, 255, 255, 0.05); color: #ffffff;" required>
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="student-name">Student Full Name</label>
             <input type="text" id="student-name" class="form-control" placeholder="e.g. Kabir Sharma" required>
@@ -874,16 +881,16 @@
           if (availableTutors.length === 0) {
             td.innerHTML = `<div style="color: rgba(255,255,255,0.06); font-size: 0.75rem; padding: 12px 0;">—</div>`;
           } else {
-            // Find free tutor who isn't booked
-            const freeTutor = availableTutors.find(t => {
+            // Find all tutors who are available for this slot ID and are not booked on this date/time
+            const freeTutors = availableTutors.filter(t => {
               return !window.allDemos || !window.allDemos.some(d => {
                 const dDate = d.date || d.dateTime || "";
                 return dDate.includes(dateStr) && d.tutorId === t.id && (d.slot === slotName || d.time === time);
               });
             });
 
-            const booked = !freeTutor;
-            const assignedTutor = freeTutor || availableTutors[0];
+            const booked = freeTutors.length === 0;
+            const assignedTutor = !booked ? freeTutors[0] : availableTutors[0];
             const zoomLink = assignedTutor.zoomLink || "https://zoom.us/j/default";
 
             const cell = document.createElement("div");
@@ -895,8 +902,10 @@
                 <div style="font-size: 0.55rem; opacity: 0.8; margin-top:2px;">[Booked]</div>
               `;
             } else {
+              const extraCount = freeTutors.length - 1;
+              const suffix = extraCount > 0 ? ` (+${extraCount})` : "";
               cell.innerHTML = `
-                <div style="font-weight: 700; font-size: 0.65rem;">${assignedTutor.name}</div>
+                <div style="font-weight: 700; font-size: 0.65rem;">${assignedTutor.name}${suffix}</div>
                 <div style="font-size: 0.55rem; opacity: 0.8; margin-top:2px;">(${assignedTutor.languages || "English"})</div>
               `;
 
@@ -919,12 +928,36 @@
                 document.getElementById("form-panel").style.display = "block";
                 document.getElementById("success-panel").style.display = "none";
 
+                // Populate tutor select dropdown options dynamically
+                const tutorSelect = document.getElementById("booking-tutor-select");
+                if (tutorSelect) {
+                  tutorSelect.innerHTML = "";
+                  freeTutors.forEach(t => {
+                    const opt = document.createElement("option");
+                    opt.value = t.id;
+                    opt.dataset.name = t.name;
+                    opt.dataset.zoom = t.zoomLink || "https://zoom.us/j/default";
+                    opt.textContent = `${t.name} (${t.languages || "English"})`;
+                    tutorSelect.appendChild(opt);
+                  });
+
+                  // Change event listener to update dynamic datasets on change
+                  tutorSelect.onchange = () => {
+                    const selectedOpt = tutorSelect.options[tutorSelect.selectedIndex];
+                    if (selectedOpt) {
+                      demoSlotInput.dataset.tutorId = tutorSelect.value;
+                      demoSlotInput.dataset.tutorName = selectedOpt.dataset.name;
+                      demoSlotInput.dataset.zoomLink = selectedOpt.dataset.zoom;
+                    }
+                  };
+                }
+
                 // Open modal overlay
                 const modal = document.getElementById("booking-modal");
                 if (modal) {
                   modal.classList.add("open");
                   const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                  document.getElementById("booking-modal-subtitle").textContent = `${formattedDate} at ${time} (Tutor: ${assignedTutor.name})`;
+                  document.getElementById("booking-modal-subtitle").textContent = `${formattedDate} at ${time}`;
                 }
               });
             }
