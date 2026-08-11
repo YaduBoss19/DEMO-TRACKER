@@ -418,6 +418,39 @@
         gap: 18px;
       }
     }
+    /* Interactive Calendar Grid Table Styles */
+    .calendar-grid-table td {
+      padding: 0 !important;
+      height: 52px;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .calendar-cell {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      user-select: none;
+      font-weight: 500;
+    }
+
+    .calendar-cell:hover {
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .calendar-cell.selected-booking-cell {
+      background-color: #25d366 !important;
+      border-color: #25d366 !important;
+      color: #0c0f17 !important;
+      font-weight: bold;
+      transform: scale(1.02);
+      box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -483,17 +516,41 @@
           <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
         </div>
 
-        <div class="form-group">
-          <label for="demo-date">Preferred Date</label>
-          <input type="date" id="demo-date" class="form-control" required>
-        </div>
+        <!-- Hidden Inputs for selected slot & date -->
+        <input type="hidden" id="demo-date" required>
+        <input type="hidden" id="demo-slot" required>
 
-        <div class="form-group" style="margin-top: 15px; margin-bottom: 20px;">
-          <label style="margin-bottom: 6px; display: block;">Select a Slot from the Timetable (Tutor & Language info shown)</label>
-          <input type="hidden" id="demo-slot" required>
+        <div class="form-group" style="margin-top: 15px; margin-bottom: 25px;">
+          <label style="margin-bottom: 8px; display: block; font-weight: 700;">Select an Available Slot from the Weekly Calendar</label>
           
-          <div id="timetable-slots-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 280px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 14px; background: rgba(255,255,255,0.015); margin-top: 4px;">
-            <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 10px;">Select a date to view available slots.</div>
+          <div class="calendar-wrapper" style="margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; background: rgba(255,255,255,0.015);">
+            <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <button type="button" class="btn btn-sm" id="prev-week-btn" style="padding: 6px 12px; font-size: 0.8rem; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">‹ Prev Week</button>
+              <span id="current-week-label" style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Loading Week...</span>
+              <button type="button" class="btn btn-sm" id="next-week-btn" style="padding: 6px 12px; font-size: 0.8rem; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">Next Week ›</button>
+            </div>
+            
+            <div class="table-container" style="overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+              <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 800px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
+                <thead>
+                  <tr id="calendar-grid-header">
+                    <th style="width: 100px; text-align: left; padding-left: 15px;">Time (IST)</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                    <th>Sun</th>
+                  </tr>
+                </thead>
+                <tbody id="booking-calendar-body">
+                  <tr>
+                    <td colspan="8" style="padding: 20px; color: var(--text-muted);">Initialising calendar...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -652,83 +709,173 @@
       });
     }
 
-    function renderTimetableGrid() {
-      const container = document.getElementById("timetable-slots-container");
-      if (!container) return;
-      
-      const dateInput = document.getElementById("demo-date");
-      const selectedDate = dateInput ? dateInput.value : "";
-      
-      container.innerHTML = "";
-      if (!selectedDate) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Please pick a preferred date first.</div>`;
-        return;
+    let currentWeekStart = new Date();
+    // Normalize currentWeekStart to Monday of the current week
+    const currentDayVal = currentWeekStart.getDay();
+    const distanceToMon = currentDayVal === 0 ? -6 : 1 - currentDayVal;
+    currentWeekStart.setDate(currentWeekStart.getDate() + distanceToMon);
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    function getWeekDates(startDate) {
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        dates.push(d);
       }
-      
-      const dayOfWeekKey = getDayOfWeekKey(selectedDate);
-      const defaultSlots = generateDefaultTimetable();
-      const tutors = window.tutorsList || [];
-      
-      let renderedCount = 0;
-      
-      defaultSlots.forEach((slot, index) => {
-        const weeklySlotId = `${dayOfWeekKey}_slot_${index}`;
-        
-        // Find all tutors who checked they are available for this specific weekly slot ID
-        const availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
-        
-        // If no tutor has selected availability for this slot, do not display it!
-        if (availableTutors.length === 0) return;
-        
-        // Find if there is an available tutor who doesn't have a booked demo at this slot/time on this date
-        const freeTutor = availableTutors.find(t => {
-          return !window.allDemos || !window.allDemos.some(d => {
-            const dDate = d.date || d.dateTime || "";
-            return dDate.includes(selectedDate) && d.tutorId === t.id && (d.slot === slot.name || d.time === slot.time);
-          });
-        });
-        
-        // If all tutors who are available for this slot are already booked on this date/time, then it's Booked!
-        const booked = !freeTutor;
-        const assignedTutor = freeTutor || availableTutors[0];
-        
-        // Read custom tutor Zoom link if they set it up, otherwise fallback to slot zoom link
-        const zoomLink = assignedTutor.zoomLink || slot.zoomLink;
-        
-        const pill = document.createElement("div");
-        pill.className = `slot-pill ${booked ? 'booked' : 'available'}`;
-        pill.dataset.slot = slot.name;
-        
-        pill.innerHTML = `
-          <div class="slot-pill-time">${slot.time}</div>
-          <div class="slot-pill-desc">${assignedTutor.name} (${slot.language})</div>
-        `;
-        
-        if (!booked) {
-          pill.addEventListener("click", () => {
-            document.querySelectorAll(".slot-pill").forEach(p => p.classList.remove("selected"));
-            pill.classList.add("selected");
-            
-            const demoSlotInput = document.getElementById("demo-slot");
-            demoSlotInput.value = slot.name;
-            demoSlotInput.dataset.tutorId = assignedTutor.id;
-            demoSlotInput.dataset.tutorName = assignedTutor.name;
-            demoSlotInput.dataset.time = slot.time;
-            demoSlotInput.dataset.zoomLink = zoomLink;
-          });
-        } else {
-          pill.title = "All available tutors are booked for this slot";
-          pill.innerHTML += `<div style="font-size:0.6rem; color:#ef4444; font-weight:bold; margin-top:2px;">Booked</div>`;
-        }
-        
-        container.appendChild(pill);
-        renderedCount++;
-      });
-      
-      if (renderedCount === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">No slots available on this date. Tutors have not set availability.</div>`;
-      }
+      return dates;
     }
+
+    function formatDateKey(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function renderTimetableGrid() {
+      const tbody = document.getElementById("booking-calendar-body");
+      const headerTr = document.getElementById("calendar-grid-header");
+      const weekLabel = document.getElementById("current-week-label");
+      if (!tbody || !headerTr || !weekLabel) return;
+
+      const dates = getWeekDates(currentWeekStart);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      weekLabel.textContent = `${months[dates[0].getMonth()]} ${dates[0].getDate()} - ${months[dates[6].getMonth()]} ${dates[6].getDate()}, ${dates[0].getFullYear()}`;
+
+      // Update days of the week headers
+      const daysStr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      headerTr.innerHTML = `<th style="width: 100px; text-align: left; padding-left: 15px;">Time (IST)</th>`;
+      dates.forEach((date, i) => {
+        const th = document.createElement("th");
+        th.innerHTML = `${daysStr[i]} ${date.getDate()}`;
+        if (formatDateKey(date) === formatDateKey(new Date())) {
+          th.style.color = "var(--brand-secondary)";
+          th.style.fontWeight = "bold";
+        }
+        headerTr.appendChild(th);
+      });
+
+      tbody.innerHTML = "";
+
+      const defaultSlots = generateDefaultTimetable(); // 24 slots (10:00 AM to 10:00 PM)
+      const tutors = window.tutorsList || [];
+
+      // Generate times array
+      const times = [];
+      const startHour = 10;
+      for (let i = 0; i < 24; i++) {
+        const totalMinutes = i * 30;
+        const hour24 = startHour + Math.floor(totalMinutes / 60);
+        const hour = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 ? "PM" : "AM";
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
+        times.push(timeStr);
+      }
+
+      times.forEach((time, timeIdx) => {
+        const tr = document.createElement("tr");
+
+        // Time Label Cell
+        const timeTd = document.createElement("td");
+        timeTd.style.textAlign = "left";
+        timeTd.style.paddingLeft = "15px";
+        timeTd.style.fontWeight = "bold";
+        timeTd.textContent = time;
+        tr.appendChild(timeTd);
+
+        // Day cells Mon to Sun
+        dates.forEach((date, dayIdx) => {
+          const dateStr = formatDateKey(date);
+          const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+          const dayKey = dayKeys[date.getDay()];
+          const weeklySlotId = `${dayKey}_slot_${timeIdx}`;
+          const slotName = `Slot ${timeIdx + 1}`;
+
+          // Find tutors available for this slot ID
+          const availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
+          const td = document.createElement("td");
+
+          if (availableTutors.length === 0) {
+            td.innerHTML = `<div style="color: rgba(255,255,255,0.06); font-size: 0.75rem; padding: 12px 0;">—</div>`;
+          } else {
+            // Find free tutor who isn't booked
+            const freeTutor = availableTutors.find(t => {
+              return !window.allDemos || !window.allDemos.some(d => {
+                const dDate = d.date || d.dateTime || "";
+                return dDate.includes(dateStr) && d.tutorId === t.id && (d.slot === slotName || d.time === time);
+              });
+            });
+
+            const booked = !freeTutor;
+            const assignedTutor = freeTutor || availableTutors[0];
+            const zoomLink = assignedTutor.zoomLink || "https://zoom.us/j/default";
+
+            const cell = document.createElement("div");
+            cell.className = `calendar-cell ${booked ? 'booked' : 'available'}`;
+            
+            if (booked) {
+              cell.innerHTML = `
+                <div style="font-weight: 700; font-size: 0.65rem;">${assignedTutor.name}</div>
+                <div style="font-size: 0.55rem; opacity: 0.8; margin-top:2px;">[Booked]</div>
+              `;
+            } else {
+              cell.innerHTML = `
+                <div style="font-weight: 700; font-size: 0.65rem;">${assignedTutor.name}</div>
+                <div style="font-size: 0.55rem; opacity: 0.8; margin-top:2px;">(${assignedTutor.languages || "English"})</div>
+              `;
+
+              cell.addEventListener("click", () => {
+                document.querySelectorAll(".calendar-cell").forEach(c => c.classList.remove("selected-booking-cell"));
+                cell.classList.add("selected-booking-cell");
+
+                // Set inputs
+                document.getElementById("demo-date").value = dateStr;
+                
+                const demoSlotInput = document.getElementById("demo-slot");
+                demoSlotInput.value = slotName;
+                demoSlotInput.dataset.tutorId = assignedTutor.id;
+                demoSlotInput.dataset.tutorName = assignedTutor.name;
+                demoSlotInput.dataset.time = time;
+                demoSlotInput.dataset.zoomLink = zoomLink;
+
+                // Selection UI feedback label
+                let selectHelper = document.getElementById("selected-slot-feedback");
+                if (!selectHelper) {
+                  selectHelper = document.createElement("div");
+                  selectHelper.id = "selected-slot-feedback";
+                  selectHelper.style.marginTop = "15px";
+                  selectHelper.style.padding = "10px 15px";
+                  selectHelper.style.backgroundColor = "rgba(37, 211, 102, 0.15)";
+                  selectHelper.style.border = "1px solid #25d366";
+                  selectHelper.style.borderRadius = "8px";
+                  selectHelper.style.color = "#25d366";
+                  selectHelper.style.fontWeight = "bold";
+                  selectHelper.style.fontSize = "0.85rem";
+                  document.querySelector(".calendar-wrapper").appendChild(selectHelper);
+                }
+                const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                selectHelper.innerHTML = `✓ Selected: ${formattedDate} at ${time} with ${assignedTutor.name}`;
+              });
+            }
+            td.appendChild(cell);
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("prev-week-btn")?.addEventListener("click", () => {
+      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+      renderTimetableGrid();
+    });
+    
+    document.getElementById("next-week-btn")?.addEventListener("click", () => {
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      renderTimetableGrid();
+    });
 
     async function loadLiveConfigs() {
       applyBranding();
