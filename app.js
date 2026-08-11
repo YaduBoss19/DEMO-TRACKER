@@ -201,6 +201,15 @@ async function fetchFromSheets() {
               ...(data.branding.themeColors || {})
             }
           };
+          if (data.branding.timetableTemplate) {
+            try {
+              state.timetable = typeof data.branding.timetableTemplate === "string"
+                ? JSON.parse(data.branding.timetableTemplate)
+                : data.branding.timetableTemplate;
+            } catch (e) {
+              console.error("Failed to parse loaded timetableTemplate:", e);
+            }
+          }
         }
         if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
         if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
@@ -356,7 +365,8 @@ async function writeToSheets(action, payload) {
         name: payload.companyName,
         logo: payload.logoUrl,
         currency: payload.currency,
-        themeColors: payload.themeColors
+        themeColors: payload.themeColors,
+        timetableTemplate: JSON.stringify(payload.timetableTemplate || [])
       };
     }
 
@@ -381,12 +391,44 @@ async function writeToSheets(action, payload) {
   }
 }
 
+function generateDefaultTimetable() {
+  const timetable = [];
+  const startHour = 9; // 9:00 AM
+  const languages = ["English", "Hindi", "English", "Hindi", "English"];
+  
+  for (let i = 1; i <= 50; i++) {
+    const totalMinutes = (i - 1) * 15;
+    const hour24 = Math.floor(startHour + (totalMinutes / 60));
+    const hour = hour24 % 12 || 12;
+    const ampm = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
+    const minutes = totalMinutes % 60;
+    const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
+    
+    let defaultZoom = "https://zoom.us/j/default-meeting";
+    if (i >= 9 && i <= 26) {
+      defaultZoom = `https://eighttimeseight.onlineclass.site/joinPublic/default-slot${i}`;
+    }
+    
+    timetable.push({
+      id: `slot_${i}`,
+      name: `Slot ${i}`,
+      time: timeStr,
+      tutorId: "",
+      tutorName: "Unassigned",
+      language: languages[(i - 1) % languages.length],
+      zoomLink: defaultZoom
+    });
+  }
+  return timetable;
+}
+
 // --- Local Storage load/save ---
 function loadFromLocalStorage() {
   const localBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
   const localSlabs = localStorage.getItem("CHESS_PORTAL_SLABS");
   const localTutors = localStorage.getItem("CHESS_PORTAL_TUTORS");
   const localDemos = localStorage.getItem("CHESS_PORTAL_DEMOS");
+  const localTimetable = localStorage.getItem("CHESS_PORTAL_TIMETABLE");
   const sessionUser = sessionStorage.getItem("CHESS_PORTAL_SESSION");
 
   if (localBranding) {
@@ -411,6 +453,12 @@ function loadFromLocalStorage() {
   } catch (e) {
     console.error("Failed to parse slabs from local storage:", e);
     state.slabs = [ ...window.DEFAULT_SLABS ];
+  }
+  try {
+    state.timetable = localTimetable ? JSON.parse(localTimetable) : generateDefaultTimetable();
+  } catch (e) {
+    console.error("Failed to parse timetable from local storage:", e);
+    state.timetable = generateDefaultTimetable();
   }
   
   // Wipes old mock data from local cache if it is detected on launch
@@ -456,6 +504,7 @@ function saveToLocalStorage() {
     localStorage.setItem("CHESS_PORTAL_BRANDING", JSON.stringify(state.branding));
     localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
     localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
+    localStorage.setItem("CHESS_PORTAL_TIMETABLE", JSON.stringify(state.timetable));
     
     // If a cloud database is connected, clear local demos cache to save domain storage quota!
     const connector = state.branding.connectorType || "sheets";
@@ -811,6 +860,7 @@ function updateViews() {
   if (state.activeTab === "admin-slabs") renderAdminSlabs();
   if (state.activeTab === "admin-branding") renderAdminBranding();
   if (state.activeTab === "admin-tutors") renderAdminTutors();
+  if (state.activeTab === "admin-timetable") renderAdminTimetable();
 }
 
 // --- VIEW: DASHBOARD ---
@@ -1143,12 +1193,13 @@ function renderDemosTable() {
       tr.className = rowClass;
 
       const isChecked = state.bulkSelectedDemoIds.includes(demo.id) ? "checked" : "";
+      const zoomLink = getZoomLinkForSlot(demo.slot);
 
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
         <td>${demo.time || '-'}</td>
-        <td>${demo.slot || '-'}</td>
+        <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.tutorName}</strong></td>
         <td>${demo.studentName}</td>
         <td>${demo.age}</td>
@@ -1247,10 +1298,11 @@ function renderDemosTable() {
         tutorStatusOptions += `<option value="Cancelled" selected disabled>Cancelled (Closed)</option>`;
       }
 
+      const zoomLink = getZoomLinkForSlot(demo.slot);
       tr.innerHTML = `
         <td>${demo.date || demo.dateTime || '-'}</td>
         <td>${demo.time || '-'}</td>
-        <td>${demo.slot || '-'}</td>
+        <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.studentName}</strong></td>
         <td>${demo.age}</td>
         <td>${demo.language}</td>
@@ -1435,6 +1487,37 @@ function renderAdminTutors() {
   });
 }
 
+function renderAdminTimetable() {
+  const tbody = document.getElementById("admin-timetable-rows");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!state.timetable || state.timetable.length === 0) {
+    state.timetable = generateDefaultTimetable();
+  }
+
+  state.timetable.forEach(slot => {
+    const tr = document.createElement("tr");
+    const tutor = state.tutors.find(t => t.id === slot.tutorId);
+    const tutorName = tutor ? tutor.name : (slot.tutorName || "Unassigned");
+
+    tr.innerHTML = `
+      <td><strong>${slot.name}</strong></td>
+      <td>${slot.time}</td>
+      <td><strong>${tutorName}</strong></td>
+      <td>${slot.language}</td>
+      <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${slot.zoomLink}">
+        <a href="${slot.zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline;">${slot.zoomLink}</a>
+      </td>
+      <td>
+        <button class="action-btn edit-slot-btn-el" data-id="${slot.id}" title="Edit Slot">✏️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 // --- Toast notifications ---
 function showToast(message, type = "success") {
   const container = document.getElementById("toast-container");
@@ -1524,6 +1607,28 @@ async function deleteSlab(slabId) {
 }
 
 // Tutors CRUD
+function openSlotModal(slotId) {
+  const slot = state.timetable.find(s => s.id === slotId);
+  if (!slot) return;
+  
+  document.getElementById("slot-id-input").value = slot.id;
+  document.getElementById("slot-name-label").value = slot.name;
+  document.getElementById("slot-time-input").value = slot.time;
+  document.getElementById("slot-language-input").value = slot.language || "English";
+  document.getElementById("slot-zoom-input").value = slot.zoomLink || "";
+  
+  // Populate tutor select dropdown
+  const tutorSelect = document.getElementById("slot-tutor-select");
+  if (tutorSelect) {
+    tutorSelect.innerHTML = `<option value="">-- Unassigned / Assign Later --</option>`;
+    state.tutors.forEach(t => {
+      tutorSelect.innerHTML += `<option value="${t.id}" ${t.id === slot.tutorId ? 'selected' : ''}>${t.name}</option>`;
+    });
+  }
+  
+  document.getElementById("slot-modal").classList.add("open");
+}
+
 function openTutorModal(tutorId = null) {
   const modal = document.getElementById("tutor-modal");
   const title = document.getElementById("tutor-modal-title");
@@ -1610,6 +1715,17 @@ function openDemoModal(demoId = null) {
     op.textContent = t.name;
     select.appendChild(op);
   });
+
+  const slotSelect = document.getElementById("demo-slot");
+  if (slotSelect) {
+    slotSelect.innerHTML = '<option value="" disabled selected>-- Select Slot --</option>';
+    for (let i = 1; i <= 50; i++) {
+      const op = document.createElement("option");
+      op.value = `Slot ${i}`;
+      op.textContent = `Slot ${i}`;
+      slotSelect.appendChild(op);
+    }
+  }
 
   document.getElementById("demo-form").reset();
   
@@ -1719,14 +1835,21 @@ async function deleteDemo(demoId) {
 
 function getZoomLinkForSlot(slotName) {
   if (!slotName) return "https://zoom.us/j/default-meeting";
+  
+  // 1. Look up in our custom timetable template if configured
+  if (state.timetable && state.timetable.length > 0) {
+    const slotObj = state.timetable.find(s => s.name.toLowerCase() === slotName.toLowerCase());
+    if (slotObj && slotObj.zoomLink) return slotObj.zoomLink;
+  }
+
   const branding = state.branding || {};
   const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
   
-  // Look up in the branding config from sheet
+  // 2. Look up in direct branding variables
   const link = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName];
   if (link) return link;
   
-  // Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
+  // 3. Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
   const defaultLinks = {
     "slot 9": "https://zoom.us/j/default-slot9",
     "slot 10": "https://zoom.us/j/default-slot10",
@@ -1764,7 +1887,7 @@ function sendDemoInvite(demoId) {
   const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : ""; // clean digits only
   const zoomLink = getZoomLinkForSlot(slot);
   
-  const text = `Hello *${student}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${date}\n⚡ *Slot:* ${slot}\n🗣️ *Language:* ${language}\n📈 *Level:* ${level}\n👤 *Tutor:* ${tutor}\n🎥 *Zoom Join Link:* ${zoomLink}\n\nLooking forward to seeing you in the session!`;
+  const text = `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : ${date}\nTIME : ${time}\n\nKindly join the demo class using the link below.\n${slot}\n${zoomLink}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
   
   // Copy to clipboard first
   navigator.clipboard.writeText(text).then(() => {
@@ -1958,6 +2081,60 @@ function initEventListeners() {
   document.getElementById("feedback-form")?.addEventListener("submit", handleFeedbackSubmit);
   document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
   document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
+
+  document.getElementById("slot-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const id = document.getElementById("slot-id-input").value;
+    const time = document.getElementById("slot-time-input").value.trim();
+    const language = document.getElementById("slot-language-input").value;
+    const tutorId = document.getElementById("slot-tutor-select").value;
+    const zoomLink = document.getElementById("slot-zoom-input").value.trim();
+
+    const tutor = state.tutors.find(t => t.id === tutorId);
+    const tutorName = tutor ? tutor.name : "Unassigned";
+
+    const idx = state.timetable.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      state.timetable[idx] = {
+        ...state.timetable[idx],
+        time,
+        language,
+        tutorId,
+        tutorName,
+        zoomLink
+      };
+      showToast(`Slot ${state.timetable[idx].name} updated locally.`);
+    }
+
+    document.getElementById("slot-modal").classList.remove("open");
+    renderAdminTimetable();
+  });
+
+  document.getElementById("slot-modal-close")?.addEventListener("click", () => document.getElementById("slot-modal").classList.remove("open"));
+  document.getElementById("slot-modal-cancel")?.addEventListener("click", () => document.getElementById("slot-modal").classList.remove("open"));
+
+  document.getElementById("save-entire-timetable-btn")?.addEventListener("click", async () => {
+    const saveBtn = document.getElementById("save-entire-timetable-btn");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving to cloud...";
+
+    saveToLocalStorage();
+
+    // Write to Sheets
+    const success = await writeToSheets("updateBranding", {
+      ...state.branding,
+      timetableTemplate: state.timetable
+    });
+
+    if (success) {
+      showToast("Timetable template saved successfully!");
+    } else {
+      showToast("Failed to save to database. Saved locally.", "warning");
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Timetable Changes";
+  });
 
   // Download Payroll CSV Exporter
   const downloadPayrollBtn = document.getElementById("download-payroll-btn");
@@ -2195,6 +2372,7 @@ function initEventListeners() {
     if (target.classList.contains("edit-demo-btn-el")) openDemoModal(target.dataset.id);
     if (target.classList.contains("delete-demo-btn-el")) deleteDemo(target.dataset.id);
     if (target.classList.contains("share-demo-btn-el")) sendDemoInvite(target.dataset.id);
+    if (target.classList.contains("edit-slot-btn-el")) openSlotModal(target.dataset.id);
 
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
 

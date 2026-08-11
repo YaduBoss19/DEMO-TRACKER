@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eight Times Eight Chess Academy - Admin Portal</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <script>
     window.addEventListener('error', function(e) {
       let errorDiv = document.getElementById('global-error-banner');
@@ -29,6 +29,13 @@
   </script>
 </head>
 <body>
+
+  <!-- ♟️ Floating Chess Pieces Background Animation -->
+  <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite;">♞</div>
+  <div class="floating-piece" style="top: 62%; left: 4%; animation: float-medium 10s ease-in-out infinite; animation-delay: -2s;">♟</div>
+  <div class="floating-piece" style="top: 14%; right: 8%; animation: float-fast 8s ease-in-out infinite; animation-delay: -4s;">♛</div>
+  <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
+  <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
@@ -120,6 +127,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
             Tutor Access
+          </a>
+          <a class="nav-item" data-tab="admin-timetable">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Timetable Template
           </a>
         </div>
       </nav>
@@ -579,6 +592,37 @@
         </div>
       </section>
 
+      <!-- VIEW: TIMETABLE & SLOTS -->
+      <section id="admin-timetable-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">Booking Timetable (50 Slots Template)</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Configure the daily 50-slot timetable template. Tutors and Zoom links assigned here reflect in client booking and tutor portals.</p>
+            </div>
+            <button class="btn btn-primary" id="save-entire-timetable-btn">Save Timetable Changes</button>
+          </div>
+          
+          <div class="table-container" style="margin-top: 20px; max-height: 500px; overflow-y: auto;">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Slot Name</th>
+                  <th>Default Time</th>
+                  <th>Assigned Tutor</th>
+                  <th>Language</th>
+                  <th>Zoom / Online Link</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-timetable-rows">
+                <!-- Javascript will render the 50 slots dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -680,24 +724,6 @@
               <label for="demo-slot">Slot Info (SLOT NUMBER)</label>
               <select id="demo-slot" class="form-control" required>
                 <option value="" disabled selected>-- Select Slot --</option>
-                <option value="Slot 9">Slot 9</option>
-                <option value="Slot 10">Slot 10</option>
-                <option value="Slot 11">Slot 11</option>
-                <option value="Slot 12">Slot 12</option>
-                <option value="Slot 13">Slot 13</option>
-                <option value="Slot 14">Slot 14</option>
-                <option value="Slot 15">Slot 15</option>
-                <option value="Slot 16">Slot 16</option>
-                <option value="Slot 17">Slot 17</option>
-                <option value="Slot 18">Slot 18</option>
-                <option value="Slot 19">Slot 19</option>
-                <option value="Slot 20">Slot 20</option>
-                <option value="Slot 21">Slot 21</option>
-                <option value="Slot 22">Slot 22</option>
-                <option value="Slot 23">Slot 23</option>
-                <option value="Slot 24">Slot 24</option>
-                <option value="Slot 25">Slot 25</option>
-                <option value="Slot 26">Slot 26</option>
               </select>
             </div>
           </div>
@@ -739,6 +765,61 @@
         <div class="modal-footer">
           <button type="button" class="btn" id="demo-modal-cancel">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Demo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SLOT TIMETABLE EDIT -->
+  <div class="modal-backdrop" id="slot-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Configure Timetable Slot</h4>
+        <button class="modal-close" type="button" id="slot-modal-close">✕</button>
+      </div>
+      <form id="slot-form">
+        <div class="modal-body">
+          <input type="hidden" id="slot-id-input">
+          
+          <div class="form-group">
+            <label>Slot Identifier</label>
+            <input type="text" id="slot-name-label" class="form-control" disabled style="background: rgba(255,255,255,0.05); color: #94a3b8;">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="slot-time-input">Time</label>
+              <input type="text" id="slot-time-input" class="form-control" placeholder="e.g. 11:30 PM" required>
+            </div>
+            <div class="form-group">
+              <label for="slot-language-input">Language</label>
+              <select id="slot-language-input" class="form-control" required>
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Telugu">Telugu</option>
+                <option value="Kannada">Kannada</option>
+                <option value="Malayalam">Malayalam</option>
+                <option value="Bengali">Bengali</option>
+                <option value="Spanish">Spanish</option>
+                <option value="Arabic">Arabic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="slot-tutor-select">Assigned Tutor</label>
+            <select id="slot-tutor-select" class="form-control"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="slot-zoom-input">Slot Zoom Link</label>
+            <input type="url" id="slot-zoom-input" class="form-control" placeholder="https://zoom.us/j/..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="slot-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Slot Configuration</button>
         </div>
       </form>
     </div>

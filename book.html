@@ -177,6 +177,82 @@
       color: #ffffff;
     }
 
+    /* Timetable Grid and Slot Pills styling */
+    .slot-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      position: relative;
+    }
+    .slot-pill:hover:not(.booked) {
+      border-color: var(--brand-secondary);
+      background: rgba(224, 122, 95, 0.08);
+      transform: translateY(-2px);
+    }
+    .slot-pill.selected {
+      border-color: var(--brand-secondary);
+      background: var(--brand-secondary);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(224, 122, 95, 0.3);
+    }
+    .slot-pill.selected .slot-pill-desc {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .slot-pill.booked {
+      opacity: 0.35;
+      background: rgba(255, 255, 255, 0.01);
+      border-color: rgba(255, 255, 255, 0.05);
+      cursor: not-allowed;
+    }
+    .slot-pill-time {
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .slot-pill-desc {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* ♟️ Floating Chess Pieces Animation */
+    .floating-piece {
+      position: fixed;
+      font-size: 7.5rem;
+      color: rgba(255, 255, 255, 0.02);
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.03);
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+    }
+
+    @keyframes float-slow {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-25px) rotate(6deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    @keyframes float-medium {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-18px) rotate(-8deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    @keyframes float-fast {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(12deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
@@ -346,6 +422,13 @@
 </head>
 <body>
 
+  <!-- ♟️ Floating Chess Pieces Background Animation -->
+  <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite;">♞</div>
+  <div class="floating-piece" style="top: 62%; left: 4%; animation: float-medium 10s ease-in-out infinite; animation-delay: -2s;">♟</div>
+  <div class="floating-piece" style="top: 14%; right: 8%; animation: float-fast 8s ease-in-out infinite; animation-delay: -4s;">♛</div>
+  <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
+  <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
+
   <div class="booking-card">
     <!-- Booking Form Container -->
     <div id="form-panel">
@@ -400,34 +483,17 @@
           <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="demo-date">Preferred Date</label>
-            <input type="date" id="demo-date" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="demo-slot">Preferred Time / Slot</label>
-            <select id="demo-slot" class="form-control" required>
-              <option value="" disabled selected>-- Select Slot --</option>
-              <option value="Slot 9">Slot 9</option>
-              <option value="Slot 10">Slot 10</option>
-              <option value="Slot 11">Slot 11</option>
-              <option value="Slot 12">Slot 12</option>
-              <option value="Slot 13">Slot 13</option>
-              <option value="Slot 14">Slot 14</option>
-              <option value="Slot 15">Slot 15</option>
-              <option value="Slot 16">Slot 16</option>
-              <option value="Slot 17">Slot 17</option>
-              <option value="Slot 18">Slot 18</option>
-              <option value="Slot 19">Slot 19</option>
-              <option value="Slot 20">Slot 20</option>
-              <option value="Slot 21">Slot 21</option>
-              <option value="Slot 22">Slot 22</option>
-              <option value="Slot 23">Slot 23</option>
-              <option value="Slot 24">Slot 24</option>
-              <option value="Slot 25">Slot 25</option>
-              <option value="Slot 26">Slot 26</option>
-            </select>
+        <div class="form-group">
+          <label for="demo-date">Preferred Date</label>
+          <input type="date" id="demo-date" class="form-control" required>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px; margin-bottom: 20px;">
+          <label style="margin-bottom: 6px; display: block;">Select a Slot from the Timetable (Tutor & Language info shown)</label>
+          <input type="hidden" id="demo-slot" required>
+          
+          <div id="timetable-slots-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 280px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 14px; background: rgba(255,255,255,0.015); margin-top: 4px;">
+            <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 10px;">Select a date to view available slots.</div>
           </div>
         </div>
 
@@ -495,12 +561,14 @@
       }
     }
 
-    applyBranding();
-
     // Set Default calendar date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById("demo-date").value = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    document.getElementById("demo-date").value = tomorrowStr;
+    document.getElementById("demo-date").addEventListener("change", () => {
+      renderTimetableGrid();
+    });
 
     // Pre-fill agent name from URL parameter ?agent=John
     const urlParams = new URLSearchParams(window.location.search);
@@ -539,6 +607,150 @@
       }
     }
 
+    function generateDefaultTimetable() {
+      const timetable = [];
+      const startHour = 9; // 9:00 AM
+      const languages = ["English", "Hindi", "English", "Hindi", "English"];
+      
+      for (let i = 1; i <= 50; i++) {
+        const totalMinutes = (i - 1) * 15;
+        const hour24 = Math.floor(startHour + (totalMinutes / 60));
+        const hour = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
+        
+        let defaultZoom = "https://zoom.us/j/default-meeting";
+        if (i >= 9 && i <= 26) {
+          defaultZoom = `https://eighttimeseight.onlineclass.site/joinPublic/default-slot${i}`;
+        }
+        
+        timetable.push({
+          id: `slot_${i}`,
+          name: `Slot ${i}`,
+          time: timeStr,
+          tutorId: "",
+          tutorName: "Unassigned",
+          language: languages[(i - 1) % languages.length],
+          zoomLink: defaultZoom
+        });
+      }
+      return timetable;
+    }
+
+    function isSlotBooked(dateStr, slotName) {
+      if (!window.allDemos) return false;
+      return window.allDemos.some(d => {
+        const dDate = d.date || d.dateTime || "";
+        return dDate.includes(dateStr) && (d.slot === slotName || d.time === slotName);
+      });
+    }
+
+    function renderTimetableGrid() {
+      const container = document.getElementById("timetable-slots-container");
+      if (!container) return;
+      
+      const dateInput = document.getElementById("demo-date");
+      const selectedDate = dateInput ? dateInput.value : "";
+      
+      container.innerHTML = "";
+      if (!selectedDate) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Please pick a preferred date first.</div>`;
+        return;
+      }
+      
+      const timetable = window.timetable || [];
+      timetable.forEach(slot => {
+        const booked = isSlotBooked(selectedDate, slot.name);
+        const pill = document.createElement("div");
+        pill.className = `slot-pill ${booked ? 'booked' : 'available'}`;
+        pill.dataset.slot = slot.name;
+        
+        pill.innerHTML = `
+          <div class="slot-pill-time">${slot.time}</div>
+          <div class="slot-pill-desc">${slot.tutorName !== "Unassigned" ? slot.tutorName : 'No Tutor'} (${slot.language})</div>
+        `;
+        
+        if (!booked) {
+          pill.addEventListener("click", () => {
+            document.querySelectorAll(".slot-pill").forEach(p => p.classList.remove("selected"));
+            pill.classList.add("selected");
+            document.getElementById("demo-slot").value = slot.name;
+          });
+        } else {
+          pill.title = "This slot is already booked for this date";
+          pill.innerHTML += `<div style="font-size:0.6rem; color:#ef4444; font-weight:bold; margin-top:2px;">Booked</div>`;
+        }
+        
+        container.appendChild(pill);
+      });
+    }
+
+    async function loadLiveConfigs() {
+      applyBranding();
+      window.timetable = generateDefaultTimetable();
+      renderTimetableGrid();
+
+      const connector = branding.connectorType || "sheets";
+      if (connector === "supabase" && branding.supabaseUrl && branding.supabaseKey) {
+        try {
+          if (typeof window.supabase === "undefined") {
+            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+          }
+          const client = window.supabase.createClient(branding.supabaseUrl, branding.supabaseKey);
+          const { data: bData } = await client.from('branding').select('*').eq('id', 'default').maybeSingle();
+          if (bData) {
+            branding.companyName = bData.name || branding.companyName;
+            branding.logoUrl = bData.logo || branding.logoUrl;
+            if (bData.themeColors) branding.themeColors = { ...branding.themeColors, ...bData.themeColors };
+            if (bData.timetableTemplate) {
+              try {
+                window.timetable = typeof bData.timetableTemplate === "string" 
+                  ? JSON.parse(bData.timetableTemplate) 
+                  : bData.timetableTemplate;
+              } catch(e) {}
+            }
+          }
+          const { data: dData } = await client.from('demos').select('date,dateTime,slot,time');
+          if (dData) {
+            window.allDemos = dData;
+          }
+          applyBranding();
+          renderTimetableGrid();
+        } catch(e) { console.warn("Supabase fetch failed", e); }
+      } else if (connector === "sheets" && branding.sheetsUrl) {
+        try {
+          const res = await fetch(`${branding.sheetsUrl}?action=readAll`);
+          const json = await res.json();
+          if (json && json.status === "success" && json.data) {
+            const b = json.data.branding;
+            if (b) {
+              branding.companyName = b.name || b.companyName || branding.companyName;
+              branding.logoUrl = b.logo || b.logoUrl || branding.logoUrl;
+              if (b.themeColors) {
+                const colors = typeof b.themeColors === "string" ? JSON.parse(b.themeColors) : b.themeColors;
+                branding.themeColors = { ...branding.themeColors, ...colors };
+              }
+              if (b.timetableTemplate) {
+                try {
+                  window.timetable = typeof b.timetableTemplate === "string" 
+                    ? JSON.parse(b.timetableTemplate) 
+                    : b.timetableTemplate;
+                } catch(e) {}
+              }
+            }
+            if (json.data.demos) {
+              window.allDemos = json.data.demos;
+            }
+            applyBranding();
+            renderTimetableGrid();
+          }
+        } catch(e) { console.warn("Sheets fetch failed", e); }
+      }
+    }
+
+    loadLiveConfigs();
+
     // 2. Submit Handler to sync database
     document.getElementById("booking-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -557,19 +769,28 @@
       const slot = document.getElementById("demo-slot").value.trim();
       const agentName = document.getElementById("agent-name").value;
 
+      if (!slot) {
+        alert("Please select a slot from the timetable grid first!");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Schedule Free Demo</span>`;
+        return;
+      }
+
+      const slotObj = window.timetable.find(s => s.name === slot) || {};
+
       // Construct Demo Item (Matching DB schema)
       const demoPayload = {
         id: `demo_${Date.now()}`,
-        tutorId: "", // Unassigned initially
-        tutorName: "Unassigned",
+        tutorId: slotObj.tutorId || "", // Auto assigned tutor ID from timetable
+        tutorName: slotObj.tutorName || "Unassigned", // Auto assigned tutor name
         studentName: studentName,
         date: date,
-        time: slot,
-        dateTime: `${date} ${slot}`,
-        slot: slot, // Use chosen slot dropdown name (e.g. Slot 9)
+        time: slotObj.time || slot,
+        dateTime: `${date} ${slotObj.time || slot}`,
+        slot: slot, // Chosen slot name (e.g. Slot 9)
         status: "Demo Not Done",
         age: age,
-        language: language,
+        language: language || slotObj.language || "English",
         agentName: agentName,
         location: location,
         mobileNumber: mobileNumber,
@@ -582,7 +803,7 @@
       if (success) {
         // Render success UI
         document.getElementById("res-student").textContent = studentName;
-        document.getElementById("res-datetime").textContent = `${date} at ${slot}`;
+        document.getElementById("res-datetime").textContent = `${date} at ${slotObj.time || slot}`;
         document.getElementById("res-level").textContent = level;
         document.getElementById("res-mobile").textContent = mobileNumber;
 
@@ -631,14 +852,16 @@
       return defaultLinks[slotName.toLowerCase()] || "https://zoom.us/j/default-meeting";
     }
 
-    // WhatsApp invite confirmation handler
+    // WhatsApp invite confirmation handler (custom greetings format)
     document.getElementById("send-whatsapp-invite-btn").addEventListener("click", () => {
       const demo = window.lastBookedDemo;
       if (!demo) return;
       
       const zoomLink = getZoomLinkForSlot(demo.slot);
       const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : "";
-      const text = `Hello *${demo.studentName}*,\n\nYour chess demo class has been scheduled successfully! ♟️\n\n📅 *Date:* ${demo.date}\n⚡ *Slot:* ${demo.slot}\n🗣️ *Language:* ${demo.language}\n📈 *Level:* ${demo.level}\n🎥 *Zoom Join Link:* ${zoomLink}\n\nLooking forward to seeing you in the class!`;
+      
+      // Exact requested template format
+      const text = `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : ${demo.date}\nTIME : ${demo.time}\n\nKindly join the demo class using the link below.\n${demo.slot}\n${zoomLink}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
       
       navigator.clipboard.writeText(text).then(() => {
         alert("Invitation details copied to clipboard! Opening WhatsApp Web/App...");
