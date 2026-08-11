@@ -93,329 +93,111 @@ function mapAppDemoToSheet(a) {
   };
 }
 
-// --- Supabase Database Integration ---
-let supabaseClient = null;
-
-function initSupabase() {
-  const url = state.branding.supabaseUrl;
-  const key = state.branding.supabaseKey;
-  if (url && key) {
-    if (typeof window.supabase === "undefined") {
-      console.warn("Supabase SDK not loaded yet. Delaying database connection.");
-      return;
-    }
-    try {
-      supabaseClient = window.supabase.createClient(url, key);
-      
-      // Subscribe to real-time updates from Postgres
-      supabaseClient
-        .channel('schema-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-          console.log("Supabase Realtime update detected!");
-          fetchFromSheets().then(() => updateViews());
-        })
-        .subscribe();
-    } catch (e) {
-      console.error("Failed to initialize Supabase client:", e);
-    }
-  }
-}
-
 async function fetchFromSheets() {
-  const connector = state.branding.connectorType || "sheets";
+  const url = state.branding.sheetsUrl;
+  if (!url) return false;
 
-  if (connector === "supabase") {
-    const url = state.branding.supabaseUrl;
-    const key = state.branding.supabaseKey;
-    if (!url || !key) return false;
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
 
-    if (!supabaseClient) {
-      initSupabase();
-    }
-    if (!supabaseClient) return false;
-
-    const statusIndicator = document.getElementById("sheets-sync-status");
-    if (statusIndicator) statusIndicator.style.display = "inline-flex";
-
-    try {
-      // 1. Fetch Branding options
-      const { data: brandingData, error: bErr } = await supabaseClient.from('branding').select('*').eq('id', 'default').maybeSingle();
-      if (bErr) throw bErr;
-      if (brandingData) {
+  try {
+    const response = await fetch(`${url}?action=readAll`, {
+      method: "GET",
+      mode: "cors"
+    });
+    const result = await response.json();
+    
+    if (result && result.status === "success" && result.data) {
+      const data = result.data;
+      if (data.branding) {
         state.branding = {
           ...state.branding,
-          companyName: brandingData.name,
-          logoUrl: brandingData.logo,
-          currency: brandingData.currency,
+          companyName: data.branding.name || data.branding.companyName || state.branding.companyName,
+          logoUrl: data.branding.logo || data.branding.logoUrl || state.branding.logoUrl,
+          currency: data.branding.currency || state.branding.currency,
           themeColors: {
             ...state.branding.themeColors,
-            ...(brandingData.themeColors || {})
+            ...(data.branding.themeColors || {})
           }
         };
-      }
-
-      // 2. Fetch Slabs configurations
-      const { data: slabsData, error: sErr } = await supabaseClient.from('slabs').select('*');
-      if (sErr) throw sErr;
-      if (slabsData && slabsData.length > 0) {
-        state.slabs = slabsData.map(s => ({
-          id: s.id,
-          minDemos: s.minDemos,
-          minConversion: parseFloat(s.minConversion),
-          rate: parseFloat(s.rate),
-          enabled: s.enabled
-        }));
-      }
-
-      // 3. Fetch Tutors configurations
-      const { data: tutorsData, error: tErr } = await supabaseClient.from('tutors').select('*');
-      if (tErr) throw tErr;
-      if (tutorsData && tutorsData.length > 0) {
-        state.tutors = tutorsData;
-      } else if (state.tutors.length > 0) {
-        // Auto-migrate local tutors to empty Supabase database
-        for (const t of state.tutors) {
-          await supabaseClient.from('tutors').upsert(t);
+        if (data.branding.timetableTemplate) {
+          try {
+            state.timetable = typeof data.branding.timetableTemplate === "string"
+              ? JSON.parse(data.branding.timetableTemplate)
+              : data.branding.timetableTemplate;
+          } catch (e) {
+            console.error("Failed to parse loaded timetableTemplate:", e);
+          }
+        }
+        if (data.branding.inviteTemplate) {
+          state.inviteTemplate = data.branding.inviteTemplate;
         }
       }
-
-      // 4. Fetch Demos configurations
-      const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
-      if (dErr) throw dErr;
-      if (demosData && demosData.length > 0) {
-        state.demos = demosData.map(mapSheetDemoToApp);
-      } else if (state.demos.length > 0) {
-        // Auto-migrate local demos to empty Supabase database
-        await supabaseClient.from('demos').insert(state.demos);
+      if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
+      if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
+      if (data.demos && data.demos.length > 0) {
+        state.demos = data.demos.map(mapSheetDemoToApp);
       }
-
+      
       saveToLocalStorage();
       return true;
-    } catch (err) {
-      console.error("Failed to fetch from Supabase: ", err);
-      showToast("Supabase sync failed. Running in Offline Mode.", "warning");
-      return false;
-    } finally {
-      if (statusIndicator) statusIndicator.style.display = "none";
     }
-  } else {
-    // Google Sheets Integration
-    const url = state.branding.sheetsUrl;
-    if (!url) return false;
-
-    const statusIndicator = document.getElementById("sheets-sync-status");
-    if (statusIndicator) statusIndicator.style.display = "inline-flex";
-
-    try {
-      const response = await fetch(`${url}?action=readAll`, {
-        method: "GET",
-        mode: "cors"
-      });
-      const result = await response.json();
-      
-      if (result && result.status === "success" && result.data) {
-        const data = result.data;
-        if (data.branding) {
-          state.branding = {
-            ...state.branding,
-            companyName: data.branding.name || data.branding.companyName || state.branding.companyName,
-            logoUrl: data.branding.logo || data.branding.logoUrl || state.branding.logoUrl,
-            currency: data.branding.currency || state.branding.currency,
-            themeColors: {
-              ...state.branding.themeColors,
-              ...(data.branding.themeColors || {})
-            }
-          };
-          if (data.branding.timetableTemplate) {
-            try {
-              state.timetable = typeof data.branding.timetableTemplate === "string"
-                ? JSON.parse(data.branding.timetableTemplate)
-                : data.branding.timetableTemplate;
-            } catch (e) {
-              console.error("Failed to parse loaded timetableTemplate:", e);
-            }
-          }
-          if (data.branding.inviteTemplate) {
-            state.inviteTemplate = data.branding.inviteTemplate;
-          }
-        }
-        if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
-        if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
-        if (data.demos && data.demos.length > 0) {
-          state.demos = data.demos.map(mapSheetDemoToApp);
-        }
-        
-        saveToLocalStorage();
-        return true;
-      }
-    } catch (err) {
-      console.error("Failed to fetch from Google Sheets: ", err);
-      showToast("Sheets sync failed. Running in Offline Mode.", "warning");
-    } finally {
-      if (statusIndicator) statusIndicator.style.display = "none";
-    }
-    return false;
+  } catch (err) {
+    console.error("Failed to fetch from Google Sheets: ", err);
+    showToast("Sheets sync failed. Running in Offline Mode.", "warning");
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
   }
+  return false;
 }
-
 async function writeToSheets(action, payload) {
-  const connector = state.branding.connectorType || "sheets";
+  const url = state.branding.sheetsUrl;
+  if (!url) return false;
 
-  if (connector === "supabase") {
-    const url = state.branding.supabaseUrl;
-    const key = state.branding.supabaseKey;
-    if (!url || !key) return false;
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
 
-    if (!supabaseClient) {
-      initSupabase();
-    }
-    if (!supabaseClient) return false;
+  let mappedPayload = payload;
+  let finalAction = action;
 
-    const statusIndicator = document.getElementById("sheets-sync-status");
-    if (statusIndicator) statusIndicator.style.display = "inline-flex";
+  // Intercept and translate payloads/actions for sheet layout compatibility
+  if (action === "addDemo" || action === "updateDemo") {
+    mappedPayload = mapAppDemoToSheet(payload);
+  } else if (action === "updateDemoStatus") {
+    finalAction = "updateDemoCell";
+    mappedPayload = { id: payload.id, columnName: "DEMO STATUS", value: payload.status };
+  } else if (action === "updateDemoFeedback") {
+    finalAction = "updateDemoCell";
+    mappedPayload = { id: payload.id, columnName: "feedback", value: payload.feedback };
+  } else if (action === "addDemosBulk") {
+    mappedPayload = payload.map(mapAppDemoToSheet);
+  } else if (action === "updateBranding") {
+    mappedPayload = {
+      name: payload.companyName,
+      logo: payload.logoUrl,
+      currency: payload.currency,
+      themeColors: payload.themeColors,
+      timetableTemplate: JSON.stringify(payload.timetableTemplate || [])
+    };
+  }
 
-    try {
-      switch (action) {
-        case "updateBranding":
-          const bPayload = {
-            id: 'default',
-            name: payload.companyName,
-            logo: payload.logoUrl,
-            currency: payload.currency,
-            themeColors: payload.themeColors
-          };
-          const { error: bErr } = await supabaseClient.from('branding').upsert(bPayload);
-          if (bErr) throw bErr;
-          break;
-
-        case "addSlab":
-          const { error: sAddErr } = await supabaseClient.from('slabs').insert([payload]);
-          if (sAddErr) throw sAddErr;
-          break;
-
-        case "updateSlab":
-          const { error: sUpErr } = await supabaseClient.from('slabs').upsert(payload);
-          if (sUpErr) throw sUpErr;
-          break;
-
-        case "deleteSlab":
-          const { error: sDelErr } = await supabaseClient.from('slabs').delete().eq('id', payload.id);
-          if (sDelErr) throw sDelErr;
-          break;
-
-        case "addTutor":
-          const { error: tAddErr } = await supabaseClient.from('tutors').insert([payload]);
-          if (tAddErr) throw tAddErr;
-          break;
-
-        case "updateTutor":
-          const { error: tUpErr } = await supabaseClient.from('tutors').upsert(payload);
-          if (tUpErr) throw tUpErr;
-          break;
-
-        case "deleteTutor":
-          const { error: tDelErr } = await supabaseClient.from('tutors').delete().eq('id', payload.id);
-          if (tDelErr) throw tDelErr;
-          break;
-
-        case "addDemo":
-          const { error: dAddErr } = await supabaseClient.from('demos').insert([payload]);
-          if (dAddErr) throw dAddErr;
-          break;
-
-        case "updateDemo":
-          const { error: dUpErr } = await supabaseClient.from('demos').upsert(payload);
-          if (dUpErr) throw dUpErr;
-          break;
-
-        case "deleteDemo":
-          const { error: dDelErr } = await supabaseClient.from('demos').delete().eq('id', payload.id);
-          if (dDelErr) throw dDelErr;
-          break;
-
-        case "updateDemoStatus":
-          const { error: dStatErr } = await supabaseClient.from('demos').update({ status: payload.status }).eq('id', payload.id);
-          if (dStatErr) throw dStatErr;
-          break;
-
-        case "updateDemoFeedback":
-          const { error: dFeedErr } = await supabaseClient.from('demos').update({ feedback: payload.feedback }).eq('id', payload.id);
-          if (dFeedErr) throw dFeedErr;
-          break;
-
-        case "addDemosBulk":
-          const { error: dBulkErr } = await supabaseClient.from('demos').insert(payload);
-          if (dBulkErr) throw dBulkErr;
-          break;
-
-        case "clearDatabase":
-          const { error: clearDemosErr } = await supabaseClient.from('demos').delete().neq('id', 'non-existent');
-          const { error: clearTutorsErr } = await supabaseClient.from('tutors').delete().neq('id', 'non-existent');
-          if (clearDemosErr) throw clearDemosErr;
-          if (clearTutorsErr) throw clearTutorsErr;
-          break;
-
-        default:
-          console.warn("Unknown write action:", action);
-      }
-      return true;
-    } catch (err) {
-      console.error("Failed to write to Supabase: ", err);
-      showToast("Write failed. Saved locally.", "warning");
-      return false;
-    } finally {
-      if (statusIndicator) statusIndicator.style.display = "none";
-    }
-  } else {
-    // Google Sheets Integration
-    const url = state.branding.sheetsUrl;
-    if (!url) return false;
-
-    const statusIndicator = document.getElementById("sheets-sync-status");
-    if (statusIndicator) statusIndicator.style.display = "inline-flex";
-
-    let mappedPayload = payload;
-    let finalAction = action;
-
-    // Intercept and translate payloads/actions for sheet layout compatibility
-    if (action === "addDemo" || action === "updateDemo") {
-      mappedPayload = mapAppDemoToSheet(payload);
-    } else if (action === "updateDemoStatus") {
-      finalAction = "updateDemoCell";
-      mappedPayload = { id: payload.id, columnName: "DEMO STATUS", value: payload.status };
-    } else if (action === "updateDemoFeedback") {
-      finalAction = "updateDemoCell";
-      mappedPayload = { id: payload.id, columnName: "feedback", value: payload.feedback };
-    } else if (action === "addDemosBulk") {
-      mappedPayload = payload.map(mapAppDemoToSheet);
-    } else if (action === "updateBranding") {
-      mappedPayload = {
-        name: payload.companyName,
-        logo: payload.logoUrl,
-        currency: payload.currency,
-        themeColors: payload.themeColors,
-        timetableTemplate: JSON.stringify(payload.timetableTemplate || [])
-      };
-    }
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "text/plain"
-        },
-        body: JSON.stringify({ action: finalAction, data: mappedPayload })
-      });
-      const result = await response.json();
-      return result && result.status === "success";
-    } catch (err) {
-      console.error("Failed to write to Google Sheets: ", err);
-      showToast("Write failed. Saved locally.", "warning");
-      return false;
-    } finally {
-      if (statusIndicator) statusIndicator.style.display = "none";
-    }
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "text/plain"
+      },
+      body: JSON.stringify({ action: finalAction, data: mappedPayload })
+    });
+    const result = await response.json();
+    return result && result.status === "success";
+  } catch (err) {
+    console.error("Failed to write to Google Sheets: ", err);
+    showToast("Write failed. Saved locally.", "warning");
+    return false;
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
   }
 }
 

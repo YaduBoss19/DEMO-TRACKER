@@ -1201,54 +1201,8 @@
       
       renderTimetableGrid();
 
-      // 3. Connect to live database if sheets or supabase config is set
-      const connector = branding.connectorType || "sheets";
-      if (connector === "supabase" && branding.supabaseUrl && branding.supabaseKey) {
-        try {
-          if (typeof window.supabase === "undefined") {
-            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-          }
-          const client = window.supabase.createClient(branding.supabaseUrl, branding.supabaseKey);
-          const { data: bData } = await client.from('branding').select('*').eq('id', 'default').maybeSingle();
-          if (bData) {
-            branding.companyName = bData.name || branding.companyName;
-            branding.logoUrl = bData.logo || branding.logoUrl;
-            if (bData.themeColors) branding.themeColors = { ...branding.themeColors, ...bData.themeColors };
-            if (bData.timetableTemplate) {
-              try {
-                window.timetable = typeof bData.timetableTemplate === "string" 
-                  ? JSON.parse(bData.timetableTemplate) 
-                  : bData.timetableTemplate;
-              } catch(e) {}
-            }
-            if (bData.inviteTemplate) {
-              branding.inviteTemplate = bData.inviteTemplate;
-            }
-          }
-          const { data: dData } = await client.from('demos').select('date,dateTime,slot,time');
-          if (dData) {
-            window.allDemos = dData;
-          }
-          const { data: tData } = await client.from('tutors').select('*');
-          if (tData) {
-            window.tutorsList = tData.map(t => {
-              let availability = [];
-              if (t.availability) {
-                try {
-                  availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
-                } catch(e) {}
-              }
-              let zoomLinks = {};
-              if (t.zoomLinks) {
-                try {
-                  zoomLinks = typeof t.zoomLinks === "string" ? JSON.parse(t.zoomLinks) : t.zoomLinks;
-                } catch(e) {}
-              }
-              return { ...t, availability, zoomLinks };
-            });
-          }
-        } catch(e) { console.warn("Supabase fetch failed", e); }
-      } else if (connector === "sheets" && branding.sheetsUrl) {
+      // 3. Connect to live database if sheets config is set
+      if (branding.sheetsUrl) {
         try {
           const res = await fetch(`${branding.sheetsUrl}?action=readAll`);
           const json = await res.json();
@@ -1430,68 +1384,41 @@
 
     // Helper: Dynamic DB writer
     async function writeToDatabase(action, payload) {
-      const connector = branding.connectorType || "sheets";
-
-      if (connector === "supabase") {
-        const url = branding.supabaseUrl;
-        const key = branding.supabaseKey;
-        if (!url || !key) return false;
-        
-        // Dynamically load Supabase client SDK
-        if (typeof window.supabase === "undefined") {
-          try {
-            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-          } catch(e) {
-            console.error("Failed to load Supabase SDK dynamically:", e);
-            return false;
-          }
-        }
-        
-        try {
-          const client = window.supabase.createClient(url, key);
-          const { error } = await client.from('demos').insert([payload]);
-          if (error) throw error;
-          return true;
-        } catch(e) {
-          console.error("Supabase write failed:", e);
-          return false;
-        }
-      } else {
-        // Google Sheets
-        const url = branding.sheetsUrl;
-        if (!url) return false;
-        
-        const mappedPayload = {
-          id: payload.id,
-          tutorId: payload.tutorId,
-          "TUTOR NAME": payload.tutorName,
-          "STUDENT NAME": payload.studentName,
-          "DATE": payload.date,
-          "TIME": payload.time,
-          "SLOT NUMBER": payload.slot,
-          "DEMO STATUS": payload.status,
-          "AGE": payload.age,
-          "LANGUAGE": payload.language,
-          "AGENT NAME": payload.agentName,
-          "LOCATION": payload.location,
-          "MOBILE NUMBER": payload.mobileNumber,
-          "LEVEL": payload.level,
-          feedback: payload.feedback
-        };
-        
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: action, data: mappedPayload })
-          });
-          const result = await response.json();
-          return result && result.status === "success";
-        } catch (err) {
-          console.error("Google Sheets write failed:", err);
-          return false;
-        }
+      const url = branding.sheetsUrl;
+      if (!url) return false;
+      
+      const mappedPayload = {
+        id: payload.id,
+        tutorId: payload.tutorId,
+        "TUTOR NAME": payload.tutorName,
+        "STUDENT NAME": payload.studentName,
+        "DATE": payload.date,
+        "TIME": payload.time,
+        "SLOT NUMBER": payload.slot,
+        "DEMO STATUS": payload.status,
+        "AGE": payload.age,
+        "LANGUAGE": payload.language,
+        "AGENT NAME": payload.agentName,
+        "LOCATION": payload.location,
+        "MOBILE NUMBER": payload.mobileNumber,
+        "LEVEL": payload.level,
+        feedback: payload.feedback,
+        "REVISION": payload.revision || "-",
+        "TOPIC TO START": payload.topicToStart || "-"
+      };
+      
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ action: action, data: mappedPayload })
+        });
+        const result = await response.json();
+        return result && result.status === "success";
+      } catch (err) {
+        console.error("Google Sheets write failed:", err);
+        return false;
       }
     }
 
