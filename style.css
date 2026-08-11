@@ -1306,8 +1306,8 @@ input:checked + .slider-toggle:before {
 
 /* Interactive Calendar Grid Table Styles */
 .calendar-grid-table td {
-  padding: 0 !important;
-  height: 52px;
+  padding: 4px !important;
+  vertical-align: middle;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
