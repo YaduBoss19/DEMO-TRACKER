@@ -425,26 +425,35 @@
       <!-- VIEW: TUTOR SLOTS & ZOOM -->
       <section id="tutor-slots-view" class="view-section">
         <div class="card-panel">
-          <div class="panel-header">
+          <div class="panel-header" style="margin-bottom: 20px;">
             <div>
-              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">My Availability & Zoom Links</h2>
-              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Select the slots when you are available to teach, and enter your Zoom links. Clients booking slots at these times will get automatically assigned to you!</p>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">My Availability Calendar</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Set your recurring weekly availability. Click cells in the grid to toggle. Enter your personal meeting link below.</p>
             </div>
-            <button class="btn btn-primary" id="save-tutor-slots-btn">Save My Settings</button>
+            <button class="btn btn-primary" id="save-tutor-slots-btn">Save Settings</button>
+          </div>
+
+          <div class="form-group" style="max-width: 500px; margin-bottom: 25px;">
+            <label for="tutor-master-zoom" style="font-weight: 700;">My Personal Zoom / Online Class Link</label>
+            <input type="url" id="tutor-master-zoom" class="form-control" placeholder="https://zoom.us/j/your-meeting-id" style="margin-top: 6px;">
           </div>
           
-          <div class="table-container" style="margin-top: 20px; max-height: 500px; overflow-y: auto;">
-            <table class="custom-table">
+          <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01);">
+            <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 800px; width: 100%; border-collapse: collapse; text-align: center;">
               <thead>
                 <tr>
-                  <th style="width: 80px;">Active</th>
-                  <th>Slot Name</th>
-                  <th>Default Time</th>
-                  <th>My Zoom Join Link</th>
+                  <th style="width: 120px; text-align: left; padding-left: 15px;">Time (IST)</th>
+                  <th>Mon</th>
+                  <th>Tue</th>
+                  <th>Wed</th>
+                  <th>Thu</th>
+                  <th>Fri</th>
+                  <th>Sat</th>
+                  <th>Sun</th>
                 </tr>
               </thead>
-              <tbody id="tutor-slots-rows">
-                <!-- Javascript will render the 50 slots dynamically -->
+              <tbody id="tutor-slots-grid-body">
+                <!-- Javascript will render the weekly grid rows dynamically -->
               </tbody>
             </table>
           </div>

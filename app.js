@@ -393,12 +393,12 @@ async function writeToSheets(action, payload) {
 
 function generateDefaultTimetable() {
   const timetable = [];
-  const startHour = 9; // 9:00 AM
+  const startHour = 10; // 10:00 AM
   const languages = ["English", "Hindi", "English", "Hindi", "English"];
   
-  for (let i = 1; i <= 50; i++) {
-    const totalMinutes = (i - 1) * 15;
-    const hour24 = Math.floor(startHour + (totalMinutes / 60));
+  for (let i = 1; i <= 24; i++) {
+    const totalMinutes = (i - 1) * 30; // 30 min intervals
+    const hour24 = startHour + Math.floor(totalMinutes / 60);
     const hour = hour24 % 12 || 12;
     const ampm = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
     const minutes = totalMinutes % 60;
@@ -420,6 +420,46 @@ function generateDefaultTimetable() {
     });
   }
   return timetable;
+}
+
+function generateWeeklySlots() {
+  const days = [
+    { key: "mon", name: "Mon" },
+    { key: "tue", name: "Tue" },
+    { key: "wed", name: "Wed" },
+    { key: "thu", name: "Thu" },
+    { key: "fri", name: "Fri" },
+    { key: "sat", name: "Sat" },
+    { key: "sun", name: "Sun" }
+  ];
+  
+  const slots = [];
+  const times = [];
+  
+  const startHour = 10;
+  for (let i = 0; i < 24; i++) {
+    const totalMinutes = i * 30;
+    const hour24 = startHour + Math.floor(totalMinutes / 60);
+    const hour = hour24 % 12 || 12;
+    const ampm = hour24 >= 12 ? "PM" : "AM";
+    const minutes = totalMinutes % 60;
+    const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
+    times.push(timeStr);
+  }
+  
+  days.forEach(day => {
+    times.forEach((time, index) => {
+      slots.push({
+        id: `${day.key}_slot_${index}`,
+        dayKey: day.key,
+        dayName: day.name,
+        time: time,
+        index: index
+      });
+    });
+  });
+  
+  return { slots, times, days };
 }
 
 // --- Local Storage load/save ---
@@ -1520,7 +1560,7 @@ function renderAdminTimetable() {
 }
 
 function renderTutorSlots() {
-  const tbody = document.getElementById("tutor-slots-rows");
+  const tbody = document.getElementById("tutor-slots-grid-body");
   if (!tbody) return;
 
   tbody.innerHTML = "";
@@ -1529,26 +1569,47 @@ function renderTutorSlots() {
   const tutor = state.tutors.find(t => t.id === state.currentUser.id);
   if (!tutor) return;
 
+  // Set master Zoom input value
+  const zoomInput = document.getElementById("tutor-master-zoom");
+  if (zoomInput) {
+    zoomInput.value = tutor.zoomLink || "";
+  }
+
   const availability = tutor.availability || [];
-  const zoomLinks = tutor.zoomLinks || {};
+  const { slots, times, days } = generateWeeklySlots();
 
-  const defaultSlots = generateDefaultTimetable();
-
-  defaultSlots.forEach(slot => {
+  times.forEach((time, timeIdx) => {
     const tr = document.createElement("tr");
-    const isActive = availability.includes(slot.id) ? "checked" : "";
-    const currentZoom = zoomLinks[slot.id] || "";
 
-    tr.innerHTML = `
-      <td>
-        <input type="checkbox" class="tutor-slot-active-cb" data-id="${slot.id}" ${isActive} style="width: 18px; height: 18px; cursor: pointer;">
-      </td>
-      <td><strong>${slot.name}</strong></td>
-      <td>${slot.time}</td>
-      <td>
-        <input type="url" class="form-control tutor-slot-zoom-input" data-id="${slot.id}" placeholder="https://zoom.us/j/..." value="${currentZoom}" style="padding: 6px 12px; font-size: 0.8rem;">
-      </td>
-    `;
+    // Time label cell
+    const timeTd = document.createElement("td");
+    timeTd.style.textAlign = "left";
+    timeTd.style.paddingLeft = "15px";
+    timeTd.style.fontWeight = "bold";
+    timeTd.textContent = time;
+    tr.appendChild(timeTd);
+
+    // Day cells
+    days.forEach(day => {
+      const slotId = `${day.key}_slot_${timeIdx}`;
+      const isActive = availability.includes(slotId);
+
+      const td = document.createElement("td");
+
+      const cell = document.createElement("div");
+      cell.className = `calendar-cell ${isActive ? 'active' : ''}`;
+      cell.dataset.slotId = slotId;
+      cell.innerHTML = isActive ? "Available ✓" : "Unavailable";
+
+      cell.addEventListener("click", () => {
+        const active = cell.classList.toggle("active");
+        cell.innerHTML = active ? "Available ✓" : "Unavailable";
+      });
+
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+
     tbody.appendChild(tr);
   });
 }
@@ -2175,33 +2236,25 @@ function initEventListeners() {
     const saveBtn = document.getElementById("save-tutor-slots-btn");
     if (!saveBtn) return;
     saveBtn.disabled = true;
-    saveBtn.textContent = "Saving to cloud...";
+    saveBtn.textContent = "Saving...";
 
     const tutor = state.tutors.find(t => t.id === state.currentUser.id);
     if (!tutor) {
       saveBtn.disabled = false;
-      saveBtn.textContent = "Save My Settings";
+      saveBtn.textContent = "Save Settings";
       return;
     }
 
     const availability = [];
-    const zoomLinks = {};
-
-    document.querySelectorAll(".tutor-slot-active-cb").forEach(cb => {
-      if (cb.checked) {
-        availability.push(cb.dataset.id);
-      }
+    document.querySelectorAll(".calendar-cell.active").forEach(cell => {
+      availability.push(cell.dataset.slotId);
     });
 
-    document.querySelectorAll(".tutor-slot-zoom-input").forEach(input => {
-      const val = input.value.trim();
-      if (val) {
-        zoomLinks[input.dataset.id] = val;
-      }
-    });
+    const zoomLinkInput = document.getElementById("tutor-master-zoom");
+    const zoomLink = zoomLinkInput ? zoomLinkInput.value.trim() : "";
 
     tutor.availability = availability;
-    tutor.zoomLinks = zoomLinks;
+    tutor.zoomLink = zoomLink;
 
     saveToLocalStorage();
 
@@ -2209,19 +2262,19 @@ function initEventListeners() {
     const payload = {
       ...tutor,
       availability: JSON.stringify(availability),
-      zoomLinks: JSON.stringify(zoomLinks)
+      zoomLink: zoomLink
     };
 
     const success = await writeToSheets("updateTutor", payload);
 
     if (success) {
-      showToast("Availability and Zoom links saved successfully!");
+      showToast("Availability calendar saved successfully!");
     } else {
       showToast("Failed to save to database. Saved locally.", "warning");
     }
 
     saveBtn.disabled = false;
-    saveBtn.textContent = "Save My Settings";
+    saveBtn.textContent = "Save Settings";
   });
 
   // Download Payroll CSV Exporter

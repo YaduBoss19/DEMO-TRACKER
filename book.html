@@ -609,12 +609,12 @@
 
     function generateDefaultTimetable() {
       const timetable = [];
-      const startHour = 9; // 9:00 AM
+      const startHour = 10; // 10:00 AM
       const languages = ["English", "Hindi", "English", "Hindi", "English"];
       
-      for (let i = 1; i <= 50; i++) {
-        const totalMinutes = (i - 1) * 15;
-        const hour24 = Math.floor(startHour + (totalMinutes / 60));
+      for (let i = 1; i <= 24; i++) {
+        const totalMinutes = (i - 1) * 30; // 30 min intervals
+        const hour24 = startHour + Math.floor(totalMinutes / 60);
         const hour = hour24 % 12 || 12;
         const ampm = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
         const minutes = totalMinutes % 60;
@@ -638,6 +638,12 @@
       return timetable;
     }
 
+    function getDayOfWeekKey(dateStr) {
+      const date = new Date(dateStr + "T00:00:00");
+      const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+      return days[date.getDay()];
+    }
+
     function isSlotBooked(dateStr, slotName) {
       if (!window.allDemos) return false;
       return window.allDemos.some(d => {
@@ -659,14 +665,17 @@
         return;
       }
       
+      const dayOfWeekKey = getDayOfWeekKey(selectedDate);
       const defaultSlots = generateDefaultTimetable();
       const tutors = window.tutorsList || [];
       
       let renderedCount = 0;
       
-      defaultSlots.forEach(slot => {
-        // Find all tutors who checked they are available for this slot ID
-        const availableTutors = tutors.filter(t => t.availability && t.availability.includes(slot.id));
+      defaultSlots.forEach((slot, index) => {
+        const weeklySlotId = `${dayOfWeekKey}_slot_${index}`;
+        
+        // Find all tutors who checked they are available for this specific weekly slot ID
+        const availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
         
         // If no tutor has selected availability for this slot, do not display it!
         if (availableTutors.length === 0) return;
@@ -684,7 +693,7 @@
         const assignedTutor = freeTutor || availableTutors[0];
         
         // Read custom tutor Zoom link if they set it up, otherwise fallback to slot zoom link
-        const zoomLink = (assignedTutor.zoomLinks && assignedTutor.zoomLinks[slot.id]) || slot.zoomLink;
+        const zoomLink = assignedTutor.zoomLink || slot.zoomLink;
         
         const pill = document.createElement("div");
         pill.className = `slot-pill ${booked ? 'booked' : 'available'}`;
