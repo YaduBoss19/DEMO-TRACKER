@@ -477,16 +477,13 @@
     /* Fixed Column Widths and Row Heights */
     .calendar-grid-table {
       table-layout: fixed !important;
-      width: 1170px !important; /* 120px time + 7 * 150px days */
-      min-width: 1170px !important;
+      width: 100% !important; /* fills the entire parent container */
+      min-width: 960px !important; /* guarantees scroll bounds on mobile/tablet viewports */
       border-collapse: collapse;
     }
 
     .calendar-grid-table th,
     .calendar-grid-table td {
-      width: 150px !important;
-      min-width: 150px !important;
-      max-width: 150px !important;
       box-sizing: border-box;
       text-align: center;
     }
@@ -850,21 +847,18 @@
 
     function generateDefaultTimetable() {
       const timetable = [];
-      const startHour = 10; // 10:00 AM
+      const startHour = 0; // Start at 12:00 AM
       const languages = ["English", "Hindi", "English", "Hindi", "English"];
       
-      for (let i = 1; i <= 24; i++) {
+      for (let i = 1; i <= 48; i++) {
         const totalMinutes = (i - 1) * 30; // 30 min intervals
         const hour24 = startHour + Math.floor(totalMinutes / 60);
         const hour = hour24 % 12 || 12;
-        const ampm = hour24 >= 12 && hour24 < 24 ? "PM" : "AM";
+        const ampm = hour24 >= 12 ? "PM" : "AM";
         const minutes = totalMinutes % 60;
         const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
         
         let defaultZoom = "https://zoom.us/j/default-meeting";
-        if (i >= 9 && i <= 26) {
-          defaultZoom = `https://eighttimeseight.onlineclass.site/joinPublic/default-slot${i}`;
-        }
         
         timetable.push({
           id: `slot_${i}`,
@@ -950,8 +944,8 @@
 
       // Generate times array
       const times = [];
-      const startHour = 10;
-      for (let i = 0; i < 24; i++) {
+      const startHour = 0; // Start at 12:00 AM (midnight)
+      for (let i = 0; i < 48; i++) {
         const totalMinutes = i * 30;
         const hour24 = startHour + Math.floor(totalMinutes / 60);
         const hour = hour24 % 12 || 12;
@@ -974,7 +968,10 @@
         if (selectedTz === "GMT") {
           // IST (UTC+5:30) to GMT (UTC+0) -> Subtract 5 hours 30 mins (330 mins)
           const istMinutes = startHour * 60 + timeIdx * 30;
-          const gmtMinutes = istMinutes - 330;
+          let gmtMinutes = istMinutes - 330;
+          if (gmtMinutes < 0) {
+            gmtMinutes += 1440; // Wrap around past midnight (24 hours * 60 minutes)
+          }
           const gmtHour24 = Math.floor(gmtMinutes / 60);
           const gmtHour = gmtHour24 % 12 || 12;
           const gmtAmpm = gmtHour24 >= 12 ? "PM" : "AM";

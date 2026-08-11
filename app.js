@@ -436,8 +436,8 @@ function generateWeeklySlots() {
   const slots = [];
   const times = [];
   
-  const startHour = 10;
-  for (let i = 0; i < 24; i++) {
+  const startHour = 0;
+  for (let i = 0; i < 48; i++) {
     const totalMinutes = i * 30;
     const hour24 = startHour + Math.floor(totalMinutes / 60);
     const hour = hour24 % 12 || 12;
