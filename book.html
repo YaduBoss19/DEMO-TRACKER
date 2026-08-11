@@ -880,7 +880,13 @@
               return !window.allDemos || !window.allDemos.some(d => {
                 const dDate = d.date || d.dateTime || "";
                 return dDate.includes(dateStr) && d.tutorId === t.id && (d.slot === slotName || d.time === time);
-                const cellWrapper = document.createElement("div");
+              });
+            });
+
+            const booked = freeTutors.length === 0;
+            const assignedTutor = !booked ? freeTutors[0] : availableTutors[0];
+
+            const cellWrapper = document.createElement("div");
             cellWrapper.style.display = "flex";
             cellWrapper.style.flexDirection = "column";
             cellWrapper.style.gap = "4px";
