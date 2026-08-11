@@ -995,10 +995,17 @@
     });
 
     async function loadLiveConfigs() {
+      // 1. Initial local branding setup and layout render
       applyBranding();
       window.timetable = generateDefaultTimetable();
+      
+      // 2. Initialize default empty arrays so references never throw undefined errors
+      window.tutorsList = window.DEFAULT_TUTORS || [];
+      window.allDemos = window.DEFAULT_DEMOS || [];
+      
       renderTimetableGrid();
 
+      // 3. Connect to live database if sheets or supabase config is set
       const connector = branding.connectorType || "sheets";
       if (connector === "supabase" && branding.supabaseUrl && branding.supabaseKey) {
         try {
@@ -1041,8 +1048,6 @@
               return { ...t, availability, zoomLinks };
             });
           }
-          applyBranding();
-          renderTimetableGrid();
         } catch(e) { console.warn("Supabase fetch failed", e); }
       } else if (connector === "sheets" && branding.sheetsUrl) {
         try {
@@ -1087,17 +1092,15 @@
             }
           } else {
             console.warn("Sheets fetch returned error status, loading fallback defaults", json);
-            window.tutorsList = window.DEFAULT_TUTORS || [];
-            window.allDemos = window.DEFAULT_DEMOS || [];
           }
         } catch(e) {
           console.warn("Sheets fetch failed, loading fallback data", e);
-          window.tutorsList = window.DEFAULT_TUTORS || [];
-          window.allDemos = window.DEFAULT_DEMOS || [];
         }
-        applyBranding();
-        renderTimetableGrid();
       }
+
+      // 4. Always apply final branding configurations and re-render grid
+      applyBranding();
+      renderTimetableGrid();
     }
 
     // 2. Submit Handler to sync database
