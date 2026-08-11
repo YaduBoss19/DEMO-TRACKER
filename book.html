@@ -1221,6 +1221,9 @@
                   : bData.timetableTemplate;
               } catch(e) {}
             }
+            if (bData.inviteTemplate) {
+              branding.inviteTemplate = bData.inviteTemplate;
+            }
           }
           const { data: dData } = await client.from('demos').select('date,dateTime,slot,time');
           if (dData) {
@@ -1264,6 +1267,9 @@
                     ? JSON.parse(b.timetableTemplate) 
                     : b.timetableTemplate;
                 } catch(e) {}
+              }
+              if (b.inviteTemplate) {
+                branding.inviteTemplate = b.inviteTemplate;
               }
             }
             if (json.data.demos) {
@@ -1388,8 +1394,27 @@
       const zoomLink = window.lastBookedZoom || "https://zoom.us/j/default-meeting";
       const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : "";
       
-      // Exact requested template format
-      const text = `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : ${demo.date}\nTIME : ${demo.time}\n\nKindly join the demo class using the link below.\n${demo.slot}\n${zoomLink}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
+      const dateVal = demo.date || "";
+      let dateFormatted = dateVal;
+      if (dateVal.includes("-")) {
+        const parts = dateVal.split("-");
+        if (parts.length === 3) {
+          const year = parts[0].slice(-2);
+          const month = parts[1];
+          const day = parts[2];
+          dateFormatted = `${day}/${month}/${year}`;
+        }
+      }
+
+      let template = branding.inviteTemplate || localStorage.getItem("DEMO_INVITE_TEMPLATE") || `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : {DATE}\nTIME : {TIME}\n\nKindly join the demo class using the link below.\n{SLOT}\n{LINK}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
+
+      const text = template
+        .replace(/{DATE}/gi, dateFormatted)
+        .replace(/{TIME}/gi, demo.time || "")
+        .replace(/{SLOT}/gi, demo.slot || "")
+        .replace(/{LINK}/gi, zoomLink)
+        .replace(/{STUDENT}/gi, demo.studentName || "")
+        .replace(/{TUTOR}/gi, demo.tutorName || "");
       
       navigator.clipboard.writeText(text).then(() => {
         alert("Invitation details copied to clipboard! Opening WhatsApp Web/App...");

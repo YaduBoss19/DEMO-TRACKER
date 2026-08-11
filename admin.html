@@ -129,9 +129,9 @@
           </a>
           <a class="nav-item" data-tab="admin-timetable">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
             </svg>
-            Timetable Template
+            Invite Template
           </a>
         </div>
       </nav>
@@ -591,33 +591,34 @@
         </div>
       </section>
 
-      <!-- VIEW: TIMETABLE & SLOTS -->
+      <!-- VIEW: INVITE TEMPLATE -->
       <section id="admin-timetable-view" class="view-section">
         <div class="card-panel">
           <div class="panel-header">
             <div>
-              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">Booking Timetable (50 Slots Template)</h2>
-              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Configure the daily 50-slot timetable template. Tutors and Zoom links assigned here reflect in client booking and tutor portals.</p>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">WhatsApp Invite Template</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Customize the message template sent to parents. Click Save to apply.</p>
             </div>
-            <button class="btn btn-primary" id="save-entire-timetable-btn">Save Timetable Changes</button>
+            <button class="btn btn-primary" id="save-invite-template-btn">Save Template</button>
           </div>
-          
-          <div class="table-container" style="margin-top: 20px; max-height: 500px; overflow-y: auto;">
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th>Slot Name</th>
-                  <th>Default Time</th>
-                  <th>Assigned Tutor</th>
-                  <th>Language</th>
-                  <th>Zoom / Online Link</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="admin-timetable-rows">
-                <!-- Javascript will render the 50 slots dynamically -->
-              </tbody>
-            </table>
+
+          <div style="margin-top: 20px;">
+            <div class="form-group">
+              <label for="invite-template-textarea" style="font-weight: 700; margin-bottom: 8px; display: block;">Message Template</label>
+              <textarea id="invite-template-textarea" class="form-control" style="width: 100%; min-height: 250px; font-family: monospace; font-size: 0.9rem; line-height: 1.5; padding: 12px; resize: vertical; color: #ffffff; background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 8px;" placeholder="Enter message template..."></textarea>
+            </div>
+            
+            <div style="margin-top: 15px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;">
+              <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--brand-secondary); margin-bottom: 6px;">Available Placeholders:</h4>
+              <ul style="font-size: 0.78rem; color: var(--text-muted); padding-left: 20px; line-height: 1.6; list-style: disc;">
+                <li><strong>{DATE}</strong> - The scheduled date of the demo class (e.g. 11/08/26)</li>
+                <li><strong>{TIME}</strong> - The scheduled time of the demo class (e.g. 9:00 PM IST)</li>
+                <li><strong>{SLOT}</strong> - The slot identifier (e.g. Slot 22)</li>
+                <li><strong>{LINK}</strong> - The class Zoom / Google Meet / class URL (e.g. https://eighttimeseight.onlineclass.site/joinPublic/...)</li>
+                <li><strong>{STUDENT}</strong> - The student's name</li>
+                <li><strong>{TUTOR}</strong> - The assigned tutor's name</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>

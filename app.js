@@ -1,11 +1,30 @@
 // app.js
 
+const DEFAULT_INVITE_TEMPLATE = `Dear Sir/Ma'am
+
+Greetings from Eight Times Eight Chess Academy!
+
+Your demo has been successfully scheduled.
+
+DATE : {DATE}
+TIME : {TIME}
+
+Kindly join the demo class using the link below.
+{SLOT}
+{LINK}
+
+Please join 5 minutes before the class.
+
+Regards,
+Team Eight Times Eight Chess Academy`;
+
 // State management
 let state = {
   branding: {},
   slabs: [],
   tutors: [],
   demos: [],
+  inviteTemplate: "",
   currentUser: null, // { name, role, id, email, avatar }
   activeTab: "dashboard",
   leaderboardSortKey: "conversion",
@@ -44,7 +63,8 @@ function mapSheetDemoToApp(s) {
     location: s.location || s["LOCATION"] || "-",
     mobileNumber: s.mobileNumber || s["MOBILE NUMBER"] || "-",
     level: s.level || s["LEVEL"] || "-",
-    feedback: s.feedback || ""
+    feedback: s.feedback || "",
+    zoomLink: s.zoomLink || s["ZOOM LINK"] || s["CLASS LINK"] || ""
   };
 }
 
@@ -64,7 +84,8 @@ function mapAppDemoToSheet(a) {
     "LOCATION": a.location,
     "MOBILE NUMBER": a.mobileNumber,
     "LEVEL": a.level,
-    feedback: a.feedback
+    feedback: a.feedback,
+    "ZOOM LINK": a.zoomLink || ""
   };
 }
 
@@ -209,6 +230,9 @@ async function fetchFromSheets() {
             } catch (e) {
               console.error("Failed to parse loaded timetableTemplate:", e);
             }
+          }
+          if (data.branding.inviteTemplate) {
+            state.inviteTemplate = data.branding.inviteTemplate;
           }
         }
         if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
@@ -488,6 +512,8 @@ function loadFromLocalStorage() {
   } else {
     state.branding = { ...window.DEFAULT_BRANDING };
   }
+  const localTemplate = localStorage.getItem("DEMO_INVITE_TEMPLATE");
+  state.inviteTemplate = localTemplate || DEFAULT_INVITE_TEMPLATE;
   try {
     state.slabs = localSlabs ? JSON.parse(localSlabs) : [ ...window.DEFAULT_SLABS ];
   } catch (e) {
@@ -545,6 +571,7 @@ function saveToLocalStorage() {
     localStorage.setItem("CHESS_PORTAL_SLABS", JSON.stringify(state.slabs));
     localStorage.setItem("CHESS_PORTAL_TUTORS", JSON.stringify(state.tutors));
     localStorage.setItem("CHESS_PORTAL_TIMETABLE", JSON.stringify(state.timetable));
+    localStorage.setItem("DEMO_INVITE_TEMPLATE", state.inviteTemplate);
     
     // If a cloud database is connected, clear local demos cache to save domain storage quota!
     const connector = state.branding.connectorType || "sheets";
@@ -1530,34 +1557,13 @@ function renderAdminTutors() {
 }
 
 function renderAdminTimetable() {
-  const tbody = document.getElementById("admin-timetable-rows");
-  if (!tbody) return;
+  const textarea = document.getElementById("invite-template-textarea");
+  if (!textarea) return;
 
-  tbody.innerHTML = "";
-
-  if (!state.timetable || state.timetable.length === 0) {
-    state.timetable = generateDefaultTimetable();
+  if (!state.inviteTemplate) {
+    state.inviteTemplate = localStorage.getItem("DEMO_INVITE_TEMPLATE") || DEFAULT_INVITE_TEMPLATE;
   }
-
-  state.timetable.forEach(slot => {
-    const tr = document.createElement("tr");
-    const tutor = state.tutors.find(t => t.id === slot.tutorId);
-    const tutorName = tutor ? tutor.name : (slot.tutorName || "Unassigned");
-
-    tr.innerHTML = `
-      <td><strong>${slot.name}</strong></td>
-      <td>${slot.time}</td>
-      <td><strong>${tutorName}</strong></td>
-      <td>${slot.language}</td>
-      <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${slot.zoomLink}">
-        <a href="${slot.zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline;">${slot.zoomLink}</a>
-      </td>
-      <td>
-        <button class="action-btn edit-slot-btn-el" data-id="${slot.id}" title="Edit Slot">✏️</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+  textarea.value = state.inviteTemplate;
 }
 
 function renderTutorSlots() {
@@ -1974,17 +1980,37 @@ function sendDemoInvite(demoId) {
   const demo = state.demos.find(d => d.id === demoId);
   if (!demo) return;
   
-  const student = demo.studentName;
-  const date = demo.date || demo.dateTime;
-  const time = demo.time;
+  const student = demo.studentName || "Student";
+  const dateVal = demo.date || demo.dateTime || "";
+  
+  // Format Date to DD/MM/YY format (e.g. 11/08/26)
+  let dateFormatted = dateVal;
+  if (dateVal.includes("-")) {
+    const parts = dateVal.split("-");
+    if (parts.length === 3) {
+      const year = parts[0].slice(-2);
+      const month = parts[1];
+      const day = parts[2];
+      dateFormatted = `${day}/${month}/${year}`;
+    }
+  }
+  
+  const time = demo.time || "";
   const slot = demo.slot || "Slot 1";
   const tutor = demo.tutorName || "Assigning soon";
-  const level = demo.level || "-";
-  const language = demo.language || "English";
   const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : ""; // clean digits only
-  const zoomLink = getZoomLinkForSlot(slot);
+  const zoomLink = demo.zoomLink || getZoomLinkForSlot(slot);
   
-  const text = `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : ${date}\nTIME : ${time}\n\nKindly join the demo class using the link below.\n${slot}\n${zoomLink}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
+  let template = state.inviteTemplate || localStorage.getItem("DEMO_INVITE_TEMPLATE") || DEFAULT_INVITE_TEMPLATE;
+  
+  // Replace placeholders
+  let text = template
+    .replace(/{DATE}/gi, dateFormatted)
+    .replace(/{TIME}/gi, time)
+    .replace(/{SLOT}/gi, slot)
+    .replace(/{LINK}/gi, zoomLink)
+    .replace(/{STUDENT}/gi, student)
+    .replace(/{TUTOR}/gi, tutor);
   
   // Copy to clipboard first
   navigator.clipboard.writeText(text).then(() => {
@@ -2210,27 +2236,34 @@ function initEventListeners() {
   document.getElementById("slot-modal-close")?.addEventListener("click", () => document.getElementById("slot-modal").classList.remove("open"));
   document.getElementById("slot-modal-cancel")?.addEventListener("click", () => document.getElementById("slot-modal").classList.remove("open"));
 
-  document.getElementById("save-entire-timetable-btn")?.addEventListener("click", async () => {
-    const saveBtn = document.getElementById("save-entire-timetable-btn");
+  document.getElementById("save-invite-template-btn")?.addEventListener("click", async () => {
+    const saveBtn = document.getElementById("save-invite-template-btn");
+    const textarea = document.getElementById("invite-template-textarea");
+    if (!saveBtn || !textarea) return;
+
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving to cloud...";
+
+    const textVal = textarea.value.trim();
+    state.inviteTemplate = textVal;
+    localStorage.setItem("DEMO_INVITE_TEMPLATE", textVal);
 
     saveToLocalStorage();
 
     // Write to Sheets
     const success = await writeToSheets("updateBranding", {
       ...state.branding,
-      timetableTemplate: state.timetable
+      inviteTemplate: textVal
     });
 
     if (success) {
-      showToast("Timetable template saved successfully!");
+      showToast("WhatsApp invitation template saved successfully!");
     } else {
       showToast("Failed to save to database. Saved locally.", "warning");
     }
 
     saveBtn.disabled = false;
-    saveBtn.textContent = "Save Timetable Changes";
+    saveBtn.textContent = "Save Template";
   });
 
   document.getElementById("save-tutor-slots-btn")?.addEventListener("click", async () => {
