@@ -1338,6 +1338,22 @@ function renderAdminBranding() {
       groupSupabase.style.display = "none";
     }
   }
+
+  const slotContainer = document.getElementById("slot-links-container");
+  if (slotContainer) {
+    slotContainer.innerHTML = "";
+    for (let i = 10; i <= 26; i++) {
+      const key = `slot${i}`;
+      const val = branding[key] || branding[key + "zoom"] || branding[`Slot ${i}`] || "";
+      const div = document.createElement("div");
+      div.className = "form-group";
+      div.innerHTML = `
+        <label style="font-weight:700; font-size:0.8rem; display:block; margin-bottom:4px;">Demo Slot ${i} Link</label>
+        <input type="text" class="form-control slot-zoom-input" data-slot="${i}" value="${val}" placeholder="e.g. https://zoom.us/j/...">
+      `;
+      slotContainer.appendChild(div);
+    }
+  }
 }
 
 // --- VIEW: ADMIN TUTORS ---
@@ -1969,6 +1985,34 @@ function handleBrandingReset() {
   }
 }
 
+async function handleSaveSlotLinks() {
+  const saveBtn = document.getElementById("save-slot-links-btn");
+  if (!saveBtn) return;
+  
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+  
+  const inputs = document.querySelectorAll(".slot-zoom-input");
+  inputs.forEach(input => {
+    const slotNum = input.dataset.slot;
+    const val = input.value.trim();
+    const key = `slot${slotNum}`;
+    state.branding[key] = val;
+  });
+  
+  saveToLocalStorage();
+  
+  const success = await writeToSheets("updateBranding", state.branding);
+  if (success) {
+    showToast("Custom slot Zoom links saved successfully!");
+  } else {
+    showToast("Failed to save to cloud database. Saved locally.", "warning");
+  }
+  
+  saveBtn.disabled = false;
+  saveBtn.textContent = "Save Slot Links";
+}
+
 // --- Initialize Event Listeners ---
 function initEventListeners() {
   
@@ -2057,6 +2101,7 @@ function initEventListeners() {
   document.getElementById("feedback-form")?.addEventListener("submit", handleFeedbackSubmit);
   document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
   document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
+  document.getElementById("save-slot-links-btn")?.addEventListener("click", handleSaveSlotLinks);
 
   document.getElementById("slot-form")?.addEventListener("submit", (e) => {
     e.preventDefault();

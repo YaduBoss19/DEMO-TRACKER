@@ -1121,7 +1121,9 @@
                   demoSlotInput.dataset.tutorId = tutor.id;
                   demoSlotInput.dataset.tutorName = tutor.name;
                   demoSlotInput.dataset.time = time;
-                  demoSlotInput.dataset.zoomLink = tutor.zoomLink || "https://zoom.us/j/default";
+                  const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+                  const fallbackLink = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName] || `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+                  demoSlotInput.dataset.zoomLink = tutor.zoomLink || fallbackLink;
 
                   // Reset form and view states
                   document.getElementById("booking-form").reset();
