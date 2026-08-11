@@ -419,10 +419,9 @@
         gap: 18px;
       }
     }
-    /* Interactive Calendar Grid Table Styles */
     .calendar-grid-table td {
-      padding: 0 !important;
-      height: 52px;
+      padding: 6px 4px !important;
+      vertical-align: middle;
       border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 
@@ -538,10 +537,19 @@
 
   <!-- Large Full-Width Calendar Wrapper -->
   <div class="calendar-layout-wide">
-    <div class="calendar-header-nav">
-      <button type="button" class="btn-nav" id="prev-week-btn">‹ Prev Week</button>
-      <span id="current-week-label">Loading Week...</span>
-      <button type="button" class="btn-nav" id="next-week-btn">Next Week ›</button>
+    <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); gap: 15px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="btn-nav" id="prev-week-btn" style="margin: 0; min-width: 100px;">‹ Prev Week</button>
+        <button type="button" class="btn-nav" id="next-week-btn" style="margin: 0; min-width: 100px;">Next Week ›</button>
+      </div>
+      <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Timezone:</span>
+        <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+          <option value="IST" selected>IST (India)</option>
+          <option value="GMT">GMT/UTC (UK/Europe)</option>
+        </select>
+      </div>
     </div>
     
     <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01); max-height: 480px; overflow-y: auto;">
@@ -819,8 +827,11 @@
       weekLabel.textContent = `${months[dates[0].getMonth()]} ${dates[0].getDate()} - ${months[dates[6].getMonth()]} ${dates[6].getDate()}, ${dates[0].getFullYear()}`;
 
       // Update days of the week headers
+      const tzSelector = document.getElementById("timezone-selector");
+      const selectedTz = tzSelector ? tzSelector.value : "IST";
+      
       const daysStr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      headerTr.innerHTML = `<th style="width: 100px; text-align: left; padding-left: 15px;">Time (IST)</th>`;
+      headerTr.innerHTML = `<th style="width: 120px; text-align: left; padding-left: 15px;">Time (${selectedTz})</th>`;
       dates.forEach((date, i) => {
         const th = document.createElement("th");
         th.innerHTML = `${daysStr[i]} ${date.getDate()}`;
@@ -857,7 +868,20 @@
         timeTd.style.textAlign = "left";
         timeTd.style.paddingLeft = "15px";
         timeTd.style.fontWeight = "bold";
-        timeTd.textContent = time;
+
+        let displayTime = time;
+        if (selectedTz === "GMT") {
+          // IST (UTC+5:30) to GMT (UTC+0) -> Subtract 5 hours 30 mins (330 mins)
+          const istMinutes = startHour * 60 + timeIdx * 30;
+          const gmtMinutes = istMinutes - 330;
+          const gmtHour24 = Math.floor(gmtMinutes / 60);
+          const gmtHour = gmtHour24 % 12 || 12;
+          const gmtAmpm = gmtHour24 >= 12 ? "PM" : "AM";
+          const gmtMin = gmtMinutes % 60;
+          displayTime = `${gmtHour}:${gmtMin === 0 ? "00" : gmtMin} ${gmtAmpm}`;
+        }
+
+        timeTd.textContent = displayTime;
         tr.appendChild(timeTd);
 
         // Day cells Mon to Sun
@@ -993,6 +1017,10 @@
     
     document.getElementById("next-week-btn")?.addEventListener("click", () => {
       currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      renderTimetableGrid();
+    });
+
+    document.getElementById("timezone-selector")?.addEventListener("change", () => {
       renderTimetableGrid();
     });
 
