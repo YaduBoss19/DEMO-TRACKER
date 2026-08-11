@@ -40,24 +40,25 @@
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      padding: 20px;
+      justify-content: flex-start;
+      padding: 40px 20px;
       overflow-x: hidden;
     }
 
     /* Container Card with Glassmorphism */
     .booking-card {
       width: 100%;
-      max-width: 520px;
-      background: var(--surface-color);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      max-width: 500px;
+      background: #111827;
       border: 1px solid var(--border-color);
       border-radius: 24px;
       padding: 35px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       transition: all 0.4s ease;
+      z-index: 100000;
+    }
       position: relative;
     }
 
@@ -451,6 +452,72 @@
       transform: scale(1.02);
       box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
     }
+    .calendar-layout-wide {
+      width: 100%;
+      max-width: 1200px;
+      background: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      position: relative;
+      margin-bottom: 30px;
+    }
+
+    .calendar-header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .calendar-header-nav span {
+      font-size: 1.2rem;
+      font-weight: 700;
+      font-family: var(--font-outfit);
+      color: #ffffff;
+    }
+
+    .btn-nav {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover {
+      background: var(--brand-secondary);
+      border-color: var(--brand-secondary);
+    }
+
+    /* Modal Backdrop overlay */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(12, 15, 23, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
   </style>
 </head>
 <body>
@@ -462,138 +529,145 @@
   <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
   <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
 
-  <div class="booking-card">
-    <!-- Booking Form Container -->
-    <div id="form-panel">
-      <div class="header">
-        <div class="logo-container" id="logo-slot"></div>
-        <h2 class="title" id="company-name">Academy Portal</h2>
-        <p class="subtitle">Enter details below to schedule your free chess trial demo lesson.</p>
-      </div>
+  <!-- Page Header -->
+  <div class="page-header" style="text-align: center; margin-bottom: 25px; z-index: 10; position: relative; width: 100%; max-width: 1200px;">
+    <div class="logo-container" id="logo-slot" style="margin: 0 auto 10px auto; width: 80px; height: 80px;"></div>
+    <h1 class="title" id="company-name" style="font-family: var(--font-outfit); font-size: 2rem; font-weight: 800; color: #ffffff;">Eight Times Eight Chess Academy</h1>
+    <p class="subtitle" style="font-size: 0.95rem; color: var(--text-muted); margin-top: 5px;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
+  </div>
 
-      <form id="booking-form">
-        <div class="form-group">
-          <label for="student-name">Student Full Name</label>
-          <input type="text" id="student-name" class="form-control" placeholder="e.g. Kabir Sharma" required>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="student-age">Student Age</label>
-            <input type="text" id="student-age" class="form-control" placeholder="e.g. 8 years" required>
-          </div>
-          <div class="form-group">
-            <label for="student-language">Language Preference</label>
-            <select id="student-language" class="form-control" required>
-              <option value="English" selected>English</option>
-              <option value="Hindi">Hindi</option>
-              <option value="Malayalam">Malayalam</option>
-              <option value="Tamil">Tamil</option>
-              <option value="Kannada">Kannada</option>
-              <option value="Telugu">Telugu</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="student-level">Chess Level</label>
-            <select id="student-level" class="form-control" required>
-              <option value="Beginner" selected>Beginner (Knows nothing/only pieces move)</option>
-              <option value="Intermediate">Intermediate (Knows basic tactics/checks)</option>
-              <option value="Advanced">Advanced (Has FIDE rating/tournaments)</option>
-              <option value="Not Sure">Not Sure</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="student-location">Location / Country</label>
-            <input type="text" id="student-location" class="form-control" placeholder="e.g. Bangalore, India" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="mobile-number">Mobile / WhatsApp Number</label>
-          <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
-        </div>
-
-        <!-- Hidden Inputs for selected slot & date -->
-        <input type="hidden" id="demo-date" required>
-        <input type="hidden" id="demo-slot" required>
-
-        <div class="form-group" style="margin-top: 15px; margin-bottom: 25px;">
-          <label style="margin-bottom: 8px; display: block; font-weight: 700;">Select an Available Slot from the Weekly Calendar</label>
-          
-          <div class="calendar-wrapper" style="margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; background: rgba(255,255,255,0.015);">
-            <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <button type="button" class="btn btn-sm" id="prev-week-btn" style="padding: 6px 12px; font-size: 0.8rem; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">‹ Prev Week</button>
-              <span id="current-week-label" style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Loading Week...</span>
-              <button type="button" class="btn btn-sm" id="next-week-btn" style="padding: 6px 12px; font-size: 0.8rem; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">Next Week ›</button>
-            </div>
-            
-            <div class="table-container" style="overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
-              <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 800px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
-                <thead>
-                  <tr id="calendar-grid-header">
-                    <th style="width: 100px; text-align: left; padding-left: 15px;">Time (IST)</th>
-                    <th>Mon</th>
-                    <th>Tue</th>
-                    <th>Wed</th>
-                    <th>Thu</th>
-                    <th>Fri</th>
-                    <th>Sat</th>
-                    <th>Sun</th>
-                  </tr>
-                </thead>
-                <tbody id="booking-calendar-body">
-                  <tr>
-                    <td colspan="8" style="padding: 20px; color: var(--text-muted);">Initialising calendar...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hidden Agent Identifier -->
-        <input type="hidden" id="agent-name" value="-">
-
-        <button type="submit" class="btn" id="submit-btn">
-          <span>Schedule Free Demo</span>
-        </button>
-      </form>
+  <!-- Large Full-Width Calendar Wrapper -->
+  <div class="calendar-layout-wide">
+    <div class="calendar-header-nav">
+      <button type="button" class="btn-nav" id="prev-week-btn">‹ Prev Week</button>
+      <span id="current-week-label">Loading Week...</span>
+      <button type="button" class="btn-nav" id="next-week-btn">Next Week ›</button>
     </div>
+    
+    <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01); max-height: 480px; overflow-y: auto;">
+      <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 900px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
+        <thead>
+          <tr id="calendar-grid-header">
+            <th style="width: 110px; text-align: left; padding-left: 15px;">Time (IST)</th>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+            <th>Sun</th>
+          </tr>
+        </thead>
+        <tbody id="booking-calendar-body">
+          <tr>
+            <td colspan="8" style="padding: 40px; color: var(--text-muted);">Initialising scheduler calendar...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- Success Confirmation Panel -->
-    <div id="success-panel" class="success-panel">
-      <svg class="checkmark-svg" viewBox="0 0 52 52">
-        <circle class="checkmark-circle" cx="26" cy="26" r="25"/>
-        <path class="checkmark-check" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-      </svg>
-      <h3 class="success-title">Booking Confirmed!</h3>
-      <p class="success-desc">Your free chess trial session has been registered successfully. Our coordinator will contact you shortly.</p>
+  <!-- Booking Modal Overlay -->
+  <div class="modal-backdrop" id="booking-modal">
+    <div class="booking-card">
+      <button type="button" class="modal-close" id="booking-modal-close" style="float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; padding: 4px;">✕</button>
       
-      <div class="details-card">
-        <div class="detail-row">
-          <span class="detail-label">Student</span>
-          <span class="detail-val" id="res-student">-</span>
+      <!-- Booking Form Container -->
+      <div id="form-panel">
+        <div class="header" style="margin-bottom: 20px;">
+          <h2 class="title" id="booking-modal-title" style="font-size: 1.4rem; color: #ffffff;">Book Demo Slot</h2>
+          <p class="subtitle" id="booking-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Selected slot: -</p>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">Date & Time</span>
-          <span class="detail-val" id="res-datetime">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Level</span>
-          <span class="detail-val" id="res-level">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Mobile</span>
-          <span class="detail-val" id="res-mobile">-</span>
-        </div>
+
+        <form id="booking-form">
+          <input type="hidden" id="demo-date" required>
+          <input type="hidden" id="demo-slot" required>
+
+          <div class="form-group">
+            <label for="student-name">Student Full Name</label>
+            <input type="text" id="student-name" class="form-control" placeholder="e.g. Kabir Sharma" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="student-age">Student Age</label>
+              <input type="text" id="student-age" class="form-control" placeholder="e.g. 8 years" required>
+            </div>
+            <div class="form-group">
+              <label for="student-language">Language Preference</label>
+              <select id="student-language" class="form-control" required>
+                <option value="English" selected>English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Malayalam">Malayalam</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Kannada">Kannada</option>
+                <option value="Telugu">Telugu</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="student-level">Chess Level</label>
+              <select id="student-level" class="form-control" required>
+                <option value="Beginner" selected>Beginner (Knows nothing/only pieces move)</option>
+                <option value="Intermediate">Intermediate (Knows basic tactics/checks)</option>
+                <option value="Advanced">Advanced (Has FIDE rating/tournaments)</option>
+                <option value="Not Sure">Not Sure</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="student-location">Location / Country</label>
+              <input type="text" id="student-location" class="form-control" placeholder="e.g. Bangalore, India" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mobile-number">Mobile / WhatsApp Number</label>
+            <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
+          </div>
+
+          <!-- Hidden Agent Identifier -->
+          <input type="hidden" id="agent-name" value="-">
+
+          <button type="submit" class="btn" id="submit-btn" style="margin-top: 15px;">
+            <span>Schedule Free Demo</span>
+          </button>
+        </form>
       </div>
 
-      <button id="send-whatsapp-invite-btn" class="btn" style="background: #25d366; color: white; border: none; margin-top: 20px; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <span>💬 Send WhatsApp Confirmation</span>
-      </button>
+      <!-- Success Confirmation Panel -->
+      <div id="success-panel" class="success-panel">
+        <svg class="checkmark-svg" viewBox="0 0 52 52">
+          <circle class="checkmark-circle" cx="26" cy="26" r="25"/>
+          <path class="checkmark-check" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+        <h3 class="success-title">Booking Confirmed!</h3>
+        <p class="success-desc">Your free chess trial session has been registered successfully. Our coordinator will contact you shortly.</p>
+        
+        <div class="details-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-top: 15px;">
+          <div class="detail-row">
+            <span class="detail-label">Student</span>
+            <span class="detail-val" id="res-student">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Date & Time</span>
+            <span class="detail-val" id="res-datetime">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Level</span>
+            <span class="detail-val" id="res-level">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Mobile</span>
+            <span class="detail-val" id="res-mobile">-</span>
+          </div>
+        </div>
+
+        <button id="send-whatsapp-invite-btn" class="btn" style="background: #25d366; color: #0c0f17; border: none; margin-top: 20px; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>💬 Send WhatsApp Confirmation</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -840,23 +914,18 @@
                 demoSlotInput.dataset.time = time;
                 demoSlotInput.dataset.zoomLink = zoomLink;
 
-                // Selection UI feedback label
-                let selectHelper = document.getElementById("selected-slot-feedback");
-                if (!selectHelper) {
-                  selectHelper = document.createElement("div");
-                  selectHelper.id = "selected-slot-feedback";
-                  selectHelper.style.marginTop = "15px";
-                  selectHelper.style.padding = "10px 15px";
-                  selectHelper.style.backgroundColor = "rgba(37, 211, 102, 0.15)";
-                  selectHelper.style.border = "1px solid #25d366";
-                  selectHelper.style.borderRadius = "8px";
-                  selectHelper.style.color = "#25d366";
-                  selectHelper.style.fontWeight = "bold";
-                  selectHelper.style.fontSize = "0.85rem";
-                  document.querySelector(".calendar-wrapper").appendChild(selectHelper);
+                // Reset form and view states
+                document.getElementById("booking-form").reset();
+                document.getElementById("form-panel").style.display = "block";
+                document.getElementById("success-panel").style.display = "none";
+
+                // Open modal overlay
+                const modal = document.getElementById("booking-modal");
+                if (modal) {
+                  modal.classList.add("open");
+                  const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                  document.getElementById("booking-modal-subtitle").textContent = `${formattedDate} at ${time} (Tutor: ${assignedTutor.name})`;
                 }
-                const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                selectHelper.innerHTML = `✓ Selected: ${formattedDate} at ${time} with ${assignedTutor.name}`;
               });
             }
             td.appendChild(cell);
@@ -875,6 +944,10 @@
     document.getElementById("next-week-btn")?.addEventListener("click", () => {
       currentWeekStart.setDate(currentWeekStart.getDate() + 7);
       renderTimetableGrid();
+    });
+
+    document.getElementById("booking-modal-close")?.addEventListener("click", () => {
+      document.getElementById("booking-modal").classList.remove("open");
     });
 
     async function loadLiveConfigs() {
@@ -973,10 +1046,6 @@
           }
         } catch(e) { console.warn("Sheets fetch failed", e); }
       }
-    }
-
-    loadLiveConfigs();
-
     // 2. Submit Handler to sync database
     document.getElementById("booking-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -992,31 +1061,35 @@
       const location = document.getElementById("student-location").value.trim();
       const mobileNumber = document.getElementById("mobile-number").value.trim();
       const date = document.getElementById("demo-date").value;
-      const slot = document.getElementById("demo-slot").value.trim();
+      
+      const demoSlotInput = document.getElementById("demo-slot");
+      const slot = demoSlotInput.value.trim();
+      const tutorId = demoSlotInput.dataset.tutorId || "";
+      const tutorName = demoSlotInput.dataset.tutorName || "Unassigned";
+      const timeVal = demoSlotInput.dataset.time || slot;
+      const zoomLinkVal = demoSlotInput.dataset.zoomLink || "https://zoom.us/j/default-meeting";
       const agentName = document.getElementById("agent-name").value;
 
-      if (!slot) {
-        alert("Please select a slot from the timetable grid first!");
+      if (!slot || !date) {
+        alert("Please select a slot from the calendar first!");
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>Schedule Free Demo</span>`;
         return;
       }
 
-      const slotObj = window.timetable.find(s => s.name === slot) || {};
-
       // Construct Demo Item (Matching DB schema)
       const demoPayload = {
         id: `demo_${Date.now()}`,
-        tutorId: slotObj.tutorId || "", // Auto assigned tutor ID from timetable
-        tutorName: slotObj.tutorName || "Unassigned", // Auto assigned tutor name
+        tutorId: tutorId,
+        tutorName: tutorName,
         studentName: studentName,
         date: date,
-        time: slotObj.time || slot,
-        dateTime: `${date} ${slotObj.time || slot}`,
+        time: timeVal,
+        dateTime: `${date} ${timeVal}`,
         slot: slot, // Chosen slot name (e.g. Slot 9)
         status: "Demo Not Done",
         age: age,
-        language: language || slotObj.language || "English",
+        language: language || "English",
         agentName: agentName,
         location: location,
         mobileNumber: mobileNumber,
@@ -1029,15 +1102,22 @@
       if (success) {
         // Render success UI
         document.getElementById("res-student").textContent = studentName;
-        document.getElementById("res-datetime").textContent = `${date} at ${slotObj.time || slot}`;
+        document.getElementById("res-datetime").textContent = `${date} at ${timeVal}`;
         document.getElementById("res-level").textContent = level;
         document.getElementById("res-mobile").textContent = mobileNumber;
 
         // Store for WhatsApp share handler
         window.lastBookedDemo = demoPayload;
+        window.lastBookedZoom = zoomLinkVal;
 
         document.getElementById("form-panel").style.display = "none";
         document.getElementById("success-panel").style.display = "flex";
+        
+        // Refresh calendar availability in background
+        if (window.allDemos) {
+          window.allDemos.push(demoPayload);
+        }
+        renderTimetableGrid();
       } else {
         alert("Booking failed. Please check your internet connection and try again.");
         submitBtn.disabled = false;
@@ -1045,45 +1125,14 @@
       }
     });
 
-    // Helper to resolve Zoom Link dynamically based on Slot name (either from sheet branding or fallback)
-    function getZoomLinkForSlot(slotName) {
-      if (!slotName) return "https://zoom.us/j/default-meeting";
-      const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
-      
-      // Look up in the branding config from sheet
-      const link = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName];
-      if (link) return link;
-      
-      // Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
-      const defaultLinks = {
-        "slot 9": "https://zoom.us/j/default-slot9",
-        "slot 10": "https://zoom.us/j/default-slot10",
-        "slot 11": "https://zoom.us/j/default-slot11",
-        "slot 12": "https://zoom.us/j/default-slot12",
-        "slot 13": "https://zoom.us/j/default-slot13",
-        "slot 14": "https://zoom.us/j/default-slot14",
-        "slot 15": "https://zoom.us/j/default-slot15",
-        "slot 16": "https://zoom.us/j/default-slot16",
-        "slot 17": "https://zoom.us/j/default-slot17",
-        "slot 18": "https://zoom.us/j/default-slot18",
-        "slot 19": "https://zoom.us/j/default-slot19",
-        "slot 20": "https://zoom.us/j/default-slot20",
-        "slot 21": "https://zoom.us/j/default-slot21",
-        "slot 22": "https://zoom.us/j/default-slot22",
-        "slot 23": "https://zoom.us/j/default-slot23",
-        "slot 24": "https://zoom.us/j/default-slot24",
-        "slot 25": "https://zoom.us/j/default-slot25",
-        "slot 26": "https://zoom.us/j/default-slot26"
-      };
-      return defaultLinks[slotName.toLowerCase()] || "https://zoom.us/j/default-meeting";
-    }
+    loadLiveConfigs();
 
     // WhatsApp invite confirmation handler (custom greetings format)
     document.getElementById("send-whatsapp-invite-btn").addEventListener("click", () => {
       const demo = window.lastBookedDemo;
       if (!demo) return;
       
-      const zoomLink = getZoomLinkForSlot(demo.slot);
+      const zoomLink = window.lastBookedZoom || "https://zoom.us/j/default-meeting";
       const mobile = demo.mobileNumber ? demo.mobileNumber.replace(/\D/g, '') : "";
       
       // Exact requested template format
