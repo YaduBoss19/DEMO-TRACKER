@@ -44,27 +44,8 @@ const DEFAULT_SLABS = [
   }
 ];
 
-// Start with default fallback tutors list so calendar is populated even if sheets connection is failing
-const DEFAULT_TUTORS = [
-  {
-    id: "tutor_1",
-    name: "Rahul Sharma",
-    email: "rahul@example.com",
-    accessCode: "RAHUL2026",
-    languages: "English, Hindi",
-    availability: ["mon_slot_0", "mon_slot_1", "mon_slot_2", "mon_slot_3", "tue_slot_4", "tue_slot_5", "tue_slot_6", "wed_slot_0", "wed_slot_1", "thu_slot_2", "thu_slot_3", "fri_slot_4", "fri_slot_5", "sat_slot_6", "sat_slot_7", "sun_slot_8"],
-    zoomLink: "https://zoom.us/j/rahul-meeting"
-  },
-  {
-    id: "tutor_2",
-    name: "Gopakumar",
-    email: "gopakumar@example.com",
-    accessCode: "GOPA2026",
-    languages: "English, Malayalam",
-    availability: ["mon_slot_0", "mon_slot_2", "tue_slot_5", "wed_slot_1", "thu_slot_3", "fri_slot_5", "sat_slot_7", "sun_slot_9"],
-    zoomLink: "https://zoom.us/j/gopa-meeting"
-  }
-];
+// Start with empty arrays so the user's Google Sheet database remains the sole source of truth
+const DEFAULT_TUTORS = [];
 const DEFAULT_DEMOS = [];
 
 const ADMIN_ACCESS_CODE = "ADMIN123";
