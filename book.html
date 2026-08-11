@@ -474,6 +474,45 @@
       scrollbar-width: none;
     }
 
+    /* Fixed Column Widths and Row Heights */
+    .calendar-grid-table {
+      table-layout: fixed !important;
+      width: 1170px !important; /* 120px time + 7 * 150px days */
+      min-width: 1170px !important;
+      border-collapse: collapse;
+    }
+
+    .calendar-grid-table th,
+    .calendar-grid-table td {
+      width: 150px !important;
+      min-width: 150px !important;
+      max-width: 150px !important;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .calendar-grid-table th {
+      height: 50px !important;
+      min-height: 50px !important;
+      max-height: 50px !important;
+    }
+
+    .calendar-grid-table td {
+      height: 80px !important;
+      min-height: 80px !important;
+      max-height: 80px !important;
+    }
+
+    /* First column (Time slots column) is narrower */
+    .calendar-grid-table th:first-child,
+    .calendar-grid-table td:first-child {
+      width: 120px !important;
+      min-width: 120px !important;
+      max-width: 120px !important;
+      text-align: left;
+      padding-left: 15px !important;
+    }
+
     /* Sticky Frozen Header and Time Column */
     .calendar-grid-table thead th {
       position: sticky;
