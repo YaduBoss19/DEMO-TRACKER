@@ -592,7 +592,7 @@ function handleLogin(e) {
     }
   } else if (isTutorPage) {
     // Tutor login validation
-    const tutor = state.tutors.find(t => t.name.toLowerCase() === nameInput.toLowerCase() && t.accessCode === codeInput);
+    const tutor = state.tutors.find(t => (t.name || "").trim().toLowerCase() === nameInput.toLowerCase() && String(t.accessCode || "").trim() === codeInput);
     if (tutor) {
       state.currentUser = {
         id: tutor.id,
@@ -2792,6 +2792,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Require Login
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("app-container").style.display = "none";
+    syncFullState();
   }
 });
 
