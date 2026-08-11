@@ -670,13 +670,14 @@ function applyBranding() {
   const logoSlot2 = document.getElementById("sidebar-logo-slot");
   const logoSlot3 = document.getElementById("preview-logo-slot");
 
-  const logoMarkup = branding.logoUrl
+  const hasLogoUrl = branding.logoUrl && branding.logoUrl !== "null" && branding.logoUrl !== "undefined" && branding.logoUrl.trim() !== "";
+  const logoMarkup = hasLogoUrl
     ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
     : branding.companyLogo;
 
   if (logoSlot1) {
     logoSlot1.innerHTML = logoMarkup;
-    if (branding.logoUrl) {
+    if (hasLogoUrl) {
       logoSlot1.style.backgroundColor = "transparent";
       logoSlot1.style.border = "none";
     } else {
@@ -686,7 +687,7 @@ function applyBranding() {
   }
   if (logoSlot2) {
     logoSlot2.innerHTML = logoMarkup;
-    if (branding.logoUrl) {
+    if (hasLogoUrl) {
       logoSlot2.style.backgroundColor = "transparent";
       logoSlot2.style.border = "none";
     } else {
@@ -696,7 +697,7 @@ function applyBranding() {
   }
   if (logoSlot3) {
     logoSlot3.innerHTML = logoMarkup;
-    if (branding.logoUrl) {
+    if (hasLogoUrl) {
       logoSlot3.style.backgroundColor = "transparent";
       logoSlot3.style.border = "none";
     } else {
