@@ -1609,6 +1609,28 @@ function renderTutorSlots() {
       cell.innerHTML = isActive ? "Available ✓" : "Unavailable";
 
       cell.addEventListener("click", () => {
+        const currentlyActive = cell.classList.contains("active");
+        
+        if (currentlyActive) {
+          // Tutor is trying to make this slot Unavailable (unchecking it)
+          // Block if there is any scheduled demo for this tutor on this day and time
+          const hasBookedDemo = state.demos.some(d => {
+            if (d.tutorId !== state.currentUser.id) return false;
+            if (d.status === "Cancelled") return false;
+            
+            const dDayKey = getDayKeyFromDateStr(d.date);
+            if (dDayKey !== day.key) return false;
+            
+            const slotName = `Slot ${timeIdx + 1}`;
+            return d.time === time || d.slot === slotName;
+          });
+          
+          if (hasBookedDemo) {
+            showToast("This slot cannot be removed because you have an active demo scheduled!", "error");
+            return;
+          }
+        }
+
         const active = cell.classList.toggle("active");
         cell.innerHTML = active ? "Available ✓" : "Unavailable";
       });
@@ -1619,6 +1641,13 @@ function renderTutorSlots() {
 
     tbody.appendChild(tr);
   });
+}
+
+function getDayKeyFromDateStr(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr + "T00:00:00");
+  const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return days[date.getDay()];
 }
 
 // --- Toast notifications ---
@@ -1822,7 +1851,7 @@ function openDemoModal(demoId = null) {
   const slotSelect = document.getElementById("demo-slot");
   if (slotSelect) {
     slotSelect.innerHTML = '<option value="" disabled selected>-- Select Slot --</option>';
-    for (let i = 1; i <= 50; i++) {
+    for (let i = 1; i <= 48; i++) {
       const op = document.createElement("option");
       op.value = `Slot ${i}`;
       op.textContent = `Slot ${i}`;
@@ -1888,7 +1917,7 @@ async function handleDemoSubmit(e) {
     if (oldDemo) status = oldDemo.status || "Demo Not Done";
   }
 
-  const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unassigned" };
+  const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unassigned", zoomLink: "" };
   const demoData = {
     tutorId: tutorId || "",
     tutorName: tutor.name,
@@ -1904,7 +1933,8 @@ async function handleDemoSubmit(e) {
     agentName,
     location,
     mobileNumber,
-    feedback
+    feedback,
+    zoomLink: tutor.zoomLink || ""
   };
 
   if (id) {
