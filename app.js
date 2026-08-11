@@ -346,9 +346,6 @@ function loadFromLocalStorage() {
       sessionStorage.removeItem("CHESS_PORTAL_SESSION");
     }
   }
-  
-  // Initialize Supabase DB client if credentials exist
-  initSupabase();
 }
 
 function saveToLocalStorage() {
@@ -360,9 +357,7 @@ function saveToLocalStorage() {
     localStorage.setItem("DEMO_INVITE_TEMPLATE", state.inviteTemplate);
     
     // If a cloud database is connected, clear local demos cache to save domain storage quota!
-    const connector = state.branding.connectorType || "sheets";
-    const isConnected = (connector === "supabase" && state.branding.supabaseUrl) || 
-                        (connector === "sheets" && state.branding.sheetsUrl);
+    const isConnected = !!state.branding.sheetsUrl;
     if (isConnected) {
       localStorage.removeItem("CHESS_PORTAL_DEMOS");
     } else {
@@ -445,10 +440,7 @@ function handleSignout() {
 }
 
 async function syncFullState() {
-  const connector = state.branding.connectorType || "sheets";
-  const isConnected = (connector === "supabase" && state.branding.supabaseUrl) || 
-                      (connector === "sheets" && state.branding.sheetsUrl);
-  if (isConnected) {
+  if (state.branding.sheetsUrl) {
     const success = await fetchFromSheets();
     if (success) {
       applyBranding();
@@ -1956,18 +1948,11 @@ async function handleBrandingSubmit(e) {
   state.branding.themeColors.primary = primary;
   state.branding.themeColors.secondary = secondary;
 
-  // Re-initialize Supabase client with new credentials if selected
-  if (connectorType === "supabase") {
-    initSupabase();
-  }
-
   saveToLocalStorage();
   applyBranding();
   await writeToSheets("updateBranding", state.branding);
   
-  const hasCloudConfig = (connectorType === "supabase" && supabaseUrl && supabaseKey) ||
-                         (connectorType === "sheets" && sheetsUrl);
-  if (hasCloudConfig) {
+  if (sheetsUrl) {
     await syncFullState();
   }
 
@@ -2262,68 +2247,38 @@ function initEventListeners() {
   const testConnectionBtn = document.getElementById("test-connection-btn");
   if (testConnectionBtn) {
     testConnectionBtn.addEventListener("click", async () => {
-      const connectorType = document.getElementById("brand-connector-type").value;
       const statusMsg = document.getElementById("connection-status-msg");
       if (!statusMsg) return;
 
-      if (connectorType === "supabase") {
-        const urlInput = document.getElementById("brand-supabase-url").value.trim();
-        const keyInput = document.getElementById("brand-supabase-key").value.trim();
+      const urlInput = document.getElementById("brand-sheets-url").value.trim();
+      if (!urlInput) {
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
+        return;
+      }
+
+      statusMsg.style.color = "#4b5563"; // muted gray
+      statusMsg.textContent = "⏳ Pinging Sheets API...";
+
+      try {
+        const response = await fetch(`${urlInput}?action=readAll`, {
+          method: "GET",
+          mode: "cors"
+        });
+        const result = await response.json();
         
-        if (!urlInput || !keyInput) {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "⚠️ Enter URL and public anon key first.";
-          return;
-        }
-
-        statusMsg.style.color = "#4b5563"; // muted gray
-        statusMsg.textContent = "⏳ Testing Supabase API connection...";
-
-        try {
-          const testClient = window.supabase.createClient(urlInput, keyInput);
-          const { error } = await testClient.from('branding').select('id').limit(1);
-          if (error) throw error;
-          
+        if (result && result.status === "success") {
           statusMsg.style.color = "#16a34a"; // green
-          statusMsg.textContent = "✔️ Connected successfully! Schema verified.";
-          showToast("Supabase connection verified successfully.", "success");
-        } catch (err) {
-          console.error("Supabase connection test failed:", err);
+          statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
+          showToast("Sheets API response verified successfully.", "success");
+        } else {
           statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = `❌ Failed: ${err.message || "Check URL and Keys."}`;
+          statusMsg.textContent = "❌ Connection failed. Check script settings.";
         }
-      } else {
-        // Google Sheets
-        const urlInput = document.getElementById("brand-sheets-url").value.trim();
-        if (!urlInput) {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
-          return;
-        }
-
-        statusMsg.style.color = "#4b5563"; // muted gray
-        statusMsg.textContent = "⏳ Pinging Sheets API...";
-
-        try {
-          const response = await fetch(`${urlInput}?action=readAll`, {
-            method: "GET",
-            mode: "cors"
-          });
-          const result = await response.json();
-          
-          if (result && result.status === "success") {
-            statusMsg.style.color = "#16a34a"; // green
-            statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
-            showToast("Sheets API response verified successfully.", "success");
-          } else {
-            statusMsg.style.color = "#dc2626"; // red
-            statusMsg.textContent = "❌ Connection failed. Check script settings.";
-          }
-        } catch (err) {
-          console.error("Sheets connection test failed:", err);
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "❌ Network error. Check URL or CORS settings.";
-        }
+      } catch (err) {
+        console.error("Sheets connection test failed:", err);
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "❌ Network error. Check URL or CORS settings.";
       }
     });
   }
@@ -2522,18 +2477,10 @@ function initEventListeners() {
       if (confirm(`Are you sure you want to permanently delete the ${count} selected demos from the database?`)) {
         const deletedIds = [...state.bulkSelectedDemoIds];
         
-        // 1. Delete from Supabase in bulk
-        if (state.branding.supabaseUrl && state.branding.supabaseKey) {
-          if (!supabaseClient) {
-            initSupabase();
-          }
-          if (supabaseClient) {
-            const { error } = await supabaseClient.from('demos').delete().in('id', deletedIds);
-            if (error) {
-              console.error("Bulk delete failed in Supabase:", error);
-              showToast("Failed to delete from Supabase.", "danger");
-              return;
-            }
+        // 1. Delete from Sheets in bulk
+        if (state.branding.sheetsUrl) {
+          for (const delId of deletedIds) {
+            await writeToSheets("deleteDemo", { id: delId });
           }
         }
         
@@ -2710,10 +2657,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Auto-refresh background poll (every 30 seconds) to fetch external updates
     setInterval(async () => {
-      const connector = state.branding.connectorType || "sheets";
-      const isConnected = (connector === "supabase" && state.branding.supabaseUrl) || 
-                          (connector === "sheets" && state.branding.sheetsUrl);
-      if (isConnected) {
+      if (state.branding.sheetsUrl) {
         const updated = await fetchFromSheets();
         if (updated) {
           updateViews();
