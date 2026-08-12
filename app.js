@@ -1735,20 +1735,41 @@ async function deleteTutor(tutorId) {
 function formatDisplayDate(dateStr) {
   if (!dateStr || dateStr === "-") return "-";
   
-  if (typeof dateStr === "string" && dateStr.includes("T")) {
-    try {
-      const dateObj = new Date(dateStr);
-      if (!isNaN(dateObj.getTime())) {
-        const yyyy = dateObj.getFullYear();
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+  if (typeof dateStr === "string") {
+    const trimmed = dateStr.trim();
+    // Case 1: ISO string with T, e.g. 2026-08-11T18:30:00.000Z
+    if (trimmed.includes("T")) {
+      try {
+        const dateObj = new Date(trimmed);
+        if (!isNaN(dateObj.getTime())) {
+          const yy = String(dateObj.getFullYear()).slice(-2);
+          const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const dd = String(dateObj.getDate()).padStart(2, '0');
+          return `${dd}-${mm}-${yy}`;
+        }
+      } catch (e) {}
+      const parts = trimmed.split("T")[0].split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0].slice(-2)}`;
       }
-    } catch (e) {
-      console.warn("Date parsing failed:", dateStr, e);
     }
-    const parts = dateStr.split("T");
-    return parts[0];
+    
+    // Case 2: standard YYYY-MM-DD
+    const ymdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+      return `${ymdMatch[3]}-${ymdMatch[2]}-${ymdMatch[1].slice(-2)}`;
+    }
+
+    // Case 3: DD-MM-YY already
+    if (/^\d{2}[-/]\d{2}[-/]\d{2}$/.test(trimmed)) {
+      return trimmed.replace(/\//g, "-");
+    }
+
+    // Case 4: DD-MM-YYYY -> convert to DD-MM-YY
+    const ymdMatch4 = trimmed.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (ymdMatch4) {
+      return `${ymdMatch4[1]}-${ymdMatch4[2]}-${ymdMatch4[3].slice(-2)}`;
+    }
   }
   
   return dateStr;
