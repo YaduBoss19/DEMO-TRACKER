@@ -110,7 +110,7 @@ let supabaseClient = null;
 function initSupabase() {
   const url = state.branding.supabaseUrl;
   const key = state.branding.supabaseKey;
-  if (url && key) {
+  if (url && key && !key.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
     if (typeof window.supabase === "undefined") {
       console.warn("Supabase SDK not loaded yet. Delaying database connection.");
       return;
@@ -135,7 +135,7 @@ function initSupabase() {
 async function fetchFromSupabase() {
   const url = state.branding.supabaseUrl;
   const key = state.branding.supabaseKey;
-  if (!url || !key) return false;
+  if (!url || !key || key.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) return false;
 
   if (!supabaseClient) {
     initSupabase();
@@ -231,7 +231,10 @@ async function fetchFromSupabase() {
 async function writeToSupabase(action, payload) {
   const url = state.branding.supabaseUrl;
   const key = state.branding.supabaseKey;
-  if (!url || !key) return false;
+  if (!url || !key || key.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
+    showToast("⚠️ Database not connected. Check credentials in mockData.js. Saved locally.", "warning");
+    return false;
+  }
 
   if (!supabaseClient) {
     initSupabase();
