@@ -8,7 +8,7 @@ const DEFAULT_BRANDING = {
   connectorType: "supabase", // "sheets" or "supabase"
   sheetsUrl: "", // Google Apps Script Web App URL
   supabaseUrl: "https://qxhhwkucbkwwblriygbs.supabase.co", // Supabase Project URL
-  supabaseKey: "PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE", // Supabase public anon API key
+  supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4aGh3a3VjYmt3d2Jscml5Z2JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NTcxMTAsImV4cCI6MjEwMjEzMzExMH0.Q38DHD2QGCDF4-yxAICJTRTq9LmC0JCPx5eqQ20IXi4", // Supabase public anon API key
   themeColors: {
     primary: "#111827", // Dark Gray/Black from screenshots
     secondary: "#e07a5f", // Peach/Accent color
