@@ -2817,41 +2817,79 @@ function initEventListeners() {
       const statusMsg = document.getElementById("connection-status-msg");
       if (!statusMsg) return;
 
-      let urlInput = document.getElementById("brand-sheets-url").value.trim();
-      if (!urlInput) {
-        statusMsg.style.color = "#dc2626"; // red
-        statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
-        return;
-      }
+      const connectorType = document.getElementById("brand-connector-type").value;
 
-      // Automatically append /exec if missing from Google Script macros URL
-      if (urlInput.includes("/macros/s/") && !urlInput.includes("/exec")) {
-        urlInput = urlInput.endsWith("/") ? urlInput + "exec" : urlInput + "/exec";
-        document.getElementById("brand-sheets-url").value = urlInput;
-      }
-
-      statusMsg.style.color = "#4b5563"; // muted gray
-      statusMsg.textContent = "⏳ Pinging Sheets API...";
-
-      try {
-        const response = await fetch(`${urlInput}?action=readAll`, {
-          method: "GET",
-          mode: "cors"
-        });
-        const result = await response.json();
+      if (connectorType === "supabase") {
+        const urlInput = document.getElementById("brand-supabase-url").value.trim();
+        const keyInput = document.getElementById("brand-supabase-key").value.trim();
         
-        if (result && result.status === "success") {
-          statusMsg.style.color = "#16a34a"; // green
-          statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
-          showToast("Sheets API response verified successfully.", "success");
-        } else {
+        if (!urlInput || !keyInput) {
           statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "❌ Connection failed. Check script settings.";
+          statusMsg.textContent = "⚠️ Enter Supabase URL and public anon key first.";
+          return;
         }
-      } catch (err) {
-        console.error("Sheets connection test failed:", err);
-        statusMsg.style.color = "#dc2626"; // red
-        statusMsg.textContent = "❌ Network error. Make sure access is set to 'Anyone' and you deployed as a 'Web App'.";
+
+        // Validate URL format for Supabase Project URL
+        if (!urlInput.startsWith("http://") && !urlInput.startsWith("https://")) {
+          statusMsg.style.color = "#dc2626"; // red
+          statusMsg.textContent = "⚠️ Invalid URL: Supabase Project URL must start with http:// or https://";
+          return;
+        }
+
+        statusMsg.style.color = "#4b5563"; // muted gray
+        statusMsg.textContent = "⏳ Testing Supabase API connection...";
+
+        try {
+          const testClient = window.supabase.createClient(urlInput, keyInput);
+          const { error } = await testClient.from('branding').select('id').limit(1);
+          if (error) throw error;
+          
+          statusMsg.style.color = "#16a34a"; // green
+          statusMsg.textContent = "✔️ Connected successfully! Schema verified.";
+          showToast("Supabase connection verified successfully.", "success");
+        } catch (err) {
+          console.error("Supabase connection test failed:", err);
+          statusMsg.style.color = "#dc2626"; // red
+          statusMsg.textContent = `❌ Connection failed: ${err.message || "Verify your tables & credentials."}`;
+        }
+      } else {
+        // Google Sheets
+        let urlInput = document.getElementById("brand-sheets-url").value.trim();
+        if (!urlInput) {
+          statusMsg.style.color = "#dc2626"; // red
+          statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
+          return;
+        }
+
+        // Automatically append /exec if missing from Google Script macros URL
+        if (urlInput.includes("/macros/s/") && !urlInput.includes("/exec")) {
+          urlInput = urlInput.endsWith("/") ? urlInput + "exec" : urlInput + "/exec";
+          document.getElementById("brand-sheets-url").value = urlInput;
+        }
+
+        statusMsg.style.color = "#4b5563"; // muted gray
+        statusMsg.textContent = "⏳ Pinging Sheets API...";
+
+        try {
+          const response = await fetch(`${urlInput}?action=readAll`, {
+            method: "GET",
+            mode: "cors"
+          });
+          const result = await response.json();
+          
+          if (result && result.status === "success") {
+            statusMsg.style.color = "#16a34a"; // green
+            statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
+            showToast("Sheets API response verified successfully.", "success");
+          } else {
+            statusMsg.style.color = "#dc2626"; // red
+            statusMsg.textContent = "❌ Connection failed. Check script settings.";
+          }
+        } catch (err) {
+          console.error("Sheets connection test failed:", err);
+          statusMsg.style.color = "#dc2626"; // red
+          statusMsg.textContent = "❌ Network error. Make sure access is set to 'Anyone' and you deployed as a 'Web App'.";
+        }
       }
     });
   }
