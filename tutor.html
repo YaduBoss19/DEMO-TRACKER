@@ -514,7 +514,32 @@
           </div>
           <div class="form-group">
             <label for="feedback-notes-input">Feedback / Notes</label>
-            <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:100px;" placeholder="Add feedback..."></textarea>
+            <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:80px;" placeholder="Add feedback..."></textarea>
+          </div>
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-revision-select" style="font-weight:700;">Revision</label>
+            <select id="feedback-revision-select" class="form-control" style="margin-top: 6px;">
+              <option value="-">-</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Needed">Needed</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-topic-select" style="font-weight:700;">Topic To Start</label>
+            <select id="feedback-topic-select" class="form-control" style="margin-top: 6px;">
+              <option value="-">-</option>
+              <option value="Basics">Basics</option>
+              <option value="Tactics">Tactics</option>
+              <option value="Openings">Openings</option>
+              <option value="Middlegames">Middlegames</option>
+              <option value="Endgames">Endgames</option>
+              <option value="Game Analysis">Game Analysis</option>
+              <option value="Puzzle Solving">Puzzle Solving</option>
+              <option value="Tournament Prep">Tournament Prep</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">

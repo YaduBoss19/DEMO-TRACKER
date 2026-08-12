@@ -2033,6 +2033,15 @@ function openFeedbackModal(demoId) {
   document.getElementById("feedback-info-label").textContent = `Date: ${demo.dateTime} | Slot: ${demo.slot}`;
   document.getElementById("feedback-notes-input").value = demo.feedback || "";
   
+  const revisionSelect = document.getElementById("feedback-revision-select");
+  if (revisionSelect) {
+    revisionSelect.value = demo.revision || "-";
+  }
+  const topicSelect = document.getElementById("feedback-topic-select");
+  if (topicSelect) {
+    topicSelect.value = demo.topicToStart || "-";
+  }
+  
   modal.classList.add("open");
 }
 
@@ -2040,15 +2049,32 @@ async function handleFeedbackSubmit(e) {
   e.preventDefault();
   const id = document.getElementById("feedback-demo-id").value;
   const feedback = document.getElementById("feedback-notes-input").value.trim();
+  const revisionSelect = document.getElementById("feedback-revision-select");
+  const topicSelect = document.getElementById("feedback-topic-select");
+  const revision = revisionSelect ? revisionSelect.value : "-";
+  const topicToStart = topicSelect ? topicSelect.value : "-";
 
   const idx = state.demos.findIndex(d => d.id === id);
   if (idx !== -1) {
-    state.demos[idx].feedback = feedback;
-    await writeToSheets("updateDemoFeedback", { id, feedback });
-    saveToLocalStorage();
-    document.getElementById("feedback-modal").classList.remove("open");
-    renderDemosTable();
-    showToast("Feedback saved.");
+    const demo = state.demos[idx];
+    demo.feedback = feedback;
+    demo.revision = revision;
+    demo.topicToStart = topicToStart;
+    
+    const success = await writeToSheets("updateDemo", demo);
+    if (success) {
+      saveToLocalStorage();
+      document.getElementById("feedback-modal").classList.remove("open");
+      renderDemosTable();
+      renderDashboard();
+      showToast("Notes and outcome settings updated.");
+    } else {
+      showToast("Failed to save changes to cloud database. Saved locally.", "warning");
+      saveToLocalStorage();
+      document.getElementById("feedback-modal").classList.remove("open");
+      renderDemosTable();
+      renderDashboard();
+    }
   }
 }
 
