@@ -2234,7 +2234,11 @@ async function handleBrandingSubmit(e) {
   const currency = document.getElementById("brand-currency").value.trim();
   
   const connectorType = document.getElementById("brand-connector-type").value;
-  const sheetsUrl = document.getElementById("brand-sheets-url").value.trim();
+  let sheetsUrl = document.getElementById("brand-sheets-url").value.trim();
+  if (sheetsUrl.includes("/macros/s/") && !sheetsUrl.includes("/exec")) {
+    sheetsUrl = sheetsUrl.endsWith("/") ? sheetsUrl + "exec" : sheetsUrl + "/exec";
+    document.getElementById("brand-sheets-url").value = sheetsUrl;
+  }
   const supabaseUrl = document.getElementById("brand-supabase-url").value.trim();
   const supabaseKey = document.getElementById("brand-supabase-key").value.trim();
   
@@ -2578,11 +2582,17 @@ function initEventListeners() {
       const statusMsg = document.getElementById("connection-status-msg");
       if (!statusMsg) return;
 
-      const urlInput = document.getElementById("brand-sheets-url").value.trim();
+      let urlInput = document.getElementById("brand-sheets-url").value.trim();
       if (!urlInput) {
         statusMsg.style.color = "#dc2626"; // red
         statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
         return;
+      }
+
+      // Automatically append /exec if missing from Google Script macros URL
+      if (urlInput.includes("/macros/s/") && !urlInput.includes("/exec")) {
+        urlInput = urlInput.endsWith("/") ? urlInput + "exec" : urlInput + "/exec";
+        document.getElementById("brand-sheets-url").value = urlInput;
       }
 
       statusMsg.style.color = "#4b5563"; // muted gray
@@ -2606,7 +2616,7 @@ function initEventListeners() {
       } catch (err) {
         console.error("Sheets connection test failed:", err);
         statusMsg.style.color = "#dc2626"; // red
-        statusMsg.textContent = "❌ Network error. Check URL or CORS settings.";
+        statusMsg.textContent = "❌ Network error. Make sure access is set to 'Anyone' and you deployed as a 'Web App'.";
       }
     });
   }
