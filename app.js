@@ -2106,13 +2106,36 @@ function openFeedbackModal(demoId) {
 
   document.getElementById("feedback-demo-id").value = demo.id;
   document.getElementById("feedback-student-label").textContent = `Student: ${demo.studentName}`;
-  document.getElementById("feedback-info-label").textContent = `Date: ${demo.dateTime} | Slot: ${demo.slot}`;
+  document.getElementById("feedback-info-label").textContent = `Date: ${formatDisplayDate(demo.date || demo.dateTime)} | Slot: ${demo.slot}`;
   document.getElementById("feedback-notes-input").value = demo.feedback || "";
   
+  const statusSelect = document.getElementById("feedback-status-select");
+  if (statusSelect) {
+    statusSelect.innerHTML = "";
+    const st = (demo.status || "").toUpperCase();
+    if (st === "CONVERTED" || st === "CANCELLED" || st === "RESCHEDULE") {
+      statusSelect.innerHTML = `<option value="${st}" selected>${st} (Locked by Admin)</option>`;
+      statusSelect.disabled = true;
+    } else {
+      statusSelect.innerHTML = `
+        <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
+        <option value="DEMO DONE" ${st === 'DEMO DONE' ? 'selected' : ''}>DEMO DONE</option>
+      `;
+      statusSelect.disabled = false;
+    }
+  }
+
+  const revisionVal = (demo.revision === "Yes" || demo.revision === "Yes Needed") ? "Yes" : "No";
   const revisionSelect = document.getElementById("feedback-revision-select");
   if (revisionSelect) {
-    revisionSelect.value = demo.revision || "-";
+    revisionSelect.value = revisionVal;
   }
+  
+  const topicGroup = document.getElementById("feedback-topic-group");
+  if (topicGroup) {
+    topicGroup.style.display = revisionVal === "Yes" ? "block" : "none";
+  }
+
   const topicSelect = document.getElementById("feedback-topic-select");
   if (topicSelect) {
     topicSelect.value = demo.topicToStart || "-";
@@ -2125,15 +2148,19 @@ async function handleFeedbackSubmit(e) {
   e.preventDefault();
   const id = document.getElementById("feedback-demo-id").value;
   const feedback = document.getElementById("feedback-notes-input").value.trim();
+  const statusSelect = document.getElementById("feedback-status-select");
   const revisionSelect = document.getElementById("feedback-revision-select");
   const topicSelect = document.getElementById("feedback-topic-select");
-  const revision = revisionSelect ? revisionSelect.value : "-";
-  const topicToStart = topicSelect ? topicSelect.value : "-";
+  
+  const status = statusSelect ? statusSelect.value : "DEMO NOT DONE";
+  const revision = revisionSelect ? revisionSelect.value : "No";
+  const topicToStart = (revision === "Yes" && topicSelect) ? topicSelect.value : "-";
 
   const idx = state.demos.findIndex(d => d.id === id);
   if (idx !== -1) {
     const demo = state.demos[idx];
     demo.feedback = feedback;
+    demo.status = status;
     demo.revision = revision;
     demo.topicToStart = topicToStart;
     
@@ -2143,9 +2170,9 @@ async function handleFeedbackSubmit(e) {
       document.getElementById("feedback-modal").classList.remove("open");
       renderDemosTable();
       renderDashboard();
-      showToast("Notes and outcome settings updated.");
+      showToast("Demo notes, status and outcome saved successfully.");
     } else {
-      showToast("Failed to save changes to cloud database. Saved locally.", "warning");
+      showToast("Failed to save changes to database. Saved locally.", "warning");
       saveToLocalStorage();
       document.getElementById("feedback-modal").classList.remove("open");
       renderDemosTable();
@@ -2313,6 +2340,16 @@ function initEventListeners() {
   document.getElementById("tutor-form")?.addEventListener("submit", handleTutorSubmit);
   document.getElementById("demo-form")?.addEventListener("submit", handleDemoSubmit);
   document.getElementById("feedback-form")?.addEventListener("submit", handleFeedbackSubmit);
+  document.getElementById("feedback-revision-select")?.addEventListener("change", (e) => {
+    const topicGroup = document.getElementById("feedback-topic-group");
+    if (topicGroup) {
+      topicGroup.style.display = e.target.value === "Yes" ? "block" : "none";
+    }
+    if (e.target.value !== "Yes") {
+      const topicSelect = document.getElementById("feedback-topic-select");
+      if (topicSelect) topicSelect.value = "-";
+    }
+  });
   document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
   document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
   document.getElementById("save-slot-links-btn")?.addEventListener("click", handleSaveSlotLinks);

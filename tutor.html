@@ -502,32 +502,39 @@
   <div class="modal-backdrop" id="feedback-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title">Edit Demo Notes & Feedback</h4>
+        <h4 class="modal-title">Complete Demo Notes & Outcome</h4>
         <button class="modal-close" type="button" id="feedback-modal-close">✕</button>
       </div>
       <form id="feedback-form">
         <div class="modal-body">
           <input type="hidden" id="feedback-demo-id">
           <div class="form-group">
-            <label id="feedback-student-label">Student: -</label>
-            <p id="feedback-info-label" style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Date: - | Slot: -</p>
+            <label id="feedback-student-label" style="font-size: 1.15rem; font-weight: 700; color: var(--brand-secondary);">Student: -</label>
+            <p id="feedback-info-label" style="font-size:0.8rem; color:var(--text-muted); margin-top: 4px; margin-bottom:15px;">Date: - | Slot: -</p>
           </div>
+          
           <div class="form-group">
-            <label for="feedback-notes-input">Feedback / Notes</label>
-            <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:80px;" placeholder="Add feedback..."></textarea>
+            <label for="feedback-notes-input" style="font-weight:700;">Feedback / Notes</label>
+            <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:80px; margin-top: 6px;" placeholder="Add class feedback notes..."></textarea>
           </div>
+
           <div class="form-group" style="margin-top: 15px;">
-            <label for="feedback-revision-select" style="font-weight:700;">Revision</label>
-            <select id="feedback-revision-select" class="form-control" style="margin-top: 6px;">
-              <option value="-">-</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-              <option value="Completed">Completed</option>
-              <option value="Pending">Pending</option>
-              <option value="Needed">Needed</option>
+            <label for="feedback-status-select" style="font-weight:700;">Demo Status</label>
+            <select id="feedback-status-select" class="form-control" style="margin-top: 6px;">
+              <option value="DEMO NOT DONE">DEMO NOT DONE</option>
+              <option value="DEMO DONE">DEMO DONE</option>
             </select>
           </div>
+
           <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-revision-select" style="font-weight:700;">Revision Needed?</label>
+            <select id="feedback-revision-select" class="form-control" style="margin-top: 6px;">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="feedback-topic-group" style="margin-top: 15px; display: none;">
             <label for="feedback-topic-select" style="font-weight:700;">Topic To Start</label>
             <select id="feedback-topic-select" class="form-control" style="margin-top: 6px;">
               <option value="-">-</option>
@@ -544,7 +551,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn" id="feedback-modal-cancel">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Feedback</button>
+          <button type="submit" class="btn btn-primary">Save Notes & Outcome</button>
         </div>
       </form>
     </div>
