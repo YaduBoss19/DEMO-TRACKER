@@ -51,8 +51,8 @@ function mapSheetDemoToApp(s, rowNum) {
   const demoId = s.id || (rowNum ? String(rowNum) : `demo_${Date.now()}_${Math.random()}`);
   
   // Resolve tutorId using tutorName if tutorId column is missing
-  let tutorIdVal = s.tutorId || "";
-  const tutorNameVal = s.tutorName || s["TUTOR NAME"] || "";
+  let tutorIdVal = s.tutorId || s.tutorid || "";
+  const tutorNameVal = s.tutorName || s.tutorname || s["TUTOR NAME"] || "";
   if (!tutorIdVal && tutorNameVal && tutorNameVal !== "Unassigned") {
     const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorNameVal.toLowerCase());
     if (tutor) tutorIdVal = tutor.id;
@@ -62,22 +62,22 @@ function mapSheetDemoToApp(s, rowNum) {
     id: demoId,
     tutorId: tutorIdVal || "Unassigned",
     tutorName: tutorNameVal || "Unassigned",
-    studentName: s.studentName || s["STUDENT NAME"] || "",
+    studentName: s.studentName || s.studentname || s["STUDENT NAME"] || "",
     date: s.date || s["DATE"] || "",
     time: s.time || s["TIME"] || "",
-    dateTime: s.dateTime || ((s.date || s["DATE"] || "") + " " + (s.time || s["TIME"] || "")),
+    dateTime: s.dateTime || s.datetime || ((s.date || s["DATE"] || "") + " " + (s.time || s["TIME"] || "")),
     slot: s.slot || s["SLOT NUMBER"] || "",
     status: s.status || s["DEMO STATUS"] || "DEMO NOT DONE",
     age: s.age || s["AGE"] || "-",
     language: s.language || s["LANGUAGE"] || "-",
-    agentName: s.agentName || s["AGENT NAME"] || "-",
+    agentName: s.agentName || s.agentname || s["AGENT NAME"] || "-",
     location: s.location || s["LOCATION"] || "-",
-    mobileNumber: s.mobileNumber || s["MOBILE NUMBER"] || "-",
+    mobileNumber: s.mobileNumber || s.mobilenumber || s["MOBILE NUMBER"] || "-",
     level: s.level || s["LEVEL"] || "-",
     feedback: s.feedback || "",
-    zoomLink: s.zoomLink || s["ZOOM LINK"] || s["CLASS LINK"] || "",
+    zoomLink: s.zoomLink || s.zoomlink || s["ZOOM LINK"] || s["CLASS LINK"] || "",
     revision: s.revision || s["REVISION"] || "-",
-    topicToStart: s.topicToStart || s["TOPIC TO START"] || "-"
+    topicToStart: s.topicToStart || s.topictostart || s["TOPIC TO START"] || "-"
   };
 }
 
@@ -273,12 +273,38 @@ async function writeToSupabase(action, payload) {
         break;
 
       case "addTutor":
-        const { error: tAddErr } = await supabaseClient.from('tutors').insert([payload]);
+        const tutorAddPayload = {
+          id: payload.id,
+          name: payload.name,
+          email: payload.email || "",
+          role: payload.role || "tutor",
+          status: payload.status || "ACTIVE",
+          zoomLink: payload.zoomLink || payload.zoomlink || "",
+          zoomlink: payload.zoomLink || payload.zoomlink || "",
+          availability: typeof payload.availability === "string" ? JSON.parse(payload.availability) : payload.availability,
+          accessCode: payload.accessCode || payload.accesscode || "",
+          accesscode: payload.accessCode || payload.accesscode || "",
+          avatar: payload.avatar || ""
+        };
+        const { error: tAddErr } = await supabaseClient.from('tutors').insert([tutorAddPayload]);
         if (tAddErr) throw tAddErr;
         break;
 
       case "updateTutor":
-        const { error: tUpErr } = await supabaseClient.from('tutors').upsert(payload);
+        const tutorUpPayload = {
+          id: payload.id,
+          name: payload.name,
+          email: payload.email || "",
+          role: payload.role || "tutor",
+          status: payload.status || "ACTIVE",
+          zoomLink: payload.zoomLink || payload.zoomlink || "",
+          zoomlink: payload.zoomLink || payload.zoomlink || "",
+          availability: typeof payload.availability === "string" ? JSON.parse(payload.availability) : payload.availability,
+          accessCode: payload.accessCode || payload.accesscode || "",
+          accesscode: payload.accessCode || payload.accesscode || "",
+          avatar: payload.avatar || ""
+        };
+        const { error: tUpErr } = await supabaseClient.from('tutors').upsert(tutorUpPayload);
         if (tUpErr) throw tUpErr;
         break;
 
@@ -288,12 +314,66 @@ async function writeToSupabase(action, payload) {
         break;
 
       case "addDemo":
-        const { error: dAddErr } = await supabaseClient.from('demos').insert([payload]);
+        const demoAddPayload = {
+          id: payload.id,
+          tutorId: payload.tutorId,
+          tutorid: payload.tutorId,
+          tutorName: payload.tutorName,
+          tutorname: payload.tutorName,
+          studentName: payload.studentName,
+          studentname: payload.studentName,
+          date: payload.date,
+          time: payload.time,
+          dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
+          datetime: payload.dateTime || `${payload.date} ${payload.time}`,
+          slot: payload.slot,
+          status: payload.status,
+          age: payload.age,
+          language: payload.language,
+          agentName: payload.agentName,
+          agentname: payload.agentName,
+          location: payload.location,
+          mobileNumber: payload.mobileNumber,
+          mobilenumber: payload.mobileNumber,
+          level: payload.level,
+          feedback: payload.feedback || "",
+          revision: payload.revision || "-",
+          topicToStart: payload.topicToStart || "-",
+          topictostart: payload.topicToStart || "-"
+        };
+        const { error: dAddErr } = await supabaseClient.from('demos').insert([demoAddPayload]);
         if (dAddErr) throw dAddErr;
         break;
 
       case "updateDemo":
-        const { error: dUpErr } = await supabaseClient.from('demos').upsert(payload);
+        const demoUpPayload = {
+          id: payload.id,
+          tutorId: payload.tutorId,
+          tutorid: payload.tutorId,
+          tutorName: payload.tutorName,
+          tutorname: payload.tutorName,
+          studentName: payload.studentName,
+          studentname: payload.studentName,
+          date: payload.date,
+          time: payload.time,
+          dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
+          datetime: payload.dateTime || `${payload.date} ${payload.time}`,
+          slot: payload.slot,
+          status: payload.status,
+          age: payload.age,
+          language: payload.language,
+          agentName: payload.agentName,
+          agentname: payload.agentName,
+          location: payload.location,
+          mobileNumber: payload.mobileNumber,
+          mobilenumber: payload.mobileNumber,
+          level: payload.level,
+          feedback: payload.feedback || "",
+          revision: payload.revision || "-",
+          topicToStart: payload.topicToStart || "-",
+          topictostart: payload.topicToStart || "-"
+        };
+        const { error: dUpErr } = await supabaseClient.from('demos').upsert(demoUpPayload);
         if (dUpErr) throw dUpErr;
         break;
 
@@ -313,7 +393,34 @@ async function writeToSupabase(action, payload) {
         break;
 
       case "addDemosBulk":
-        const { error: dBulkErr } = await supabaseClient.from('demos').insert(payload);
+        const demosBulkPayload = payload.map(d => ({
+          id: d.id,
+          tutorId: d.tutorId,
+          tutorid: d.tutorId,
+          tutorName: d.tutorName,
+          tutorname: d.tutorName,
+          studentName: d.studentName,
+          studentname: d.studentName,
+          date: d.date,
+          time: d.time,
+          dateTime: d.dateTime || `${d.date} ${d.time}`,
+          datetime: d.dateTime || `${d.date} ${d.time}`,
+          slot: d.slot,
+          status: d.status,
+          age: d.age,
+          language: d.language,
+          agentName: d.agentName,
+          agentname: d.agentName,
+          location: d.location,
+          mobileNumber: d.mobileNumber,
+          mobilenumber: d.mobileNumber,
+          level: d.level,
+          feedback: d.feedback || "",
+          revision: d.revision || "-",
+          topicToStart: d.topicToStart || "-",
+          topictostart: d.topicToStart || "-"
+        }));
+        const { error: dBulkErr } = await supabaseClient.from('demos').insert(demosBulkPayload);
         if (dBulkErr) throw dBulkErr;
         break;
 

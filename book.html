@@ -1462,22 +1462,29 @@
             const dbPayload = {
               id: payload.id,
               tutorId: payload.tutorId,
+              tutorid: payload.tutorId,
               tutorName: payload.tutorName,
+              tutorname: payload.tutorName,
               studentName: payload.studentName,
+              studentname: payload.studentName,
               date: payload.date,
               time: payload.time,
               dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
+              datetime: payload.dateTime || `${payload.date} ${payload.time}`,
               slot: payload.slot,
               status: payload.status,
               age: payload.age,
               language: payload.language,
               agentName: payload.agentName,
+              agentname: payload.agentName,
               location: payload.location,
               mobileNumber: payload.mobileNumber,
+              mobilenumber: payload.mobileNumber,
               level: payload.level,
               feedback: payload.feedback || "",
               revision: payload.revision || "-",
-              topicToStart: payload.topicToStart || "-"
+              topicToStart: payload.topicToStart || "-",
+              topictostart: payload.topicToStart || "-"
             };
             const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
             return !error;
