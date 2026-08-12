@@ -7,8 +7,8 @@ const DEFAULT_BRANDING = {
   currency: "₹",
   connectorType: "supabase", // "sheets" or "supabase"
   sheetsUrl: "", // Google Apps Script Web App URL
-  supabaseUrl: "", // Supabase Project URL
-  supabaseKey: "", // Supabase public anon API key
+  supabaseUrl: "https://qxhhwkucbkwwblriygbs.supabase.co", // Supabase Project URL
+  supabaseKey: "PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE", // Supabase public anon API key
   themeColors: {
     primary: "#111827", // Dark Gray/Black from screenshots
     secondary: "#e07a5f", // Peach/Accent color
