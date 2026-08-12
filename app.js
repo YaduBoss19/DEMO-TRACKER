@@ -677,6 +677,12 @@ function getEligibleSlab(completed, conversion, slabs) {
 
 // --- Views Dispatches ---
 function updateViews() {
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthEl = document.getElementById("date-switcher-month");
+  if (monthEl) {
+    monthEl.textContent = `${months[state.selectedMonth]} ${state.selectedYear}`;
+  }
+
   const headerTitle = document.getElementById("main-header-title");
   const headerSubtitle = document.getElementById("main-header-subtitle");
 
