@@ -1065,8 +1065,8 @@ function renderDemosTable() {
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
-        <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
-        <td>${demo.time || '-'}</td>
+        <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
+        <td>${formatDisplayTime(demo.time)}</td>
         <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.tutorName}</strong></td>
         <td>${demo.studentName}</td>
@@ -1181,8 +1181,8 @@ function renderDemosTable() {
       const zoomLink = getZoomLinkForSlot(demo.slot);
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
-        <td>${demo.date || demo.dateTime || '-'}</td>
-        <td>${demo.time || '-'}</td>
+        <td>${formatDisplayDate(demo.date || demo.dateTime)}</td>
+        <td>${formatDisplayTime(demo.time)}</td>
         <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.studentName}</strong></td>
         <td>${demo.age}</td>
@@ -1222,8 +1222,8 @@ function renderClaimDemosTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${idx + 1}</strong></td>
-      <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
-      <td>${demo.time || '-'}</td>
+      <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
+      <td>${formatDisplayTime(demo.time)}</td>
       <td>${demo.slot || '-'}</td>
       <td><strong>${demo.studentName}</strong></td>
       <td>${demo.age}</td>
@@ -1729,6 +1729,61 @@ async function deleteTutor(tutorId) {
     updateViews();
     showToast("Tutor deleted.", "warning");
   }
+}
+
+// Date and Time visual formatters
+function formatDisplayDate(dateStr) {
+  if (!dateStr || dateStr === "-") return "-";
+  
+  if (typeof dateStr === "string" && dateStr.includes("T")) {
+    try {
+      const dateObj = new Date(dateStr);
+      if (!isNaN(dateObj.getTime())) {
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    } catch (e) {
+      console.warn("Date parsing failed:", dateStr, e);
+    }
+    const parts = dateStr.split("T");
+    return parts[0];
+  }
+  
+  return dateStr;
+}
+
+function formatDisplayTime(timeStr) {
+  if (!timeStr || timeStr === "-") return "-";
+  
+  if (typeof timeStr === "string" && timeStr.includes("T")) {
+    try {
+      const dateObj = new Date(timeStr);
+      if (!isNaN(dateObj.getTime())) {
+        let hour = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${minutes} ${ampm}`;
+      }
+    } catch (e) {
+      console.warn("Time parsing failed:", timeStr, e);
+    }
+    const parts = timeStr.split("T");
+    if (parts.length === 2) {
+      const timeParts = parts[1].split(":");
+      if (timeParts.length >= 2) {
+        let hr = parseInt(timeParts[0]);
+        const min = timeParts[1];
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        hr = hr % 12 || 12;
+        return `${hr}:${min} ${ampm}`;
+      }
+    }
+  }
+  
+  return timeStr;
 }
 
 // Demos CRUD
