@@ -2469,7 +2469,18 @@ async function handleBrandingSubmit(e) {
     sheetsUrl = sheetsUrl.endsWith("/") ? sheetsUrl + "exec" : sheetsUrl + "/exec";
     document.getElementById("brand-sheets-url").value = sheetsUrl;
   }
-  const supabaseUrl = document.getElementById("brand-supabase-url").value.trim();
+  let supabaseUrl = document.getElementById("brand-supabase-url").value.trim();
+  // Strip trailing /rest/v1/ or /rest/v1 if present in Supabase URL
+  if (supabaseUrl.endsWith("/rest/v1/")) {
+    supabaseUrl = supabaseUrl.slice(0, -9);
+  } else if (supabaseUrl.endsWith("/rest/v1")) {
+    supabaseUrl = supabaseUrl.slice(0, -8);
+  }
+  if (supabaseUrl.endsWith("/")) {
+    supabaseUrl = supabaseUrl.slice(0, -1);
+  }
+  document.getElementById("brand-supabase-url").value = supabaseUrl;
+
   const supabaseKey = document.getElementById("brand-supabase-key").value.trim();
   
   const primary = document.getElementById("color-primary").value;
@@ -2820,7 +2831,18 @@ function initEventListeners() {
       const connectorType = document.getElementById("brand-connector-type").value;
 
       if (connectorType === "supabase") {
-        const urlInput = document.getElementById("brand-supabase-url").value.trim();
+        let urlInput = document.getElementById("brand-supabase-url").value.trim();
+        // Strip trailing /rest/v1/ or /rest/v1 if present in Supabase URL
+        if (urlInput.endsWith("/rest/v1/")) {
+          urlInput = urlInput.slice(0, -9);
+        } else if (urlInput.endsWith("/rest/v1")) {
+          urlInput = urlInput.slice(0, -8);
+        }
+        if (urlInput.endsWith("/")) {
+          urlInput = urlInput.slice(0, -1);
+        }
+        document.getElementById("brand-supabase-url").value = urlInput;
+
         const keyInput = document.getElementById("brand-supabase-key").value.trim();
         
         if (!urlInput || !keyInput) {
