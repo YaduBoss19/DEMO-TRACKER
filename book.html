@@ -1492,6 +1492,8 @@
           return false;
         } catch(e) {
           console.error("Supabase write failed:", e);
+          const errMsg = e.message || e.details || (typeof e === "object" ? JSON.stringify(e) : String(e));
+          alert("Database write failed: " + errMsg);
           return false;
         }
       } else {

@@ -430,7 +430,8 @@ async function writeToSupabase(action, payload) {
     return true;
   } catch (err) {
     console.error("Failed to write to Supabase: ", err);
-    showToast("Write to Supabase failed.", "warning");
+    const errMsg = err.message || err.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
+    showToast("Write to Supabase failed: " + errMsg, "error");
     return false;
   } finally {
     if (statusIndicator) statusIndicator.style.display = "none";
@@ -2000,12 +2001,14 @@ function showToast(message, type = "success") {
   `;
   container.appendChild(toast);
 
+  const duration = (type === "warning" || type === "danger" || type === "error") ? 10000 : 2500;
+
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(10px)";
     toast.style.transition = "all 0.3s ease";
     setTimeout(() => toast.remove(), 300);
-  }, 2500);
+  }, duration);
 }
 
 // --- CRUD Actions ---
