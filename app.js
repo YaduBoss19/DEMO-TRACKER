@@ -94,8 +94,15 @@ function mapAppDemoToSheet(a) {
 }
 
 async function fetchFromSheets() {
-  const url = state.branding.sheetsUrl;
+  let url = state.branding.sheetsUrl;
   if (!url) return false;
+  url = url.trim();
+
+  // Validate that the user pasted the Web App URL instead of the Spreadsheet or Editor URL
+  if (!url.includes("/exec")) {
+    showToast("Sync failed: The URL does not look like a deployed Web App. Make sure it ends in /exec.", "error");
+    return false;
+  }
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
@@ -151,8 +158,9 @@ async function fetchFromSheets() {
   return false;
 }
 async function writeToSheets(action, payload) {
-  const url = state.branding.sheetsUrl;
+  let url = state.branding.sheetsUrl;
   if (!url) return false;
+  url = url.trim();
 
   const statusIndicator = document.getElementById("sheets-sync-status");
   if (statusIndicator) statusIndicator.style.display = "inline-flex";
