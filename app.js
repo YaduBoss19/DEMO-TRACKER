@@ -3070,6 +3070,34 @@ function initEventListeners() {
       }
     });
   }
+
+  // Copy Supabase Key Helper
+  const copyKeyBtn = document.getElementById("copy-key-btn");
+  if (copyKeyBtn) {
+    copyKeyBtn.addEventListener("click", () => {
+      const key = document.getElementById("brand-supabase-key").value.trim();
+      if (!key) {
+        showToast("Enter or save a Supabase key first.", "warning");
+        return;
+      }
+      navigator.clipboard.writeText(key).then(() => {
+        showToast("Supabase Key copied to clipboard! Paste it into mockData.js.", "success");
+      }).catch(() => {
+        // Fallback for systems blocking navigator.clipboard
+        const textarea = document.createElement("textarea");
+        textarea.value = key;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand("copy");
+          showToast("Supabase Key copied to clipboard! Paste it into mockData.js.", "success");
+        } catch (e) {
+          showToast("Failed to copy. Double-click the field to copy manually.", "warning");
+        }
+        document.body.removeChild(textarea);
+      });
+    });
+  }
   
   document.getElementById("clear-database-btn")?.addEventListener("click", async () => {
     if (confirm("WARNING: This will wipe ALL tutor profiles and demo logs from local storage. Are you sure you want to start fresh?")) {
