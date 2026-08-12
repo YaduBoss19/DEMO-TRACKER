@@ -46,11 +46,22 @@ if (!isTutorPage && !isAdminPage) {
   }
 }
 
-function mapSheetDemoToApp(s) {
+function mapSheetDemoToApp(s, rowNum) {
+  // If the sheet has an "id" column, use it. Otherwise, use the row number as a virtual ID.
+  const demoId = s.id || (rowNum ? String(rowNum) : `demo_${Date.now()}_${Math.random()}`);
+  
+  // Resolve tutorId using tutorName if tutorId column is missing
+  let tutorIdVal = s.tutorId || "";
+  const tutorNameVal = s.tutorName || s["TUTOR NAME"] || "";
+  if (!tutorIdVal && tutorNameVal && tutorNameVal !== "Unassigned") {
+    const tutor = state.tutors.find(t => t.name.toLowerCase() === tutorNameVal.toLowerCase());
+    if (tutor) tutorIdVal = tutor.id;
+  }
+
   return {
-    id: s.id,
-    tutorId: s.tutorId || "",
-    tutorName: s.tutorName || s["TUTOR NAME"] || "",
+    id: demoId,
+    tutorId: tutorIdVal || "Unassigned",
+    tutorName: tutorNameVal || "Unassigned",
     studentName: s.studentName || s["STUDENT NAME"] || "",
     date: s.date || s["DATE"] || "",
     time: s.time || s["TIME"] || "",
@@ -143,7 +154,7 @@ async function fetchFromSheets() {
       if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
       if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
       if (data.demos && data.demos.length > 0) {
-        state.demos = data.demos.map(mapSheetDemoToApp);
+        state.demos = data.demos.map((d, index) => mapSheetDemoToApp(d, index + 2));
       }
       
       saveToLocalStorage();
