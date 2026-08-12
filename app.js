@@ -1122,8 +1122,6 @@ function renderDemosTable() {
         <th>LANGUAGE</th>
         <th>LEVEL</th>
         <th>feedback</th>
-        <th>REVISION</th>
-        <th>TOPIC TO START</th>
         <th>DEMO STATUS</th>
       </tr>
     `;
@@ -1132,7 +1130,7 @@ function renderDemosTable() {
 
     body.innerHTML = "";
     if (tutorDemos.length === 0) {
-      body.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
       return;
     }
 
@@ -1157,12 +1155,30 @@ function renderDemosTable() {
       }
       tr.className = rowClass;
 
-      const noteText = demo.feedback
-        ? `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-             <span style="font-size:0.8rem;">${demo.feedback}</span>
-             <button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}" style="padding: 2px 6px;">✏️</button>
-           </div>`
-        : `<button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}">[+] Add note</button>`;
+      // Format notes, revision, and topic combined inside the feedback cell
+      let combinedNotesMarkup = "";
+      if (demo.feedback) {
+        combinedNotesMarkup += `<div style="font-size:0.85rem; margin-bottom: 4px; word-break: break-word;">${demo.feedback}</div>`;
+      }
+      
+      const hasRevision = demo.revision && demo.revision !== "-";
+      const hasTopic = demo.topicToStart && demo.topicToStart !== "-";
+      
+      if (hasRevision || hasTopic) {
+        combinedNotesMarkup += `<div style="font-size:0.75rem; color:var(--brand-secondary); display:flex; flex-direction:column; gap:2px; margin-top: 4px; text-align: left;">`;
+        if (hasRevision) combinedNotesMarkup += `<span><strong>Revision:</strong> ${demo.revision}</span>`;
+        if (hasTopic) combinedNotesMarkup += `<span><strong>Topic:</strong> ${demo.topicToStart}</span>`;
+        combinedNotesMarkup += `</div>`;
+      }
+      
+      const noteText = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; min-width: 160px;">
+          <div style="text-align:left; flex-grow:1;">
+            ${combinedNotesMarkup || `<span style="color:var(--text-muted);font-style:italic;">No notes</span>`}
+          </div>
+          <button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}" style="padding: 2px 6px; flex-shrink: 0;" title="Edit Notes & Outcomes">✏️</button>
+        </div>
+      `;
 
       // Tutors can only toggle between DEMO NOT DONE and DEMO DONE
       let tutorStatusOptions = `
@@ -1189,8 +1205,6 @@ function renderDemosTable() {
         <td>${demo.language}</td>
         <td>${demo.level || '-'}</td>
         <td>${noteText}</td>
-        <td>${demo.revision || '-'}</td>
-        <td>${demo.topicToStart || '-'}</td>
         <td>
           <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
             ${tutorStatusOptions}
@@ -1214,12 +1228,26 @@ function renderClaimDemosTable() {
 
   body.innerHTML = "";
   if (unassignedDemos.length === 0) {
-    body.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px;">No unclaimed demos available at the moment.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px;">No unclaimed demos available at the moment.</td></tr>`;
     return;
   }
 
   unassignedDemos.forEach((demo, idx) => {
     const tr = document.createElement("tr");
+    
+    let requirements = "";
+    const hasRev = demo.revision && demo.revision !== "-";
+    const hasTop = demo.topicToStart && demo.topicToStart !== "-";
+    if (hasRev || hasTop) {
+      if (hasRev) requirements += `Revision: ${demo.revision}`;
+      if (hasTop) {
+        if (requirements) requirements += " | ";
+        requirements += `Topic: ${demo.topicToStart}`;
+      }
+    } else {
+      requirements = "-";
+    }
+
     tr.innerHTML = `
       <td><strong>${idx + 1}</strong></td>
       <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
@@ -1229,8 +1257,7 @@ function renderClaimDemosTable() {
       <td>${demo.age}</td>
       <td>${demo.language}</td>
       <td>${demo.level || '-'}</td>
-      <td>${demo.revision || '-'}</td>
-      <td>${demo.topicToStart || '-'}</td>
+      <td>${requirements}</td>
       <td>
         <button class="btn btn-primary btn-sm claim-demo-btn" data-id="${demo.id}" style="padding: 4px 10px;">Claim Demo</button>
       </td>
