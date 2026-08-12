@@ -1189,6 +1189,11 @@
       }
     }
 
+    // Bind Event Listeners for cascading dropdown elements
+    document.getElementById("demo-date")?.addEventListener("change", populateSlots);
+    document.getElementById("demo-slot")?.addEventListener("change", populateTutors);
+    document.getElementById("timezone-selector")?.addEventListener("change", populateSlots);
+
     loadLiveConfigs();
 
     // Helper: Script Loader
