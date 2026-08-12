@@ -189,7 +189,7 @@ async function fetchFromSupabase() {
     const { data: tutorsData, error: tErr } = await supabaseClient.from('tutors').select('*');
     if (tErr) throw tErr;
     if (tutorsData && tutorsData.length > 0) {
-      state.tutors = tutorsData.map(t => {
+      const fetchedTutors = tutorsData.map(t => {
         let availability = [];
         if (t.availability) {
           try {
@@ -198,6 +198,16 @@ async function fetchFromSupabase() {
         }
         return { ...t, availability };
       });
+
+      // Preserve logged-in tutor profile if missing in database
+      if (state.currentUser && state.currentUser.role === "tutor") {
+        const hasCurrentTutor = fetchedTutors.some(t => t.id === state.currentUser.id);
+        if (!hasCurrentTutor) {
+          const localTutor = state.tutors.find(t => t.id === state.currentUser.id);
+          if (localTutor) fetchedTutors.push(localTutor);
+        }
+      }
+      state.tutors = fetchedTutors;
     }
 
     // 4. Fetch Demos
@@ -373,7 +383,17 @@ async function fetchFromSheets() {
         }
       }
       if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
-      if (data.tutors && data.tutors.length > 0) state.tutors = data.tutors;
+      if (data.tutors && data.tutors.length > 0) {
+        const fetchedTutors = data.tutors;
+        if (state.currentUser && state.currentUser.role === "tutor") {
+          const hasCurrentTutor = fetchedTutors.some(t => t.id === state.currentUser.id);
+          if (!hasCurrentTutor) {
+            const localTutor = state.tutors.find(t => t.id === state.currentUser.id);
+            if (localTutor) fetchedTutors.push(localTutor);
+          }
+        }
+        state.tutors = fetchedTutors;
+      }
       if (data.demos && data.demos.length > 0) {
         state.demos = data.demos.map((d, index) => mapSheetDemoToApp(d, index + 2));
       }
@@ -1769,7 +1789,7 @@ function renderTutorSlots() {
     zoomInput.value = tutor.zoomLink || "";
   }
 
-  const availability = tutor.availability || [];
+  const availability = Array.isArray(tutor.availability) ? tutor.availability : [];
   const { slots, times, days } = generateWeeklySlots();
 
   times.forEach((time, timeIdx) => {
@@ -1787,41 +1807,63 @@ function renderTutorSlots() {
     // Day cells
     days.forEach(day => {
       const slotId = `${day.key}_slot_${timeIdx}`;
-      const isActive = availability.includes(slotId);
+      
+      // Check if there is an active class/demo booked for this tutor at this slot
+      const bookedDemo = state.demos.find(d => {
+        if (d.tutorId !== state.currentUser.id) return false;
+        if (d.status === "Cancelled") return false;
+        
+        const dDayKey = getDayKeyFromDateStr(d.date);
+        if (dDayKey !== day.key) return false;
+        
+        const slotName = `Slot ${timeIdx + 1}`;
+        return d.time === time || d.slot === slotName;
+      });
 
       const td = document.createElement("td");
-
       const cell = document.createElement("div");
-      cell.className = `calendar-cell ${isActive ? 'active' : ''}`;
       cell.dataset.slotId = slotId;
-      cell.innerHTML = isActive ? "Available ✓" : "Unavailable";
 
-      cell.addEventListener("click", () => {
-        const currentlyActive = cell.classList.contains("active");
-        
-        if (currentlyActive) {
-          // Tutor is trying to make this slot Unavailable (unchecking it)
-          // Block if there is any scheduled demo for this tutor on this day and time
-          const hasBookedDemo = state.demos.some(d => {
-            if (d.tutorId !== state.currentUser.id) return false;
-            if (d.status === "Cancelled") return false;
-            
-            const dDayKey = getDayKeyFromDateStr(d.date);
-            if (dDayKey !== day.key) return false;
-            
-            const slotName = `Slot ${timeIdx + 1}`;
-            return d.time === time || d.slot === slotName;
-          });
+      if (bookedDemo) {
+        // Red Color for Class Booked
+        cell.className = "calendar-cell booked";
+        cell.innerHTML = `🎓 ${bookedDemo.studentName}`;
+        cell.addEventListener("click", () => {
+          showToast(`This slot is locked for ${bookedDemo.studentName}'s demo class!`, "warning");
+        });
+      } else {
+        // Green Color for Available
+        const isActive = availability.includes(slotId);
+        cell.className = `calendar-cell ${isActive ? 'active' : ''}`;
+        cell.innerHTML = isActive ? "Available ✓" : "Unavailable";
+
+        cell.addEventListener("click", () => {
+          const currentlyActive = cell.classList.contains("active");
           
-          if (hasBookedDemo) {
-            showToast("This slot cannot be removed because you have an active demo scheduled!", "error");
-            return;
+          if (currentlyActive) {
+            // Tutor is trying to make this slot Unavailable (unchecking it)
+            // Block if there is any scheduled demo for this tutor on this day and time
+            const hasBookedDemo = state.demos.some(d => {
+              if (d.tutorId !== state.currentUser.id) return false;
+              if (d.status === "Cancelled") return false;
+              
+              const dDayKey = getDayKeyFromDateStr(d.date);
+              if (dDayKey !== day.key) return false;
+              
+              const slotName = `Slot ${timeIdx + 1}`;
+              return d.time === time || d.slot === slotName;
+            });
+            
+            if (hasBookedDemo) {
+              showToast("This slot cannot be removed because you have an active demo scheduled!", "error");
+              return;
+            }
           }
-        }
 
-        const active = cell.classList.toggle("active");
-        cell.innerHTML = active ? "Available ✓" : "Unavailable";
-      });
+          const active = cell.classList.toggle("active");
+          cell.innerHTML = active ? "Available ✓" : "Unavailable";
+        });
+      }
 
       td.appendChild(cell);
       tr.appendChild(td);
