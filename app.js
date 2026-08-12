@@ -708,6 +708,7 @@ function updateViews() {
 
   if (state.activeTab === "dashboard") renderDashboard();
   if (state.activeTab === "mydemos") renderDemosTable();
+  if (state.activeTab === "claim-demos") renderClaimDemosTable();
   if (state.activeTab === "leaderboard") renderLeaderboard();
   if (state.activeTab === "admin-slabs") renderAdminSlabs();
   if (state.activeTab === "admin-branding") renderAdminBranding();
@@ -1195,6 +1196,87 @@ function renderDemosTable() {
   }
 }
 
+// --- VIEW: AVAILABLE/CLAIMABLE DEMOS ---
+function renderClaimDemosTable() {
+  const body = document.getElementById("claim-demos-table-body");
+  if (!body) return;
+
+  const unassignedDemos = state.demos.filter(d => 
+    (!d.tutorId || d.tutorId === "Unassigned" || d.tutorId === "Unassigned Tutor" || d.tutorName === "Unassigned") &&
+    d.status !== "CANCELLED"
+  );
+
+  body.innerHTML = "";
+  if (unassignedDemos.length === 0) {
+    body.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px;">No unclaimed demos available at the moment.</td></tr>`;
+    return;
+  }
+
+  unassignedDemos.forEach((demo, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${idx + 1}</strong></td>
+      <td><strong>${demo.date || demo.dateTime || '-'}</strong></td>
+      <td>${demo.time || '-'}</td>
+      <td>${demo.slot || '-'}</td>
+      <td><strong>${demo.studentName}</strong></td>
+      <td>${demo.age}</td>
+      <td>${demo.language}</td>
+      <td>${demo.level || '-'}</td>
+      <td>${demo.revision || '-'}</td>
+      <td>${demo.topicToStart || '-'}</td>
+      <td>
+        <button class="btn btn-primary btn-sm claim-demo-btn" data-id="${demo.id}" style="padding: 4px 10px;">Claim Demo</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+async function claimDemo(id) {
+  if (!state.currentUser || state.currentUser.role !== "tutor") {
+    showToast("You must be logged in as a tutor to claim demos.", "warning");
+    return;
+  }
+
+  const idx = state.demos.findIndex(d => d.id === id);
+  if (idx === -1) return;
+
+  const demo = state.demos[idx];
+  
+  if (demo.tutorId && demo.tutorId !== "Unassigned") {
+    showToast("This demo has already been claimed.", "warning");
+    return;
+  }
+
+  const confirmClaim = confirm(`Are you sure you want to claim the demo for ${demo.studentName} on ${demo.date || demo.dateTime} at ${demo.time}?`);
+  if (!confirmClaim) return;
+
+  // Find the tutor object to get their zoom link
+  const tutor = state.tutors.find(t => t.id === state.currentUser.id);
+  const tutorZoom = tutor ? tutor.zoomLink : "";
+
+  // Update locally
+  demo.tutorId = state.currentUser.id;
+  demo.tutorName = state.currentUser.name;
+  if (tutorZoom) {
+    demo.zoomLink = tutorZoom;
+  }
+
+  // Sync to database
+  const success = await writeToSheets("updateDemo", demo);
+  if (success) {
+    saveToLocalStorage();
+    showToast("Demo claimed successfully!");
+    updateViews();
+  } else {
+    // Revert local state if sync failed
+    demo.tutorId = "";
+    demo.tutorName = "Unassigned";
+    showToast("Failed to claim demo on Google Sheets. Please try again.", "warning");
+  }
+}
+
 // --- VIEW: LEADERBOARD ---
 function renderLeaderboard() {
   const container = document.getElementById("leaderboard-rows-container");
@@ -1409,6 +1491,7 @@ function renderTutorSlots() {
   const { slots, times, days } = generateWeeklySlots();
 
   times.forEach((time, timeIdx) => {
+    if (timeIdx < 12) return; // Only show 6:00 AM onwards (timeIdx >= 12)
     const tr = document.createElement("tr");
 
     // Time label cell
@@ -2206,7 +2289,17 @@ function initEventListeners() {
       return;
     }
 
-    const availability = [];
+    const currentAvailability = tutor.availability || [];
+    const preservedAvailability = currentAvailability.filter(slotId => {
+      const parts = slotId.split("_slot_");
+      if (parts.length === 2) {
+        const timeIdx = parseInt(parts[1]);
+        return timeIdx < 12; // Preserve slots before 6:00 AM (which are not rendered)
+      }
+      return false;
+    });
+
+    const availability = [...preservedAvailability];
     document.querySelectorAll(".calendar-cell.active").forEach(cell => {
       availability.push(cell.dataset.slotId);
     });
@@ -2447,6 +2540,8 @@ function initEventListeners() {
     if (target.classList.contains("edit-slot-btn-el")) openSlotModal(target.dataset.id);
 
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
+
+    if (target.classList.contains("claim-demo-btn")) claimDemo(target.dataset.id);
 
     if (target.classList.contains("slab-up-el") || target.classList.contains("slab-down-el")) {
       const id = target.dataset.id;

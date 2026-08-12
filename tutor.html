@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eight Times Eight Chess Academy - Tutor Portal</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css?v=3">
   <script>
     window.addEventListener('error', function(e) {
@@ -99,6 +100,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
             </svg>
             My Demos
+          </a>
+          <a class="nav-item" data-tab="claim-demos">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Available Demos
           </a>
           <a class="nav-item" data-tab="leaderboard">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -379,6 +386,41 @@
                 <!-- Javascript fills table header & body -->
               </thead>
               <tbody id="demos-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: AVAILABLE/CLAIMABLE DEMOS -->
+      <section id="claim-demos-view" class="view-section">
+        <div class="card-panel">
+          <div class="panel-header" style="margin-bottom: 15px;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700;">Available Demos</h2>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Select and claim unassigned demo sessions to your schedule</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table" id="claim-demos-table">
+              <thead>
+                <tr>
+                  <th>SL.NO</th>
+                  <th>DATE</th>
+                  <th>TIME</th>
+                  <th>SLOT NUMBER</th>
+                  <th>STUDENT NAME</th>
+                  <th>AGE</th>
+                  <th>LANGUAGE</th>
+                  <th>LEVEL</th>
+                  <th>REVISION</th>
+                  <th>TOPIC TO START</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="claim-demos-table-body">
+                <!-- Javascript will fill available demos -->
+              </tbody>
             </table>
           </div>
         </div>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book a Demo Lesson</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -627,129 +628,114 @@
     <p class="subtitle" style="font-size: 0.95rem; color: var(--text-muted); margin-top: 5px; text-align: center; margin-left: auto; margin-right: auto; width: 100%;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
   </div>
 
-  <!-- Large Full-Width Calendar Wrapper -->
-  <div class="calendar-layout-wide">
-    <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); gap: 15px; flex-wrap: wrap;">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <button type="button" class="btn-nav" id="prev-week-btn" style="margin: 0; min-width: 100px;">‹ Prev Week</button>
-        <button type="button" class="btn-nav" id="next-week-btn" style="margin: 0; min-width: 100px;">Next Week ›</button>
-      </div>
-      <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
-      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Timezone:</span>
-          <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
-            <option value="IST" style="background: #111827; color: #ffffff;" selected>IST (India)</option>
-            <option value="GMT" style="background: #111827; color: #ffffff;">GMT/UTC (UK/Europe)</option>
-          </select>
-        </div>
-        <button type="button" id="fullscreen-btn" class="btn-nav" style="margin: 0; min-width: unset; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          <span>Fullscreen</span>
-        </button>
-      </div>
-    </div>
-    
-    <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01); max-height: 480px; overflow-y: auto;">
-      <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 900px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
-        <thead>
-          <tr id="calendar-grid-header">
-            <th style="width: 110px; text-align: left; padding-left: 15px;">Time (IST)</th>
-            <th>Mon</th>
-            <th>Tue</th>
-            <th>Wed</th>
-            <th>Thu</th>
-            <th>Fri</th>
-            <th>Sat</th>
-            <th>Sun</th>
-          </tr>
-        </thead>
-        <tbody id="booking-calendar-body">
-          <tr>
-            <td colspan="8" style="padding: 40px; color: var(--text-muted);">Initialising scheduler calendar...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Booking Modal Overlay -->
-  <div class="modal-backdrop" id="booking-modal">
-    <div class="booking-card">
-      <button type="button" class="modal-close" id="booking-modal-close" style="float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; padding: 4px;">✕</button>
-      
+  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 15px; width: 100%; z-index: 10; position: relative;">
+    <div class="booking-card" style="position: relative; width: 100%; max-width: 550px; margin: 0 auto;">
       <!-- Booking Form Container -->
       <div id="form-panel">
-        <div class="header" style="margin-bottom: 20px;">
-          <h2 class="title" id="booking-modal-title" style="font-size: 1.4rem; color: #ffffff;">Book Demo Slot</h2>
-          <p class="subtitle" id="booking-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Selected slot: -</p>
+        <div class="header" style="margin-bottom: 25px; text-align: center;">
+          <h2 class="title" id="booking-modal-title" style="font-size: 1.6rem; font-weight:800; color: #ffffff; font-family: var(--font-outfit);">Book Chess Trial Demo</h2>
+          <p class="subtitle" id="booking-modal-subtitle" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 6px;">Select a date, slot, and tutor below to book your session.</p>
         </div>
 
         <form id="booking-form">
-          <input type="hidden" id="demo-date" required>
-          <input type="hidden" id="demo-slot" required>
-
-          <div class="form-group">
-            <label for="student-name">Student Full Name</label>
-            <input type="text" id="student-name" class="form-control" placeholder="e.g. Kabir Sharma" required>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="student-age">Student Age</label>
-              <input type="text" id="student-age" class="form-control" placeholder="e.g. 8 years" required>
-            </div>
-            <div class="form-group">
-              <label for="student-language">Language Preference</label>
-              <select id="student-language" class="form-control" required>
-                <option value="English" selected>English</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Malayalam">Malayalam</option>
-                <option value="Tamil">Tamil</option>
-                <option value="Kannada">Kannada</option>
-                <option value="Telugu">Telugu</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="student-level">Chess Level</label>
-              <select id="student-level" class="form-control" required>
-                <option value="Beginner" selected>Beginner (Knows nothing/only pieces move)</option>
-                <option value="Intermediate">Intermediate (Knows basic tactics/checks)</option>
-                <option value="Advanced">Advanced (Has FIDE rating/tournaments)</option>
-                <option value="Not Sure">Not Sure</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="student-location">Location / Country</label>
-              <input type="text" id="student-location" class="form-control" placeholder="e.g. Bangalore, India" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="mobile-number">Mobile / WhatsApp Number</label>
-            <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
-          </div>
-
-          <!-- Hidden Agent Identifier -->
+          <!-- Hidden agent name -->
           <input type="hidden" id="agent-name" value="-">
 
-          <button type="submit" class="btn" id="submit-btn" style="margin-top: 15px;">
+          <div style="margin-top: 10px; margin-bottom: 25px; border-bottom: 1.5px dashed rgba(255,255,255,0.08); padding-bottom: 20px;">
+            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--brand-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.8px;">1. Schedule Session</h3>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+              <label for="demo-date" style="font-weight:700;">Select Date</label>
+              <input type="date" id="demo-date" class="form-control" required style="background: rgba(255,255,255,0.03); color: white;">
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label for="demo-slot" style="font-weight:700; margin:0;">Select Slot</label>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 0.68rem; color: var(--text-muted); font-weight:600;">TZ:</span>
+                    <select id="timezone-selector" style="background: transparent; color: var(--brand-secondary); border: none; font-size: 0.72rem; font-weight: 700; cursor: pointer; outline: none; padding: 0;">
+                      <option value="IST" style="background: #111827; color: white;" selected>IST (India)</option>
+                      <option value="GMT" style="background: #111827; color: white;">GMT/UTC</option>
+                    </select>
+                  </div>
+                </div>
+                <select id="demo-slot" class="form-control" required style="background: rgba(255,255,255,0.03); color: white;">
+                  <option value="" disabled selected>-- Choose Date First --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="demo-tutor" style="font-weight:700;">Select Tutor</label>
+                <select id="demo-tutor" class="form-control" required style="background: rgba(255,255,255,0.03); color: white;">
+                  <option value="" disabled selected>-- Choose Slot First --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--brand-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.8px;">2. Student Details</h3>
+            
+            <div class="form-group">
+              <label for="student-name" style="font-weight:700;">Student Full Name</label>
+              <input type="text" id="student-name" class="form-control" placeholder="e.g. Kabir Sharma" required style="background: rgba(255,255,255,0.03); color: white;">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="student-age" style="font-weight:700;">Student Age</label>
+                <input type="text" id="student-age" class="form-control" placeholder="e.g. 8 years" required style="background: rgba(255,255,255,0.03); color: white;">
+              </div>
+              <div class="form-group">
+                <label for="student-language" style="font-weight:700;">Language Preference</label>
+                <select id="student-language" class="form-control" required style="background: rgba(255,255,255,0.03); color: white;">
+                  <option value="English" selected>English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Malayalam">Malayalam</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Kannada">Kannada</option>
+                  <option value="Telugu">Telugu</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="student-level" style="font-weight:700;">Chess Level</label>
+                <select id="student-level" class="form-control" required style="background: rgba(255,255,255,0.03); color: white;">
+                  <option value="Beginner" selected>Beginner (Knows nothing/only pieces move)</option>
+                  <option value="Intermediate">Intermediate (Knows basic tactics/checks)</option>
+                  <option value="Advanced">Advanced (Has FIDE rating/tournaments)</option>
+                  <option value="Not Sure">Not Sure</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="student-location" style="font-weight:700;">Location / Country</label>
+                <input type="text" id="student-location" class="form-control" placeholder="e.g. Bangalore, India" required style="background: rgba(255,255,255,0.03); color: white;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="mobile-number" style="font-weight:700;">Mobile / WhatsApp Number</label>
+              <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required style="background: rgba(255,255,255,0.03); color: white;">
+            </div>
+          </div>
+
+          <button type="submit" class="btn" id="submit-btn" style="margin-top: 15px; width: 100%; background: linear-gradient(90deg, var(--brand-secondary), #3b82f6); color: white; font-weight:800; padding: 14px; border-radius:12px; font-size:1rem;">
             <span>Schedule Free Demo</span>
           </button>
         </form>
       </div>
 
       <!-- Success Confirmation Panel -->
-      <div id="success-panel" class="success-panel">
+      <div id="success-panel" class="success-panel" style="display: none;">
         <svg class="checkmark-svg" viewBox="0 0 52 52">
           <circle class="checkmark-circle" cx="26" cy="26" r="25"/>
           <path class="checkmark-check" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
         </svg>
-        <h3 class="success-title">Booking Confirmed!</h3>
-        <p class="success-desc">Your free chess trial session has been registered successfully. Our coordinator will contact you shortly.</p>
+        <h3 class="success-title" style="font-size: 1.5rem; font-family: var(--font-outfit); font-weight:800; text-align: center; margin-top: 15px; color: white;">Booking Confirmed!</h3>
+        <p class="success-desc" style="text-align: center; margin-bottom: 20px;">Your free chess trial session has been registered successfully. Our coordinator will contact you shortly.</p>
         
         <div class="details-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-top: 15px;">
           <div class="detail-row">
@@ -770,7 +756,7 @@
           </div>
         </div>
 
-        <button id="send-whatsapp-invite-btn" class="btn" style="background: #25d366; color: #0c0f17; border: none; margin-top: 20px; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <button type="button" id="send-whatsapp-invite-btn" class="btn" style="background: #25d366; color: #0c0f17; border: none; margin-top: 20px; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <span>💬 Send WhatsApp Confirmation</span>
         </button>
       </div>
@@ -781,6 +767,7 @@
   <script src="mockData.js"></script>
 
   <script>
+
     // 1. Setup and Apply Custom Branding
     const savedBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
     let branding = window.DEFAULT_BRANDING || {
@@ -797,15 +784,6 @@
         console.warn("Could not load custom branding settings, using defaults.");
       }
     }
-
-    // Set Default calendar date to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    document.getElementById("demo-date").value = tomorrowStr;
-    document.getElementById("demo-date").addEventListener("change", () => {
-      renderTimetableGrid();
-    });
 
     // Pre-fill agent name from URL parameter ?agent=John
     const urlParams = new URLSearchParams(window.location.search);
@@ -828,10 +806,6 @@
           logoSlot.innerHTML = `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`;
           logoSlot.style.backgroundColor = "transparent";
           logoSlot.style.border = "none";
-        } else if (branding.companyLogo) {
-          logoSlot.innerHTML = branding.companyLogo;
-          logoSlot.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
-          logoSlot.style.border = "1px solid var(--border-color)";
         } else {
           logoSlot.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 42px; height: 42px; color: var(--brand-secondary);"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`;
           logoSlot.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
@@ -845,365 +819,154 @@
       }
     }
 
-    function generateDefaultTimetable() {
-      const timetable = [];
-      const startHour = 0; // Start at 12:00 AM
-      const languages = ["English", "Hindi", "English", "Hindi", "English"];
-      
-      for (let i = 1; i <= 48; i++) {
-        const totalMinutes = (i - 1) * 30; // 30 min intervals
-        const hour24 = startHour + Math.floor(totalMinutes / 60);
-        const hour = hour24 % 12 || 12;
-        const ampm = hour24 >= 12 ? "PM" : "AM";
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
-        
-        let defaultZoom = "https://zoom.us/j/default-meeting";
-        
-        timetable.push({
-          id: `slot_${i}`,
-          name: `Slot ${i}`,
-          time: timeStr,
-          tutorId: "",
-          tutorName: "Unassigned",
-          language: languages[(i - 1) % languages.length],
-          zoomLink: defaultZoom
-        });
-      }
-      return timetable;
-    }
-
     function getDayOfWeekKey(dateStr) {
       const date = new Date(dateStr + "T00:00:00");
       const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
       return days[date.getDay()];
     }
 
-    function isSlotBooked(dateStr, slotName) {
-      if (!window.allDemos) return false;
-      return window.allDemos.some(d => {
-        const dDate = d.date || d.dateTime || "";
-        return dDate.includes(dateStr) && (d.slot === slotName || d.time === slotName);
-      });
-    }
-
-    let currentWeekStart = new Date();
-    // Normalize currentWeekStart to Monday of the current week
-    const currentDayVal = currentWeekStart.getDay();
-    const distanceToMon = currentDayVal === 0 ? -6 : 1 - currentDayVal;
-    currentWeekStart.setDate(currentWeekStart.getDate() + distanceToMon);
-    currentWeekStart.setHours(0, 0, 0, 0);
-
-    function getWeekDates(startDate) {
-      const dates = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
-        dates.push(d);
-      }
-      return dates;
-    }
-
-    function formatDateKey(date) {
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    function renderTimetableGrid() {
-      const tbody = document.getElementById("booking-calendar-body");
-      const headerTr = document.getElementById("calendar-grid-header");
-      const weekLabel = document.getElementById("current-week-label");
-      if (!tbody || !headerTr || !weekLabel) return;
-
-      const dates = getWeekDates(currentWeekStart);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      weekLabel.textContent = `${months[dates[0].getMonth()]} ${dates[0].getDate()} - ${months[dates[6].getMonth()]} ${dates[6].getDate()}, ${dates[0].getFullYear()}`;
-
-      // Update days of the week headers
-      const tzSelector = document.getElementById("timezone-selector");
-      const selectedTz = tzSelector ? tzSelector.value : "IST";
+    // Convert slot index to time string (IST or GMT)
+    function getSlotTime(slotIndex, format = "IST") {
+      const startHour = 0;
+      const totalMinutes = (slotIndex - 1) * 30;
+      let hour24 = startHour + Math.floor(totalMinutes / 60);
       
-      const daysStr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      headerTr.innerHTML = `<th style="width: 120px; text-align: left; padding-left: 15px;">Time (${selectedTz})</th>`;
-      dates.forEach((date, i) => {
-        const th = document.createElement("th");
-        const dateStr = formatDateKey(date);
-        
-        // Count bookings for this day
-        const dayBookingsCount = window.allDemos ? window.allDemos.filter(d => {
-          const dDate = d.date || d.dateTime || "";
-          return dDate.includes(dateStr);
-        }).length : 0;
-        
-        const dailyLimit = parseInt(branding.dailyBookingLimit) || 50;
-        
-        th.innerHTML = `
-          <div>${daysStr[i]} ${date.getDate()}</div>
-          <div style="font-size: 0.65rem; opacity: 0.7; font-weight: 500; margin-top: 4px; color: ${dayBookingsCount >= dailyLimit ? '#ef4444' : 'rgba(255,255,255,0.5)'};">
-            ${dayBookingsCount}/${dailyLimit} Booked
-          </div>
-        `;
-        
-        if (dayBookingsCount >= dailyLimit) {
-          th.style.color = "#ef4444";
-        } else if (formatDateKey(date) === formatDateKey(new Date())) {
-          th.style.color = "var(--brand-secondary)";
-          th.style.fontWeight = "bold";
-        }
-        headerTr.appendChild(th);
-      });
-
-      tbody.innerHTML = "";
-
-      const defaultSlots = generateDefaultTimetable(); // 24 slots (10:00 AM to 10:00 PM)
-      const tutors = window.tutorsList || [];
-
-      // Generate times array
-      const times = [];
-      const startHour = 0; // Start at 12:00 AM (midnight)
-      for (let i = 0; i < 48; i++) {
-        const totalMinutes = i * 30;
-        const hour24 = startHour + Math.floor(totalMinutes / 60);
+      if (format === "GMT") {
+        let gmtMinutes = totalMinutes - 330; // IST is GMT+5:30
+        if (gmtMinutes < 0) gmtMinutes += 1440;
+        hour24 = Math.floor(gmtMinutes / 60);
+        const minutes = gmtMinutes % 60;
         const hour = hour24 % 12 || 12;
         const ampm = hour24 >= 12 ? "PM" : "AM";
+        return `${hour}:${minutes === 0 ? "00" : minutes} ${ampm} GMT`;
+      } else {
         const minutes = totalMinutes % 60;
-        const timeStr = `${hour}:${minutes === 0 ? "00" : minutes} ${ampm}`;
-        times.push(timeStr);
+        const hour = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 ? "PM" : "AM";
+        return `${hour}:${minutes === 0 ? "00" : minutes} ${ampm} IST`;
       }
-
-      times.forEach((time, timeIdx) => {
-        const tr = document.createElement("tr");
-
-        // Time Label Cell
-        const timeTd = document.createElement("td");
-        timeTd.style.textAlign = "left";
-        timeTd.style.paddingLeft = "15px";
-        timeTd.style.fontWeight = "bold";
-
-        let displayTime = time;
-        if (selectedTz === "GMT") {
-          // IST (UTC+5:30) to GMT (UTC+0) -> Subtract 5 hours 30 mins (330 mins)
-          const istMinutes = startHour * 60 + timeIdx * 30;
-          let gmtMinutes = istMinutes - 330;
-          if (gmtMinutes < 0) {
-            gmtMinutes += 1440; // Wrap around past midnight (24 hours * 60 minutes)
-          }
-          const gmtHour24 = Math.floor(gmtMinutes / 60);
-          const gmtHour = gmtHour24 % 12 || 12;
-          const gmtAmpm = gmtHour24 >= 12 ? "PM" : "AM";
-          const gmtMin = gmtMinutes % 60;
-          displayTime = `${gmtHour}:${gmtMin === 0 ? "00" : gmtMin} ${gmtAmpm}`;
-        }
-
-        timeTd.textContent = displayTime;
-        tr.appendChild(timeTd);
-
-        // Day cells Mon to Sun
-        dates.forEach((date, dayIdx) => {
-          const dateStr = formatDateKey(date);
-          const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-          const dayKey = dayKeys[date.getDay()];
-          const weeklySlotId = `${dayKey}_slot_${timeIdx}`;
-          const slotName = `Slot ${timeIdx + 1}`;
-
-          // Find tutors available for this slot ID
-          const availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
-          const td = document.createElement("td");
-
-          if (availableTutors.length === 0) {
-            td.innerHTML = `<div style="color: rgba(255,255,255,0.06); font-size: 0.75rem; padding: 12px 0;">—</div>`;
-          } else {
-            // Find all tutors who are available for this slot ID and are not booked on this date/time
-            const freeTutors = availableTutors.filter(t => {
-              return !window.allDemos || !window.allDemos.some(d => {
-                const dDate = d.date || d.dateTime || "";
-                return dDate.includes(dateStr) && d.tutorId === t.id && (d.slot === slotName || d.time === time);
-              });
-            });
-
-            const booked = freeTutors.length === 0;
-            const assignedTutor = !booked ? freeTutors[0] : availableTutors[0];
-
-            // Count bookings for this day to enforce daily limit
-            const dayBookingsCount = window.allDemos ? window.allDemos.filter(d => {
-              const dDate = d.date || d.dateTime || "";
-              return dDate.includes(dateStr);
-            }).length : 0;
-            const dailyLimit = parseInt(branding.dailyBookingLimit) || 50;
-            const limitReached = dayBookingsCount >= dailyLimit;
-
-            const cellWrapper = document.createElement("div");
-            cellWrapper.style.display = "flex";
-            cellWrapper.style.flexDirection = "column";
-            cellWrapper.style.gap = "4px";
-            cellWrapper.style.padding = "4px";
-            cellWrapper.style.width = "100%";
-            cellWrapper.style.height = "100%";
-            cellWrapper.style.justifyContent = "center";
-
-            if (booked) {
-              const cell = document.createElement("div");
-              cell.className = "calendar-cell booked";
-              cell.style.padding = "6px 8px";
-              cell.style.borderRadius = "8px";
-              cell.style.fontSize = "0.72rem";
-              cell.innerHTML = `
-                <div style="font-weight: 700; color: #f43f5e;">${assignedTutor.name}</div>
-                <div style="font-size: 0.55rem; opacity: 0.6; margin-top:2px;">[Booked]</div>
-              `;
-              cellWrapper.appendChild(cell);
-            } else if (limitReached) {
-              const cell = document.createElement("div");
-              cell.className = "calendar-cell booked";
-              cell.style.padding = "6px 8px";
-              cell.style.borderRadius = "8px";
-              cell.style.fontSize = "0.72rem";
-              cell.style.cursor = "not-allowed";
-              cell.style.border = "1px dashed rgba(239, 68, 68, 0.3)";
-              cell.style.backgroundColor = "rgba(239, 68, 68, 0.05)";
-              cell.innerHTML = `
-                <div style="font-weight: 700; color: #ef4444; opacity: 0.85;">Limit Reached</div>
-                <div style="font-size: 0.55rem; opacity: 0.6; margin-top:2px;">(Max ${dailyLimit})</div>
-              `;
-              cellWrapper.appendChild(cell);
-            } else {
-              freeTutors.forEach((tutor, tIdx) => {
-                const cell = document.createElement("div");
-                cell.className = "calendar-cell available";
-                cell.style.padding = "6px 8px";
-                cell.style.borderRadius = "8px";
-                cell.style.cursor = "pointer";
-                cell.style.fontSize = "0.72rem";
-                cell.style.transition = "all 0.2s ease";
-                cell.style.border = "1px solid rgba(255, 255, 255, 0.05)";
-                cell.style.backgroundColor = "rgba(255, 255, 255, 0.02)";
-                
-                // Color code individual items like the pic
-                const colors = [
-                  { bg: "rgba(99, 102, 241, 0.15)", text: "#a5b4fc", border: "rgba(99, 102, 241, 0.3)" }, // indigo
-                  { bg: "rgba(236, 72, 153, 0.15)", text: "#fbcfe8", border: "rgba(236, 72, 153, 0.3)" }, // pink
-                  { bg: "rgba(16, 185, 129, 0.15)", text: "#a7f3d0", border: "rgba(16, 185, 129, 0.3)" }, // emerald
-                  { bg: "rgba(245, 158, 11, 0.15)", text: "#fde68a", border: "rgba(245, 158, 11, 0.3)" }  // amber
-                ];
-                const c = colors[tIdx % colors.length];
-                cell.style.backgroundColor = c.bg;
-                cell.style.color = c.text;
-                cell.style.borderColor = c.border;
-
-                cell.innerHTML = `
-                  <div style="font-weight: 700;">${tutor.name}</div>
-                  <div style="font-size: 0.58rem; opacity: 0.95; margin-top: 1px;">(${tutor.languages || "English"})</div>
-                `;
-
-                // Hover effects
-                cell.addEventListener("mouseenter", () => {
-                  cell.style.transform = "translateY(-1px)";
-                  cell.style.filter = "brightness(1.2)";
-                  cell.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
-                });
-                cell.addEventListener("mouseleave", () => {
-                  cell.style.transform = "none";
-                  cell.style.filter = "none";
-                  cell.style.boxShadow = "none";
-                });
-
-                cell.addEventListener("click", () => {
-                  document.querySelectorAll(".calendar-cell").forEach(c => c.classList.remove("selected-booking-cell"));
-                  cell.classList.add("selected-booking-cell");
-
-                  // Set inputs
-                  document.getElementById("demo-date").value = dateStr;
-                  
-                  const demoSlotInput = document.getElementById("demo-slot");
-                  demoSlotInput.value = slotName;
-                  demoSlotInput.dataset.tutorId = tutor.id;
-                  demoSlotInput.dataset.tutorName = tutor.name;
-                  demoSlotInput.dataset.time = time;
-                  const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
-                  const fallbackLink = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName] || `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
-                  demoSlotInput.dataset.zoomLink = tutor.zoomLink || fallbackLink;
-
-                  // Reset form and view states
-                  document.getElementById("booking-form").reset();
-                  document.getElementById("form-panel").style.display = "block";
-                  document.getElementById("success-panel").style.display = "none";
-
-                  // Open modal overlay
-                  const modal = document.getElementById("booking-modal");
-                  if (modal) {
-                    modal.classList.add("open");
-                    const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                    document.getElementById("booking-modal-subtitle").textContent = `${formattedDate} at ${time} (Tutor: ${tutor.name})`;
-                  }
-                });
-
-                cellWrapper.appendChild(cell);
-              });
-            }
-            td.appendChild(cellWrapper);
-          }
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
     }
 
-    document.getElementById("prev-week-btn")?.addEventListener("click", () => {
-      currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-      renderTimetableGrid();
-    });
-    
-    document.getElementById("next-week-btn")?.addEventListener("click", () => {
-      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-      renderTimetableGrid();
-    });
-
-    document.getElementById("timezone-selector")?.addEventListener("change", () => {
-      renderTimetableGrid();
-    });
-
-    document.getElementById("fullscreen-btn")?.addEventListener("click", () => {
-      const container = document.querySelector(".calendar-layout-wide");
-      const btn = document.getElementById("fullscreen-btn");
-      if (container) {
-        container.classList.toggle("fullscreen-active");
-        const isActive = container.classList.contains("fullscreen-active");
-        
-        // Update button text and icon based on state
-        if (btn) {
-          if (isActive) {
-            btn.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/></svg>
-              <span>Exit Fullscreen</span>
-            `;
-          } else {
-            btn.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-              <span>Fullscreen</span>
-            `;
-          }
+    function populateSlots() {
+      const dateVal = document.getElementById("demo-date").value;
+      const slotSelect = document.getElementById("demo-slot");
+      const tutorSelect = document.getElementById("demo-tutor");
+      
+      if (!dateVal) {
+        slotSelect.innerHTML = '<option value="" disabled selected>-- Select Date First --</option>';
+        tutorSelect.innerHTML = '<option value="" disabled selected>-- Select Slot First --</option>';
+        return;
+      }
+      
+      const weekday = getDayOfWeekKey(dateVal);
+      const tutors = window.tutorsList || [];
+      const timezone = document.getElementById("timezone-selector")?.value || "IST";
+      
+      const availableSlots = [];
+      for (let i = 1; i <= 48; i++) {
+        const slotKey = `${weekday}-slot${i}`;
+        const hasTutor = tutors.some(t => t.availability && t.availability.includes(slotKey));
+        if (hasTutor) {
+          availableSlots.push({
+            num: i,
+            name: `Slot ${i}`,
+            timeStr: getSlotTime(i, timezone)
+          });
         }
       }
-    });
+      
+      // Fallback: If no slots have tutors available, show all slots
+      if (availableSlots.length === 0) {
+        for (let i = 1; i <= 48; i++) {
+          availableSlots.push({
+            num: i,
+            name: `Slot ${i}`,
+            timeStr: getSlotTime(i, timezone)
+          });
+        }
+      }
+      
+      slotSelect.innerHTML = '<option value="" disabled selected>-- Select Slot --</option>';
+      availableSlots.forEach(s => {
+        const op = document.createElement("option");
+        op.value = s.name;
+        op.dataset.slotIndex = s.num;
+        op.textContent = `${s.name} (${s.timeStr})`;
+        slotSelect.appendChild(op);
+      });
+      
+      tutorSelect.innerHTML = '<option value="" disabled selected>-- Select Slot First --</option>';
+    }
 
-    document.getElementById("booking-modal-close")?.addEventListener("click", () => {
-      document.getElementById("booking-modal").classList.remove("open");
-    });
+    function populateTutors() {
+      const dateVal = document.getElementById("demo-date").value;
+      const slotSelect = document.getElementById("demo-slot");
+      const tutorSelect = document.getElementById("demo-tutor");
+      
+      const selectedOption = slotSelect.options[slotSelect.selectedIndex];
+      if (!selectedOption || !selectedOption.value) {
+        tutorSelect.innerHTML = '<option value="" disabled selected>-- Select Slot First --</option>';
+        return;
+      }
+      
+      const slotIndex = selectedOption.dataset.slotIndex;
+      const weekday = getDayOfWeekKey(dateVal);
+      const tutors = window.tutorsList || [];
+      const slotKey = `${weekday}-slot${slotIndex}`;
+      
+      const availableTutors = tutors.filter(t => t.availability && t.availability.includes(slotKey));
+      
+      tutorSelect.innerHTML = "";
+      
+      if (availableTutors.length > 0) {
+        const op = document.createElement("option");
+        op.value = "AUTO";
+        op.textContent = "-- Any Tutor (Auto Assigned) --";
+        tutorSelect.appendChild(op);
+        
+        availableTutors.forEach(t => {
+          const op = document.createElement("option");
+          op.value = t.id;
+          op.dataset.name = t.name;
+          op.dataset.zoomLink = t.zoomLink || "";
+          op.textContent = t.name;
+          tutorSelect.appendChild(op);
+        });
+      } else {
+        const op = document.createElement("option");
+        op.value = "AUTO";
+        op.textContent = "-- No specific availability (Auto Assigned) --";
+        tutorSelect.appendChild(op);
+        
+        tutors.forEach(t => {
+          const op = document.createElement("option");
+          op.value = t.id;
+          op.dataset.name = t.name;
+          op.dataset.zoomLink = t.zoomLink || "";
+          op.textContent = t.name;
+          tutorSelect.appendChild(op);
+        });
+      }
+      
+      tutorSelect.selectedIndex = 0;
+    }
 
     async function loadLiveConfigs() {
-      // 1. Initial local branding setup and layout render
       applyBranding();
-      window.timetable = generateDefaultTimetable();
-      
-      // 2. Initialize default empty arrays so references never throw undefined errors
       window.tutorsList = window.DEFAULT_TUTORS || [];
       window.allDemos = window.DEFAULT_DEMOS || [];
       
-      renderTimetableGrid();
+      // Initialize date field to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const demoDateEl = document.getElementById("demo-date");
+      if (demoDateEl) {
+        demoDateEl.value = tomorrow.toISOString().split('T')[0];
+        demoDateEl.min = new Date().toISOString().split('T')[0];
+      }
+      
+      populateSlots();
 
-      // 3. Connect to live database if sheets config is set
       if (branding.sheetsUrl) {
         try {
           const res = await fetch(`${branding.sheetsUrl}?action=readAll`);
@@ -1216,13 +979,6 @@
               if (b.themeColors) {
                 const colors = typeof b.themeColors === "string" ? JSON.parse(b.themeColors) : b.themeColors;
                 branding.themeColors = { ...branding.themeColors, ...colors };
-              }
-              if (b.timetableTemplate) {
-                try {
-                  window.timetable = typeof b.timetableTemplate === "string" 
-                    ? JSON.parse(b.timetableTemplate) 
-                    : b.timetableTemplate;
-                } catch(e) {}
               }
               if (b.inviteTemplate) {
                 branding.inviteTemplate = b.inviteTemplate;
@@ -1248,17 +1004,14 @@
                 return { ...t, availability, zoomLinks };
               });
             }
-          } else {
-            console.warn("Sheets fetch returned error status, loading fallback defaults", json);
           }
         } catch(e) {
-          console.warn("Sheets fetch failed, loading fallback data", e);
+          console.warn("Sheets fetch failed", e);
         }
       }
 
-      // 4. Always apply final branding configurations and re-render grid
       applyBranding();
-      renderTimetableGrid();
+      populateSlots();
     }
 
     // 2. Submit Handler to sync database
@@ -1277,20 +1030,43 @@
       const mobileNumber = document.getElementById("mobile-number").value.trim();
       const date = document.getElementById("demo-date").value;
       
-      const demoSlotInput = document.getElementById("demo-slot");
-      const slot = demoSlotInput.value.trim();
-      const tutorId = demoSlotInput.dataset.tutorId || "";
-      const tutorName = demoSlotInput.dataset.tutorName || "Unassigned";
-      const timeVal = demoSlotInput.dataset.time || slot;
-      const zoomLinkVal = demoSlotInput.dataset.zoomLink || "https://zoom.us/j/default-meeting";
-      const agentName = document.getElementById("agent-name").value;
-
-      if (!slot || !date) {
-        alert("Please select a slot from the calendar first!");
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<span>Schedule Free Demo</span>`;
-        return;
+      const slotSelect = document.getElementById("demo-slot");
+      const slot = slotSelect.value;
+      const selectedSlotOption = slotSelect.options[slotSelect.selectedIndex];
+      const slotIndex = selectedSlotOption ? selectedSlotOption.dataset.slotIndex : "1";
+      
+      const timeVal = getSlotTime(slotIndex, "IST"); // Always save as IST in DB
+      
+      const tutorSelect = document.getElementById("demo-tutor");
+      const selectedTutorOption = tutorSelect.options[tutorSelect.selectedIndex];
+      
+      let tutorId = "";
+      let tutorName = "Unassigned";
+      let zoomLinkVal = "";
+      
+      if (selectedTutorOption && selectedTutorOption.value !== "AUTO") {
+        tutorId = selectedTutorOption.value;
+        tutorName = selectedTutorOption.dataset.name || "Unassigned";
+        zoomLinkVal = selectedTutorOption.dataset.zoomLink || "";
+      } else {
+        const weekday = getDayOfWeekKey(date);
+        const slotKey = `${weekday}-slot${slotIndex}`;
+        const tutors = window.tutorsList || [];
+        const availableTutors = tutors.filter(t => t.availability && t.availability.includes(slotKey));
+        if (availableTutors.length > 0) {
+          const firstTutor = availableTutors[0];
+          tutorId = firstTutor.id;
+          tutorName = firstTutor.name;
+          zoomLinkVal = firstTutor.zoomLink || "";
+        }
       }
+      
+      if (!zoomLinkVal) {
+        const cleanKey = slot.toLowerCase().replace(/\s+/g, '');
+        zoomLinkVal = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slot] || `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+      }
+
+      const agentName = document.getElementById("agent-name").value;
 
       // Construct Demo Item (Matching DB schema)
       const demoPayload = {
@@ -1301,7 +1077,7 @@
         date: date,
         time: timeVal,
         dateTime: `${date} ${timeVal}`,
-        slot: slot, // Chosen slot name (e.g. Slot 9)
+        slot: slot,
         status: "DEMO NOT DONE",
         age: age,
         language: language || "English",
@@ -1317,32 +1093,22 @@
       const success = await writeToDatabase("addDemo", demoPayload);
 
       if (success) {
-        // Render success UI
         document.getElementById("res-student").textContent = studentName;
         document.getElementById("res-datetime").textContent = `${date} at ${timeVal}`;
         document.getElementById("res-level").textContent = level;
         document.getElementById("res-mobile").textContent = mobileNumber;
 
-        // Store for WhatsApp share handler
         window.lastBookedDemo = demoPayload;
         window.lastBookedZoom = zoomLinkVal;
 
         document.getElementById("form-panel").style.display = "none";
         document.getElementById("success-panel").style.display = "flex";
-        
-        // Refresh calendar availability in background
-        if (window.allDemos) {
-          window.allDemos.push(demoPayload);
-        }
-        renderTimetableGrid();
       } else {
         alert("Booking failed. Please check your internet connection and try again.");
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>Schedule Free Demo</span>`;
       }
     });
-
-    loadLiveConfigs();
 
     // WhatsApp invite confirmation handler (custom greetings format)
     document.getElementById("send-whatsapp-invite-btn").addEventListener("click", () => {
@@ -1384,7 +1150,6 @@
       });
     });
 
-    // Helper: Dynamic DB writer
     async function writeToDatabase(action, payload) {
       const url = branding.sheetsUrl;
       if (!url) return false;
@@ -1423,6 +1188,8 @@
         return false;
       }
     }
+
+    loadLiveConfigs();
 
     // Helper: Script Loader
     function loadScript(src) {
