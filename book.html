@@ -1204,8 +1204,65 @@
       
       renderTimetableGrid();
 
-      // 3. Connect to live database if sheets config is set
-      if (branding.sheetsUrl) {
+      // 3. Connect to live database if configured
+      const connector = branding.connectorType || "sheets";
+      if (connector === "supabase" && branding.supabaseUrl && branding.supabaseKey) {
+        try {
+          if (typeof window.supabase === "undefined") {
+            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+          }
+          const client = window.supabase.createClient(branding.supabaseUrl, branding.supabaseKey);
+          
+          // Fetch Branding
+          const { data: bData, error: bErr } = await client.from('branding').select('*').eq('id', 'default').maybeSingle();
+          if (!bErr && bData) {
+            branding.companyName = bData.name || branding.companyName;
+            branding.logoUrl = bData.logo || branding.logoUrl;
+            if (bData.themeColors) {
+              const colors = typeof bData.themeColors === "string" ? JSON.parse(bData.themeColors) : bData.themeColors;
+              branding.themeColors = { ...branding.themeColors, ...colors };
+            }
+            if (bData.inviteTemplate) {
+              branding.inviteTemplate = bData.inviteTemplate;
+            }
+            if (bData.timetableTemplate) {
+              try {
+                window.timetable = typeof bData.timetableTemplate === "string" 
+                  ? JSON.parse(bData.timetableTemplate) 
+                  : bData.timetableTemplate;
+              } catch(e) {}
+            }
+          }
+
+          // Fetch Demos
+          const { data: dData, error: dErr } = await client.from('demos').select('*');
+          if (!dErr && dData) {
+            window.allDemos = dData;
+          }
+
+          // Fetch Tutors
+          const { data: tData, error: tErr } = await client.from('tutors').select('*');
+          if (!tErr && tData) {
+            window.tutorsList = tData.map(t => {
+              let availability = [];
+              if (t.availability) {
+                try {
+                  availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
+                } catch(e) {}
+              }
+              let zoomLinks = {};
+              if (t.zoomLinks) {
+                try {
+                  zoomLinks = typeof t.zoomLinks === "string" ? JSON.parse(t.zoomLinks) : t.zoomLinks;
+                } catch(e) {}
+              }
+              return { ...t, availability, zoomLinks };
+            });
+          }
+        } catch(e) {
+          console.warn("Supabase fetch failed", e);
+        }
+      } else if (branding.sheetsUrl) {
         try {
           const res = await fetch(`${branding.sheetsUrl}?action=readAll`);
           const json = await res.json();
@@ -1387,41 +1444,87 @@
 
     // Helper: Dynamic DB writer
     async function writeToDatabase(action, payload) {
-      const url = branding.sheetsUrl;
-      if (!url) return false;
-      
-      const mappedPayload = {
-        id: payload.id,
-        tutorId: payload.tutorId,
-        "TUTOR NAME": payload.tutorName,
-        "STUDENT NAME": payload.studentName,
-        "DATE": payload.date,
-        "TIME": payload.time,
-        "SLOT NUMBER": payload.slot,
-        "DEMO STATUS": payload.status,
-        "AGE": payload.age,
-        "LANGUAGE": payload.language,
-        "AGENT NAME": payload.agentName,
-        "LOCATION": payload.location,
-        "MOBILE NUMBER": payload.mobileNumber,
-        "LEVEL": payload.level,
-        feedback: payload.feedback,
-        "REVISION": payload.revision || "-",
-        "TOPIC TO START": payload.topicToStart || "-"
-      };
-      
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          mode: "cors",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ action: action, data: mappedPayload })
-        });
-        const result = await response.json();
-        return result && result.status === "success";
-      } catch (err) {
-        console.error("Google Sheets write failed:", err);
-        return false;
+      if (branding.connectorType === "supabase") {
+        if (!window.supabaseClient) {
+          const url = branding.supabaseUrl;
+          const key = branding.supabaseKey;
+          if (url && key) {
+            if (typeof window.supabase === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+            }
+            window.supabaseClient = window.supabase.createClient(url, key);
+          }
+        }
+        if (!window.supabaseClient) return false;
+        
+        try {
+          if (action === "addDemo") {
+            const dbPayload = {
+              id: payload.id,
+              tutorId: payload.tutorId,
+              tutorName: payload.tutorName,
+              studentName: payload.studentName,
+              date: payload.date,
+              time: payload.time,
+              dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
+              slot: payload.slot,
+              status: payload.status,
+              age: payload.age,
+              language: payload.language,
+              agentName: payload.agentName,
+              location: payload.location,
+              mobileNumber: payload.mobileNumber,
+              level: payload.level,
+              feedback: payload.feedback || "",
+              revision: payload.revision || "-",
+              topicToStart: payload.topicToStart || "-"
+            };
+            const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
+            return !error;
+          }
+          return false;
+        } catch(e) {
+          console.error("Supabase write failed:", e);
+          return false;
+        }
+      } else {
+        // Google Sheets
+        const url = branding.sheetsUrl;
+        if (!url) return false;
+        
+        const mappedPayload = {
+          id: payload.id,
+          tutorId: payload.tutorId,
+          "TUTOR NAME": payload.tutorName,
+          "STUDENT NAME": payload.studentName,
+          "DATE": payload.date,
+          "TIME": payload.time,
+          "SLOT NUMBER": payload.slot,
+          "DEMO STATUS": payload.status,
+          "AGE": payload.age,
+          "LANGUAGE": payload.language,
+          "AGENT NAME": payload.agentName,
+          "LOCATION": payload.location,
+          "MOBILE NUMBER": payload.mobileNumber,
+          "LEVEL": payload.level,
+          feedback: payload.feedback,
+          "REVISION": payload.revision || "-",
+          "TOPIC TO START": payload.topicToStart || "-"
+        };
+        
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: action, data: mappedPayload })
+          });
+          const result = await response.json();
+          return result && result.status === "success";
+        } catch (err) {
+          console.error("Google Sheets write failed:", err);
+          return false;
+        }
       }
     }
 

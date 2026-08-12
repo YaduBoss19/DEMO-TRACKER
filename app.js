@@ -104,7 +104,228 @@ function mapAppDemoToSheet(a) {
   };
 }
 
+// --- Supabase Database Integration ---
+let supabaseClient = null;
+
+function initSupabase() {
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (url && key) {
+    if (typeof window.supabase === "undefined") {
+      console.warn("Supabase SDK not loaded yet. Delaying database connection.");
+      return;
+    }
+    try {
+      supabaseClient = window.supabase.createClient(url, key);
+      
+      // Subscribe to real-time updates from Postgres
+      supabaseClient
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          console.log("Supabase Realtime update detected!");
+          fetchFromSheets().then(() => updateViews());
+        })
+        .subscribe();
+    } catch (e) {
+      console.error("Failed to initialize Supabase client:", e);
+    }
+  }
+}
+
+async function fetchFromSupabase() {
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (!url || !key) return false;
+
+  if (!supabaseClient) {
+    initSupabase();
+  }
+  if (!supabaseClient) return false;
+
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
+
+  try {
+    // 1. Fetch Branding
+    const { data: brandingData, error: bErr } = await supabaseClient.from('branding').select('*').eq('id', 'default').maybeSingle();
+    if (bErr) throw bErr;
+    if (brandingData) {
+      state.branding = {
+        ...state.branding,
+        companyName: brandingData.name || state.branding.companyName,
+        logoUrl: brandingData.logo || state.branding.logoUrl,
+        currency: brandingData.currency || state.branding.currency,
+        themeColors: {
+          ...state.branding.themeColors,
+          ...(brandingData.themeColors || {})
+        }
+      };
+      if (brandingData.inviteTemplate) {
+        state.inviteTemplate = brandingData.inviteTemplate;
+      }
+      if (brandingData.timetableTemplate) {
+        try {
+          state.timetable = typeof brandingData.timetableTemplate === "string"
+            ? JSON.parse(brandingData.timetableTemplate)
+            : brandingData.timetableTemplate;
+        } catch(e) {}
+      }
+    }
+
+    // 2. Fetch Slabs
+    const { data: slabsData, error: sErr } = await supabaseClient.from('slabs').select('*');
+    if (sErr) throw sErr;
+    if (slabsData && slabsData.length > 0) {
+      state.slabs = slabsData.map(s => ({
+        id: s.id,
+        minDemos: parseInt(s.minDemos) || 0,
+        minConversion: parseFloat(s.minConversion) || 0,
+        rate: parseFloat(s.rate) || 0,
+        enabled: s.enabled === true || s.enabled === "true"
+      }));
+    }
+
+    // 3. Fetch Tutors
+    const { data: tutorsData, error: tErr } = await supabaseClient.from('tutors').select('*');
+    if (tErr) throw tErr;
+    if (tutorsData && tutorsData.length > 0) {
+      state.tutors = tutorsData.map(t => {
+        let availability = [];
+        if (t.availability) {
+          try {
+            availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
+          } catch(e) {}
+        }
+        return { ...t, availability };
+      });
+    }
+
+    // 4. Fetch Demos
+    const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
+    if (dErr) throw dErr;
+    if (demosData && demosData.length > 0) {
+      state.demos = demosData.map((d, index) => mapSheetDemoToApp(d, index + 2));
+    }
+
+    saveToLocalStorage();
+    return true;
+  } catch (err) {
+    console.error("Failed to fetch from Supabase: ", err);
+    showToast("Supabase sync failed. Running in Offline Mode.", "warning");
+    return false;
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
+  }
+}
+
+async function writeToSupabase(action, payload) {
+  const url = state.branding.supabaseUrl;
+  const key = state.branding.supabaseKey;
+  if (!url || !key) return false;
+
+  if (!supabaseClient) {
+    initSupabase();
+  }
+  if (!supabaseClient) return false;
+
+  const statusIndicator = document.getElementById("sheets-sync-status");
+  if (statusIndicator) statusIndicator.style.display = "inline-flex";
+
+  try {
+    switch (action) {
+      case "updateBranding":
+        const bPayload = {
+          id: 'default',
+          name: payload.companyName,
+          logo: payload.logoUrl,
+          currency: payload.currency,
+          themeColors: payload.themeColors,
+          inviteTemplate: state.inviteTemplate || "",
+          timetableTemplate: payload.timetableTemplate || []
+        };
+        const { error: bErr } = await supabaseClient.from('branding').upsert(bPayload);
+        if (bErr) throw bErr;
+        break;
+
+      case "addSlab":
+        const { error: sAddErr } = await supabaseClient.from('slabs').insert([payload]);
+        if (sAddErr) throw sAddErr;
+        break;
+
+      case "updateSlab":
+        const { error: sUpErr } = await supabaseClient.from('slabs').upsert(payload);
+        if (sUpErr) throw sUpErr;
+        break;
+
+      case "deleteSlab":
+        const { error: sDelErr } = await supabaseClient.from('slabs').delete().eq('id', payload.id);
+        if (sDelErr) throw sDelErr;
+        break;
+
+      case "addTutor":
+        const { error: tAddErr } = await supabaseClient.from('tutors').insert([payload]);
+        if (tAddErr) throw tAddErr;
+        break;
+
+      case "updateTutor":
+        const { error: tUpErr } = await supabaseClient.from('tutors').upsert(payload);
+        if (tUpErr) throw tUpErr;
+        break;
+
+      case "deleteTutor":
+        const { error: tDelErr } = await supabaseClient.from('tutors').delete().eq('id', payload.id);
+        if (tDelErr) throw tDelErr;
+        break;
+
+      case "addDemo":
+        const { error: dAddErr } = await supabaseClient.from('demos').insert([payload]);
+        if (dAddErr) throw dAddErr;
+        break;
+
+      case "updateDemo":
+        const { error: dUpErr } = await supabaseClient.from('demos').upsert(payload);
+        if (dUpErr) throw dUpErr;
+        break;
+
+      case "deleteDemo":
+        const { error: dDelErr } = await supabaseClient.from('demos').delete().eq('id', payload.id);
+        if (dDelErr) throw dDelErr;
+        break;
+
+      case "updateDemoStatus":
+        const { error: dStatErr } = await supabaseClient.from('demos').update({ status: payload.status }).eq('id', payload.id);
+        if (dStatErr) throw dStatErr;
+        break;
+
+      case "updateDemoFeedback":
+        const { error: dFeedErr } = await supabaseClient.from('demos').update({ feedback: payload.feedback }).eq('id', payload.id);
+        if (dFeedErr) throw dFeedErr;
+        break;
+
+      case "addDemosBulk":
+        const { error: dBulkErr } = await supabaseClient.from('demos').insert(payload);
+        if (dBulkErr) throw dBulkErr;
+        break;
+
+      default:
+        console.warn("Unknown write action for Supabase:", action);
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed to write to Supabase: ", err);
+    showToast("Write to Supabase failed.", "warning");
+    return false;
+  } finally {
+    if (statusIndicator) statusIndicator.style.display = "none";
+  }
+}
+
 async function fetchFromSheets() {
+  const connector = state.branding.connectorType || "sheets";
+  if (connector === "supabase") {
+    return await fetchFromSupabase();
+  }
+
   let url = state.branding.sheetsUrl;
   if (!url) return false;
   url = url.trim();
@@ -169,6 +390,11 @@ async function fetchFromSheets() {
   return false;
 }
 async function writeToSheets(action, payload) {
+  const connector = state.branding.connectorType || "sheets";
+  if (connector === "supabase") {
+    return await writeToSupabase(action, payload);
+  }
+
   let url = state.branding.sheetsUrl;
   if (!url) return false;
   url = url.trim();
@@ -365,6 +591,9 @@ function loadFromLocalStorage() {
       sessionStorage.removeItem("CHESS_PORTAL_SESSION");
     }
   }
+
+  // Initialize Supabase DB client if credentials exist
+  initSupabase();
 }
 
 function saveToLocalStorage() {
@@ -376,7 +605,7 @@ function saveToLocalStorage() {
     localStorage.setItem("DEMO_INVITE_TEMPLATE", state.inviteTemplate);
     
     // If a cloud database is connected, clear local demos cache to save domain storage quota!
-    const isConnected = !!state.branding.sheetsUrl;
+    const isConnected = state.branding.connectorType === "supabase" || !!state.branding.sheetsUrl;
     if (isConnected) {
       localStorage.removeItem("CHESS_PORTAL_DEMOS");
     } else {
@@ -459,7 +688,8 @@ function handleSignout() {
 }
 
 async function syncFullState() {
-  if (state.branding.sheetsUrl) {
+  const isConnected = state.branding.connectorType === "supabase" || !!state.branding.sheetsUrl;
+  if (isConnected) {
     const success = await fetchFromSheets();
     if (success) {
       applyBranding();
@@ -2254,11 +2484,16 @@ async function handleBrandingSubmit(e) {
   state.branding.themeColors.primary = primary;
   state.branding.themeColors.secondary = secondary;
 
+  if (connectorType === "supabase") {
+    initSupabase();
+  }
+
   saveToLocalStorage();
   applyBranding();
   await writeToSheets("updateBranding", state.branding);
   
-  if (sheetsUrl) {
+  const isConnected = connectorType === "supabase" || !!sheetsUrl;
+  if (isConnected) {
     await syncFullState();
   }
 
@@ -2817,8 +3052,21 @@ function initEventListeners() {
       if (confirm(`Are you sure you want to permanently delete the ${count} selected demos from the database?`)) {
         const deletedIds = [...state.bulkSelectedDemoIds];
         
-        // 1. Delete from Sheets in bulk
-        if (state.branding.sheetsUrl) {
+        // 1. Delete from Sheets / Supabase in bulk
+        const connector = state.branding.connectorType || "sheets";
+        if (connector === "supabase") {
+          if (!supabaseClient) {
+            initSupabase();
+          }
+          if (supabaseClient) {
+            const { error } = await supabaseClient.from('demos').delete().in('id', deletedIds);
+            if (error) {
+              console.error("Bulk delete failed in Supabase:", error);
+              showToast("Failed to delete from Supabase.", "danger");
+              return;
+            }
+          }
+        } else if (state.branding.sheetsUrl) {
           for (const delId of deletedIds) {
             await writeToSheets("deleteDemo", { id: delId });
           }
@@ -2997,7 +3245,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Auto-refresh background poll (every 30 seconds) to fetch external updates
     setInterval(async () => {
-      if (state.branding.sheetsUrl) {
+      const isConnected = state.branding.connectorType === "supabase" || !!state.branding.sheetsUrl;
+      if (isConnected) {
         const updated = await fetchFromSheets();
         if (updated) {
           updateViews();
