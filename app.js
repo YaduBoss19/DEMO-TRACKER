@@ -77,7 +77,8 @@ function mapSheetDemoToApp(s, rowNum) {
     feedback: s.feedback || "",
     zoomLink: s.zoomLink || s.zoomlink || s["ZOOM LINK"] || s["CLASS LINK"] || "",
     revision: s.revision || s["REVISION"] || "-",
-    topicToStart: s.topicToStart || s.topictostart || s["TOPIC TO START"] || "-"
+    topicToStart: s.topicToStart || s.topictostart || s["TOPIC TO START"] || "-",
+    position: parseInt(s.position) || (rowNum ? parseInt(rowNum) : 0)
   };
 }
 
@@ -100,7 +101,8 @@ function mapAppDemoToSheet(a) {
     feedback: a.feedback,
     "ZOOM LINK": a.zoomLink || "",
     "REVISION": a.revision || "-",
-    "TOPIC TO START": a.topicToStart || "-"
+    "TOPIC TO START": a.topicToStart || "-",
+    position: a.position || 0
   };
 }
 
@@ -347,10 +349,22 @@ async function writeToSupabase(action, payload) {
           feedback: payload.feedback || "",
           revision: payload.revision || "-",
           topicToStart: payload.topicToStart || "-",
-          topictostart: payload.topicToStart || "-"
+          topictostart: payload.topicToStart || "-",
+          position: payload.position || 0
         };
-        const { error: dAddErr } = await supabaseClient.from('demos').insert([demoAddPayload]);
-        if (dAddErr) throw dAddErr;
+        try {
+          const { error: dAddErr } = await supabaseClient.from('demos').insert([demoAddPayload]);
+          if (dAddErr) throw dAddErr;
+        } catch (err) {
+          if (err.message && (err.message.includes("column") || err.message.includes("position"))) {
+            console.warn("Table does not have position column. Retrying insert without position.", err);
+            delete demoAddPayload.position;
+            const { error: retryErr } = await supabaseClient.from('demos').insert([demoAddPayload]);
+            if (retryErr) throw retryErr;
+          } else {
+            throw err;
+          }
+        }
         break;
 
       case "updateDemo":
@@ -379,10 +393,22 @@ async function writeToSupabase(action, payload) {
           feedback: payload.feedback || "",
           revision: payload.revision || "-",
           topicToStart: payload.topicToStart || "-",
-          topictostart: payload.topicToStart || "-"
+          topictostart: payload.topicToStart || "-",
+          position: payload.position || 0
         };
-        const { error: dUpErr } = await supabaseClient.from('demos').upsert(demoUpPayload);
-        if (dUpErr) throw dUpErr;
+        try {
+          const { error: dUpErr } = await supabaseClient.from('demos').upsert(demoUpPayload);
+          if (dUpErr) throw dUpErr;
+        } catch (err) {
+          if (err.message && (err.message.includes("column") || err.message.includes("position"))) {
+            console.warn("Table does not have position column. Retrying upsert without position.", err);
+            delete demoUpPayload.position;
+            const { error: retryErr } = await supabaseClient.from('demos').upsert(demoUpPayload);
+            if (retryErr) throw retryErr;
+          } else {
+            throw err;
+          }
+        }
         break;
 
       case "deleteDemo":
@@ -1031,28 +1057,23 @@ function getFilteredDemosByRange() {
   const rangeEl = document.getElementById(rangeSelectorId);
   const range = rangeEl ? rangeEl.value : "MONTH";
   
+  let list = [];
   if (range === "ALL") {
-    return state.demos; // No date filter
-  }
-  
-  if (range === "MONTH") {
-    return getMonthYearFilteredDemos(); // Month/Year calendar switcher
-  }
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  if (range === "DAY") {
-    return state.demos.filter(d => {
+    list = state.demos;
+  } else if (range === "MONTH") {
+    list = getMonthYearFilteredDemos();
+  } else if (range === "DAY") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    list = state.demos.filter(d => {
       const dateObj = parseDateString(d.date || d.dateTime);
       return dateObj.getDate() === today.getDate() && 
              dateObj.getMonth() === today.getMonth() && 
              dateObj.getFullYear() === today.getFullYear();
     });
-  }
-  
-  if (range === "WEEK") {
-    // Current Week Sunday -> Saturday
+  } else if (range === "WEEK") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
@@ -1061,13 +1082,15 @@ function getFilteredDemosByRange() {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    return state.demos.filter(d => {
+    list = state.demos.filter(d => {
       const dateObj = parseDateString(d.date || d.dateTime);
       return dateObj >= startOfWeek && dateObj <= endOfWeek;
     });
+  } else {
+    list = getMonthYearFilteredDemos();
   }
   
-  return getMonthYearFilteredDemos();
+  return list.sort((a, b) => (a.position || 0) - (b.position || 0));
 }
 
 function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
@@ -1507,11 +1530,12 @@ function formatDateForInput(dateStr) {
 // Time format conversions between 12-hour AM/PM and 24-hour HH:MM
 function formatTimeForInput(timeStr) {
   if (!timeStr) return "";
-  const clean = String(timeStr).trim().toUpperCase();
+  // Strip IST suffix if present so native time pickers can parse
+  const clean = String(timeStr).replace(/IST/i, "").trim().toUpperCase();
   const match = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
   if (!match) {
     const match24 = clean.match(/^(\d{2}):(\d{2})$/);
-    if (match24) return clean;
+    if (match24) return match24[0];
     return "";
   }
   let hrs = parseInt(match[1]);
@@ -1533,7 +1557,7 @@ function formatTimeForDatabase(time24) {
   const ampm = hrs >= 12 ? "PM" : "AM";
   hrs = hrs % 12;
   if (hrs === 0) hrs = 12;
-  return `${hrs}:${mins} ${ampm}`;
+  return `${hrs}:${mins} ${ampm} IST`;
 }
 
 // --- VIEW: DEMOS LIST ---
@@ -1655,9 +1679,24 @@ function renderDemosTable() {
       });
       agentSelectHtml += `</select>`;
 
+      let moveControls = "";
+      if (state.currentUser && (state.currentUser.role === "admin" || state.currentUser.role === "demo_manager")) {
+        moveControls = `
+          <div style="display:flex; flex-direction:column; line-height:1; margin-right:4px;">
+            <button type="button" class="row-move-up-btn" data-id="${demo.id}" style="background:none; border:none; cursor:pointer; padding:1px; font-size:0.7rem; color:var(--text-muted); line-height:1;" title="Move Up">▲</button>
+            <button type="button" class="row-move-down-btn" data-id="${demo.id}" style="background:none; border:none; cursor:pointer; padding:1px; font-size:0.7rem; color:var(--text-muted); line-height:1;" title="Move Down">▼</button>
+          </div>
+        `;
+      }
+
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
-        <td><strong>${idx + 1}</strong></td>
+        <td>
+          <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
+            ${moveControls}
+            <strong>${idx + 1}</strong>
+          </div>
+        </td>
         <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
         <td style="white-space: nowrap;"><input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
@@ -1805,6 +1844,47 @@ function renderDemosTable() {
       body.appendChild(tr);
     });
   }
+}
+
+async function moveDemoRow(demoId, direction) {
+  const isTutor = isTutorPage;
+  if (isTutor) return; // Only Admin / Demo Manager roles can sort
+  
+  const filteredDemos = getFilteredDemosByRange();
+  const index = filteredDemos.findIndex(d => d.id === demoId);
+  if (index === -1) return;
+  
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= filteredDemos.length) return; // Boundary lock
+  
+  const item1 = filteredDemos[index];
+  const item2 = filteredDemos[targetIndex];
+  
+  const pos1 = item1.position || 0;
+  const pos2 = item2.position || 0;
+  
+  // If positions are default or identical, initialize all items with unique sequential index values
+  if (pos1 === pos2) {
+    state.demos.forEach((d, idx) => {
+      d.position = idx * 10;
+    });
+    // Re-swap positions based on new unique numbering
+    const newPos1 = item1.position;
+    const newPos2 = item2.position;
+    item1.position = newPos2;
+    item2.position = newPos1;
+  } else {
+    item1.position = pos2;
+    item2.position = pos1;
+  }
+  
+  saveToLocalStorage();
+  
+  // Write both swaps to database
+  await writeToSheets("updateDemo", item1);
+  await writeToSheets("updateDemo", item2);
+  
+  renderDemosTable();
 }
 
 // --- VIEW: AVAILABLE/CLAIMABLE DEMOS ---
@@ -2434,6 +2514,7 @@ function formatDisplayDate(dateStr) {
 function formatDisplayTime(timeStr) {
   if (!timeStr || timeStr === "-") return "-";
   
+  let formatted = timeStr;
   if (typeof timeStr === "string" && timeStr.includes("T")) {
     try {
       const dateObj = new Date(timeStr);
@@ -2442,7 +2523,7 @@ function formatDisplayTime(timeStr) {
         const minutes = String(dateObj.getMinutes()).padStart(2, '0');
         const ampm = hour >= 12 ? 'PM' : 'AM';
         hour = hour % 12 || 12;
-        return `${hour}:${minutes} ${ampm}`;
+        formatted = `${hour}:${minutes} ${ampm}`;
       }
     } catch (e) {
       console.warn("Time parsing failed:", timeStr, e);
@@ -2455,12 +2536,16 @@ function formatDisplayTime(timeStr) {
         const min = timeParts[1];
         const ampm = hr >= 12 ? 'PM' : 'AM';
         hr = hr % 12 || 12;
-        return `${hr}:${min} ${ampm}`;
+        formatted = `${hr}:${min} ${ampm}`;
       }
     }
   }
   
-  return timeStr;
+  if (typeof formatted === "string" && (formatted.includes("AM") || formatted.includes("PM")) && !formatted.includes("IST")) {
+    formatted = `${formatted} IST`;
+  }
+  
+  return formatted;
 }
 
 // Demos CRUD
@@ -3462,6 +3547,15 @@ function initEventListeners() {
     if (target.classList.contains("delete-demo-btn-el")) deleteDemo(target.dataset.id);
     if (target.classList.contains("share-demo-btn-el")) sendDemoInvite(target.dataset.id);
     if (target.classList.contains("edit-slot-btn-el")) openSlotModal(target.dataset.id);
+
+    if (target.classList.contains("row-move-up-btn")) {
+      e.preventDefault();
+      moveDemoRow(target.dataset.id, "up");
+    }
+    if (target.classList.contains("row-move-down-btn")) {
+      e.preventDefault();
+      moveDemoRow(target.dataset.id, "down");
+    }
 
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
 
