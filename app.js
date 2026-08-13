@@ -1710,11 +1710,47 @@ function renderDemosTable() {
       });
       agentSelectHtml += `</select>`;
 
+      // Build inline Time dropdown select including AM/PM and IST
+      let timeSelectHtml = `<select class="inline-time-select" data-id="${demo.id}" style="width:125px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-family:var(--font-main);">`;
+      const standardTimes = [];
+      for (let hour = 6; hour <= 23; hour++) {
+        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        standardTimes.push(`${displayHour}:00 ${ampm} IST`);
+        standardTimes.push(`${displayHour}:30 ${ampm} IST`);
+      }
+      let cleanCurrentTime = String(demo.time || "").trim();
+      if (cleanCurrentTime && !cleanCurrentTime.includes("IST") && (cleanCurrentTime.includes("AM") || cleanCurrentTime.includes("PM"))) {
+        cleanCurrentTime = `${cleanCurrentTime} IST`;
+      }
+      const timeOptions = new Set(standardTimes);
+      if (cleanCurrentTime) {
+        timeOptions.add(cleanCurrentTime);
+      }
+      const sortedTimeOptions = Array.from(timeOptions).sort((a, b) => {
+        const parseTimeStr = (s) => {
+          const cleanT = s.replace(/IST/i, "").trim().toUpperCase();
+          const m = cleanT.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+          if (!m) return 0;
+          let h = parseInt(m[1]);
+          const min = parseInt(m[2]);
+          const amp = m[3];
+          if (amp === "PM" && h < 12) h += 12;
+          if (amp === "AM" && h === 12) h = 0;
+          return h * 60 + min;
+        };
+        return parseTimeStr(a) - parseTimeStr(b);
+      });
+      sortedTimeOptions.forEach(tOption => {
+        timeSelectHtml += `<option value="${tOption}" ${cleanCurrentTime === tOption ? 'selected' : ''}>${tOption}</option>`;
+      });
+      timeSelectHtml += `</select>`;
+
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
         <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-        <td style="white-space: nowrap;"><input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td style="white-space: nowrap;">${timeSelectHtml}</td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
         <td>${tutorSelectHtml}</td>
         <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
@@ -3777,11 +3813,10 @@ function initEventListeners() {
       }
     }
 
-    // Inline Time Input
-    if (target.classList.contains("inline-time-input")) {
+    // Inline Time Dropdown Select
+    if (target.classList.contains("inline-time-select")) {
       const id = target.dataset.id;
-      const time24 = target.value;
-      const formattedTime = formatTimeForDatabase(time24);
+      const formattedTime = target.value;
       const idx = state.demos.findIndex(d => d.id === id);
       if (idx !== -1) {
         state.demos[idx].time = formattedTime;
