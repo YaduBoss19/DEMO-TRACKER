@@ -599,18 +599,29 @@
 
         </div>
 
-        <!-- Custom Slot Zoom Links (Slot 10 - 26) -->
+        <!-- Custom Slot Zoom Links Settings -->
         <div class="card-panel" style="margin-top: 20px;">
-          <div class="panel-header">
+          <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <h3 class="panel-title">Custom Slot Zoom Links (Slot 10 - Slot 26)</h3>
-              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Configure custom Zoom or trial links for slots 10 to 26. These override default fallbacks.</p>
+              <h3 class="panel-title">Custom Slot Zoom Links</h3>
+              <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Configure custom Zoom or trial links for your slots. Slots defined here will populate your "Slot" dropdown selectors.</p>
             </div>
-            <button class="btn btn-primary" id="save-slot-links-btn">Save Slot Links</button>
+            <button type="button" class="btn btn-primary" id="add-new-slot-link-btn">+ Add Slot Link</button>
           </div>
           
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 20px;" id="slot-links-container">
-            <!-- Rendered dynamically by JavaScript -->
+          <div style="overflow-x:auto; margin-top: 15px;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="width:200px; text-align:left;">Slot Name</th>
+                  <th style="text-align:left;">Zoom / Class Link</th>
+                  <th style="width:120px; text-align:center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="slot-links-settings-tbody">
+                <!-- Dynamic slot links rows -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

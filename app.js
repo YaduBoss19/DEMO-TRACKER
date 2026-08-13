@@ -2192,9 +2192,20 @@ function initializeBrandingLists() {
   if (!state.branding.themeColors) {
     state.branding.themeColors = {};
   }
-  if (!state.branding.themeColors.slotsList || !Array.isArray(state.branding.themeColors.slotsList) || state.branding.themeColors.slotsList.length === 0) {
-    state.branding.themeColors.slotsList = Array.from({length: 48}, (_, i) => `Slot ${i + 1}`);
+  if (!state.branding.slotLinks || !Array.isArray(state.branding.slotLinks) || state.branding.slotLinks.length === 0) {
+    const list = [];
+    for (let i = 1; i <= 48; i++) {
+      list.push({
+        id: `slot_${i}`,
+        name: `Slot ${i}`,
+        link: "https://eighttimeseight.onlineclass.site/join"
+      });
+    }
+    state.branding.slotLinks = list;
   }
+  // Synchronize slotsList for compatibility
+  state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
+
   if (!state.branding.themeColors.agentsList || !Array.isArray(state.branding.themeColors.agentsList) || state.branding.themeColors.agentsList.length === 0) {
     state.branding.themeColors.agentsList = ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
   }
@@ -2240,6 +2251,36 @@ function renderSettingsDropdownLists() {
   }
 }
 
+function renderSlotLinksSettingsTable() {
+  const tbody = document.getElementById("slot-links-settings-tbody");
+  if (!tbody) return;
+
+  initializeBrandingLists();
+
+  tbody.innerHTML = "";
+  const slotLinks = state.branding.slotLinks || [];
+  if (slotLinks.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">No slot configurations found. Click '+ Add Slot Link' to create one.</td></tr>`;
+    return;
+  }
+
+  slotLinks.forEach(slotItem => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <input type="text" class="slot-setting-name-input form-control" data-id="${slotItem.id}" value="${slotItem.name}" style="width:100%; font-weight:bold; padding:4px 8px; font-size:0.85rem;">
+      </td>
+      <td>
+        <input type="text" class="slot-setting-link-input form-control" data-id="${slotItem.id}" value="${slotItem.link || ''}" style="width:100%; padding:4px 8px; font-size:0.85rem;" placeholder="e.g. https://zoom.us/j/...">
+      </td>
+      <td style="text-align:center; vertical-align:middle;">
+        <button type="button" class="btn btn-sm btn-danger delete-slot-link-setting-btn" data-id="${slotItem.id}">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 // --- VIEW: ADMIN BRANDING ---
 function renderAdminBranding() {
   const branding = state.branding;
@@ -2277,23 +2318,8 @@ function renderAdminBranding() {
     }
   }
 
-  const slotContainer = document.getElementById("slot-links-container");
-  if (slotContainer) {
-    slotContainer.innerHTML = "";
-    for (let i = 10; i <= 26; i++) {
-      const key = `slot${i}`;
-      const val = branding[key] || branding[key + "zoom"] || branding[`Slot ${i}`] || "";
-      const div = document.createElement("div");
-      div.className = "form-group";
-      div.innerHTML = `
-        <label style="font-weight:700; font-size:0.8rem; display:block; margin-bottom:4px;">Demo Slot ${i} Link</label>
-        <input type="text" class="form-control slot-zoom-input" data-slot="${i}" value="${val}" placeholder="e.g. https://zoom.us/j/...">
-      `;
-      slotContainer.appendChild(div);
-    }
-  }
-
   renderSettingsDropdownLists();
+  renderSlotLinksSettingsTable();
 }
 
 // --- VIEW: ADMIN TUTORS ---
@@ -2917,9 +2943,15 @@ async function deleteDemo(demoId) {
 }
 
 function getZoomLinkForSlot(slotName) {
-  if (!slotName) return "https://zoom.us/j/default-meeting";
+  if (!slotName) return "https://eighttimeseight.onlineclass.site/join";
   
-  // 1. Look up in our custom timetable template if configured
+  // 1. Look up in our custom dynamic slotLinks list
+  if (state.branding && state.branding.slotLinks) {
+    const found = state.branding.slotLinks.find(s => s.name.toLowerCase() === slotName.toLowerCase());
+    if (found && found.link) return found.link;
+  }
+
+  // 2. Look up in our custom timetable template if configured
   if (state.timetable && state.timetable.length > 0) {
     const slotObj = state.timetable.find(s => s.name.toLowerCase() === slotName.toLowerCase());
     if (slotObj && slotObj.zoomLink) return slotObj.zoomLink;
@@ -2928,32 +2960,12 @@ function getZoomLinkForSlot(slotName) {
   const branding = state.branding || {};
   const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
   
-  // 2. Look up in direct branding variables
+  // 3. Look up in direct branding variables
   const link = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName];
   if (link) return link;
   
-  // 3. Failsafe fallback mapping for 16 Zoom links (Slot 9 to 26)
-  const defaultLinks = {
-    "slot 9": "https://zoom.us/j/default-slot9",
-    "slot 10": "https://zoom.us/j/default-slot10",
-    "slot 11": "https://zoom.us/j/default-slot11",
-    "slot 12": "https://zoom.us/j/default-slot12",
-    "slot 13": "https://zoom.us/j/default-slot13",
-    "slot 14": "https://zoom.us/j/default-slot14",
-    "slot 15": "https://zoom.us/j/default-slot15",
-    "slot 16": "https://zoom.us/j/default-slot16",
-    "slot 17": "https://zoom.us/j/default-slot17",
-    "slot 18": "https://zoom.us/j/default-slot18",
-    "slot 19": "https://zoom.us/j/default-slot19",
-    "slot 20": "https://zoom.us/j/default-slot20",
-    "slot 21": "https://zoom.us/j/default-slot21",
-    "slot 22": "https://zoom.us/j/default-slot22",
-    "slot 23": "https://zoom.us/j/default-slot23",
-    "slot 24": "https://zoom.us/j/default-slot24",
-    "slot 25": "https://zoom.us/j/default-slot25",
-    "slot 26": "https://zoom.us/j/default-slot26"
-  };
-  return defaultLinks[slotName.toLowerCase()] || "https://zoom.us/j/default-meeting";
+  // 4. Standard default fallback
+  return "https://eighttimeseight.onlineclass.site/join";
 }
 
 function sendDemoInvite(demoId) {
@@ -3503,6 +3515,29 @@ function initEventListeners() {
     });
   }
 
+  // Add new Slot Link setting
+  const addNewSlotLinkBtn = document.getElementById("add-new-slot-link-btn");
+  if (addNewSlotLinkBtn) {
+    addNewSlotLinkBtn.addEventListener("click", async () => {
+      initializeBrandingLists();
+      const newId = `slot_${Date.now()}`;
+      state.branding.slotLinks.push({
+        id: newId,
+        name: `Slot ${state.branding.slotLinks.length + 1}`,
+        link: "https://eighttimeseight.onlineclass.site/join"
+      });
+      // Synchronize compatibility list
+      state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
+
+      renderSlotLinksSettingsTable();
+      renderSettingsDropdownLists();
+      await writeToSheets("updateBranding", state.branding);
+      saveToLocalStorage();
+      renderDashboard();
+      showToast("New slot link added.");
+    });
+  }
+
   // Unified Database Connection Tester
   const testConnectionBtn = document.getElementById("test-connection-btn");
   if (testConnectionBtn) {
@@ -3800,6 +3835,24 @@ function initEventListeners() {
       renderDashboard();
     }
 
+    // Delete Custom Slot Link setting
+    if (target.classList.contains("delete-slot-link-setting-btn")) {
+      e.preventDefault();
+      const id = target.dataset.id;
+      if (confirm("Are you sure you want to delete this slot and its link?")) {
+        initializeBrandingLists();
+        state.branding.slotLinks = state.branding.slotLinks.filter(s => s.id !== id);
+        state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
+
+        renderSlotLinksSettingsTable();
+        renderSettingsDropdownLists();
+        writeToSheets("updateBranding", state.branding);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Slot configuration deleted.");
+      }
+    }
+
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
 
     if (target.classList.contains("claim-demo-btn")) claimDemo(target.dataset.id);
@@ -4045,6 +4098,39 @@ function initEventListeners() {
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
         showToast("Topic to start updated.");
+      }
+    }
+
+    // Custom Slot Settings Name Input
+    if (target.classList.contains("slot-setting-name-input")) {
+      const id = target.dataset.id;
+      const val = target.value.trim();
+      if (!val) return;
+      initializeBrandingLists();
+      const found = state.branding.slotLinks.find(s => s.id === id);
+      if (found) {
+        found.name = val;
+        state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
+        
+        writeToSheets("updateBranding", state.branding);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Slot name updated.");
+      }
+    }
+
+    // Custom Slot Settings Link Input
+    if (target.classList.contains("slot-setting-link-input")) {
+      const id = target.dataset.id;
+      const val = target.value.trim();
+      initializeBrandingLists();
+      const found = state.branding.slotLinks.find(s => s.id === id);
+      if (found) {
+        found.link = val;
+        writeToSheets("updateBranding", state.branding);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Slot link updated.");
       }
     }
   });
