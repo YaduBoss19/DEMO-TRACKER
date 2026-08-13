@@ -1493,6 +1493,49 @@ function updatePredictor() {
   simTip.innerHTML = tipText || "Adjust sliders to run predictions.";
 }
 
+// Date format conversion for HTML5 native date pickers
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+  const d = parseDateString(dateStr);
+  if (!d || isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Time format conversions between 12-hour AM/PM and 24-hour HH:MM
+function formatTimeForInput(timeStr) {
+  if (!timeStr) return "";
+  const clean = String(timeStr).trim().toUpperCase();
+  const match = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+  if (!match) {
+    const match24 = clean.match(/^(\d{2}):(\d{2})$/);
+    if (match24) return clean;
+    return "";
+  }
+  let hrs = parseInt(match[1]);
+  const mins = match[2];
+  const ampm = match[3];
+  
+  if (ampm === "PM" && hrs < 12) hrs += 12;
+  if (ampm === "AM" && hrs === 12) hrs = 0;
+  
+  return `${String(hrs).padStart(2, "0")}:${mins}`;
+}
+
+function formatTimeForDatabase(time24) {
+  if (!time24) return "";
+  const match = time24.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return time24;
+  let hrs = parseInt(match[1]);
+  const mins = match[2];
+  const ampm = hrs >= 12 ? "PM" : "AM";
+  hrs = hrs % 12;
+  if (hrs === 0) hrs = 12;
+  return `${hrs}:${mins} ${ampm}`;
+}
+
 // --- VIEW: DEMOS LIST ---
 function renderDemosTable() {
   const head = document.getElementById("demos-table-head");
@@ -1615,8 +1658,8 @@ function renderDemosTable() {
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
-        <td style="white-space: nowrap;"><input type="text" class="inline-date-input" data-id="${demo.id}" value="${demo.date || ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-        <td style="white-space: nowrap;"><input type="text" class="inline-time-input" data-id="${demo.id}" value="${demo.time || ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
+        <td style="white-space: nowrap;"><input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
         <td>${tutorSelectHtml}</td>
         <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
@@ -3539,10 +3582,11 @@ function initEventListeners() {
     // Inline Time Input
     if (target.classList.contains("inline-time-input")) {
       const id = target.dataset.id;
-      const time = target.value;
+      const time24 = target.value;
+      const formattedTime = formatTimeForDatabase(time24);
       const idx = state.demos.findIndex(d => d.id === id);
       if (idx !== -1) {
-        state.demos[idx].time = time;
+        state.demos[idx].time = formattedTime;
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
         renderDashboard();
