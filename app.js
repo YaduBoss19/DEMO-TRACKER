@@ -1106,8 +1106,31 @@ function getEligibleSlab(completed, conversion, slabs) {
   return highestSlab;
 }
 
+// Helper to populate all dropdown selectors with active tutors
+function populateTutorDropdowns() {
+  const selects = document.querySelectorAll(".tutor-select-el");
+  selects.forEach(select => {
+    const prevVal = select.value;
+    select.innerHTML = "";
+    
+    // Filter to only display users with the "tutor" role or empty role
+    const tutorsList = state.tutors.filter(t => t.role === "tutor" || !t.role);
+    
+    tutorsList.forEach(t => {
+      const op = document.createElement("option");
+      op.value = t.id;
+      op.textContent = t.name;
+      select.appendChild(op);
+    });
+    if (prevVal && tutorsList.some(t => t.id === prevVal)) {
+      select.value = prevVal;
+    }
+  });
+}
+
 // --- Views Dispatches ---
 function updateViews() {
+  populateTutorDropdowns();
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthEl = document.getElementById("date-switcher-month");
   if (monthEl) {
@@ -1234,8 +1257,17 @@ function renderDashboard() {
 
   document.getElementById("dash-incentive-earned").textContent = `${currency}${metrics.incentive.toLocaleString()}`;
 
-  const todayString = "15 Jul 26";
-  const todaysCount = demos.filter(d => (isTutor ? d.tutorId === tutorId : true) && d.dateTime.includes(todayString)).length;
+  const today = new Date();
+  const todaysCount = demos.filter(d => {
+    if (isTutor && d.tutorId !== tutorId) return false;
+    
+    const demoDate = parseDateString(d.date || d.dateTime);
+    if (!demoDate || isNaN(demoDate.getTime())) return false;
+    
+    return demoDate.getDate() === today.getDate() &&
+           demoDate.getMonth() === today.getMonth() &&
+           demoDate.getFullYear() === today.getFullYear();
+  }).length;
   document.getElementById("dash-today-demos").textContent = todaysCount;
 
   document.getElementById("dash-total-demos").textContent = metrics.total;
@@ -3209,10 +3241,7 @@ function initEventListeners() {
       await writeToSheets("clearDatabase", {});
       
       // Force reload select selectors
-      const selects = document.querySelectorAll(".tutor-select-el");
-      selects.forEach(select => {
-        select.innerHTML = "";
-      });
+      populateTutorDropdowns();
 
       updateViews();
       showToast("Tutor profiles and demo logs wiped.", "warning");
@@ -3554,16 +3583,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initEventListeners();
 
   // Load select option dropdowns in admin layout
-  const selects = document.querySelectorAll(".tutor-select-el");
-  selects.forEach(select => {
-    select.innerHTML = "";
-    state.tutors.forEach(t => {
-      const op = document.createElement("option");
-      op.value = t.id;
-      op.textContent = t.name;
-      select.appendChild(op);
-    });
-  });
+  populateTutorDropdowns();
 
   if (state.currentUser) {
     // Session exists
