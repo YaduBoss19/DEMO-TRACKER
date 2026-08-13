@@ -3491,7 +3491,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-container").style.display = "flex";
-    syncFullState().then(() => updateViews());
+    syncFullState().then(() => {
+      if (isTutorPage && state.currentUser) {
+        const stillExists = state.tutors.some(t => t.id === state.currentUser.id);
+        if (!stillExists) {
+          showToast("Your tutor profile has been deleted by the admin.", "warning");
+          setTimeout(() => {
+            handleSignout();
+          }, 1500);
+          return;
+        }
+      }
+      updateViews();
+    });
 
     // Auto-refresh background poll (every 30 seconds) to fetch external updates
     setInterval(async () => {
@@ -3499,6 +3511,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (isConnected) {
         const updated = await fetchFromSheets();
         if (updated) {
+          if (isTutorPage && state.currentUser) {
+            const stillExists = state.tutors.some(t => t.id === state.currentUser.id);
+            if (!stillExists) {
+              showToast("Your tutor profile has been deleted by the admin.", "warning");
+              setTimeout(() => {
+                handleSignout();
+              }, 1500);
+              return;
+            }
+          }
           updateViews();
         }
       }
