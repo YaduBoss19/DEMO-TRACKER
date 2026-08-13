@@ -1567,17 +1567,58 @@ function renderDemosTable() {
         rowClass = "row-status-reschedule";
       }
       tr.className = rowClass;
-
       const isChecked = state.bulkSelectedDemoIds.includes(demo.id) ? "checked" : "";
       const zoomLink = getZoomLinkForSlot(demo.slot);
+
+      // Build inline Slot dropdown select
+      let slotSelectHtml = `<select class="inline-slot-select" data-id="${demo.id}" style="width:105px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-weight:600; font-family:var(--font-main);">`;
+      for (let i = 1; i <= 48; i++) {
+        const sName = `Slot ${i}`;
+        slotSelectHtml += `<option value="${sName}" ${demo.slot === sName ? 'selected' : ''}>${sName}</option>`;
+      }
+      let isStandardSlot = false;
+      for (let i = 1; i <= 48; i++) {
+        if (demo.slot === `Slot ${i}`) { isStandardSlot = true; break; }
+      }
+      if (demo.slot && !isStandardSlot) {
+        slotSelectHtml += `<option value="${demo.slot}" selected>${demo.slot}</option>`;
+      }
+      slotSelectHtml += `</select>`;
+
+      // Build inline Tutor dropdown select
+      let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-weight:600; font-family:var(--font-main);">`;
+      state.tutors.forEach(t => {
+        if (t.role === "tutor" || !t.role) {
+          tutorSelectHtml += `<option value="${t.id}" ${demo.tutorId === t.id ? 'selected' : ''}>${t.name}</option>`;
+        }
+      });
+      tutorSelectHtml += `</select>`;
+
+      // Build inline Agent dropdown select
+      const uniqueAgents = new Set(["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"]);
+      state.demos.forEach(d => {
+        if (d.agentName && d.agentName !== "-" && d.agentName.trim() !== "") {
+          uniqueAgents.add(d.agentName.trim());
+        }
+      });
+      state.tutors.forEach(t => {
+        if (t.role === "sales" || t.role === "demo_manager") {
+          uniqueAgents.add(t.name);
+        }
+      });
+      let agentSelectHtml = `<select class="inline-agent-select" data-id="${demo.id}" style="width:115px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-family:var(--font-main);">`;
+      uniqueAgents.forEach(agent => {
+        agentSelectHtml += `<option value="${agent}" ${(demo.agentName || "Admin") === agent ? 'selected' : ''}>${agent}</option>`;
+      });
+      agentSelectHtml += `</select>`;
 
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
         <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
         <td>${formatDisplayTime(demo.time)}</td>
-        <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
-        <td><strong>${demo.tutorName}</strong></td>
+        <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
+        <td>${tutorSelectHtml}</td>
         <td>${demo.studentName}</td>
         <td>
           <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
@@ -1590,7 +1631,7 @@ function renderDemosTable() {
         </td>
         <td>${demo.age}</td>
         <td>${demo.language}</td>
-        <td>${demo.agentName || '-'}</td>
+        <td>${agentSelectHtml}</td>
         <td>${demo.location || '-'}</td>
         <td>${demo.mobileNumber || '-'}</td>
         <td>${demo.level || '-'}</td>
@@ -3401,7 +3442,7 @@ function initEventListeners() {
     }
   });
 
-  // Table status dropdown update dispatches
+  // Table status and inline dropdown update dispatches
   document.addEventListener("change", async (e) => {
     const target = e.target;
     if (target.classList.contains("admin-status-select") || target.classList.contains("tutor-status-select")) {
@@ -3416,6 +3457,63 @@ function initEventListeners() {
         renderDemosTable();
         renderDashboard();
         showToast("Outcome status updated.");
+      }
+    }
+
+    // Inline Tutor Select
+    if (target.classList.contains("inline-tutor-select")) {
+      const id = target.dataset.id;
+      const tutorId = target.value;
+      const tutor = state.tutors.find(t => t.id === tutorId);
+      const tutorName = tutor ? tutor.name : "Unassigned";
+
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].tutorId = tutorId;
+        state.demos[idx].tutorid = tutorId;
+        state.demos[idx].tutorName = tutorName;
+        state.demos[idx].tutorname = tutorName;
+        
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDemosTable();
+        renderDashboard();
+        showToast("Assigned tutor updated.");
+      }
+    }
+
+    // Inline Slot Select
+    if (target.classList.contains("inline-slot-select")) {
+      const id = target.dataset.id;
+      const slot = target.value;
+
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].slot = slot;
+        
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDemosTable();
+        renderDashboard();
+        showToast("Demo slot updated.");
+      }
+    }
+
+    // Inline Agent Select
+    if (target.classList.contains("inline-agent-select")) {
+      const id = target.dataset.id;
+      const agentName = target.value;
+
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].agentName = agentName;
+        state.demos[idx].agentname = agentName;
+        
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDemosTable();
+        renderDashboard();
+        showToast("Agent name updated.");
       }
     }
   });
