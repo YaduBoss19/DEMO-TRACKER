@@ -527,6 +527,16 @@ async function fetchFromSheets() {
 }
 async function writeToSheets(action, payload) {
   const connector = state.branding.connectorType || "sheets";
+
+  const restrictedActions = ["addTutor", "updateTutor", "deleteTutor", "updateSlab", "deleteSlab", "updateBranding", "clearDatabase"];
+  if (restrictedActions.includes(action)) {
+    if (!state.currentUser || state.currentUser.role !== "admin") {
+      console.error(`Security violation: role ${state.currentUser?.role} attempted restricted action: ${action}`);
+      showToast("Access Denied: Only Admins can modify system settings.", "error");
+      return false;
+    }
+  }
+
   if (connector === "supabase") {
     return await writeToSupabase(action, payload);
   }
@@ -1138,9 +1148,9 @@ function updateViews() {
       if (leaderboardTab) leaderboardTab.style.display = "flex";
       if (slabsTab) slabsTab.style.display = "none";
       if (brandingTab) brandingTab.style.display = "none";
-      if (tutorsTab) tutorsTab.style.display = "flex";
-      if (navHeader) navHeader.style.display = "block";
-      if (["admin-slabs", "admin-branding"].includes(state.activeTab)) {
+      if (tutorsTab) tutorsTab.style.display = "none";
+      if (navHeader) navHeader.style.display = "none";
+      if (["admin-slabs", "admin-branding", "admin-tutors"].includes(state.activeTab)) {
         state.activeTab = "dashboard";
       }
     } else { // admin
@@ -1960,6 +1970,15 @@ function renderAdminTimetable() {
     state.inviteTemplate = localStorage.getItem("DEMO_INVITE_TEMPLATE") || DEFAULT_INVITE_TEMPLATE;
   }
   textarea.value = state.inviteTemplate;
+
+  const saveBtn = document.getElementById("save-invite-template-btn");
+  if (state.currentUser && state.currentUser.role !== "admin") {
+    textarea.disabled = true;
+    if (saveBtn) saveBtn.style.display = "none";
+  } else {
+    textarea.disabled = false;
+    if (saveBtn) saveBtn.style.display = "inline-flex";
+  }
 }
 
 function renderTutorSlots() {
