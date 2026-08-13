@@ -1615,8 +1615,8 @@ function renderDemosTable() {
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
-        <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
-        <td>${formatDisplayTime(demo.time)}</td>
+        <td style="white-space: nowrap;"><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
+        <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
         <td>${tutorSelectHtml}</td>
         <td>${demo.studentName}</td>
@@ -1747,8 +1747,8 @@ function renderDemosTable() {
       const zoomLink = getZoomLinkForSlot(demo.slot);
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
-        <td>${formatDisplayDate(demo.date || demo.dateTime)}</td>
-        <td>${formatDisplayTime(demo.time)}</td>
+        <td style="white-space: nowrap;">${formatDisplayDate(demo.date || demo.dateTime)}</td>
+        <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
         <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
         <td><strong>${demo.studentName}</strong></td>
         <td>${demo.age}</td>
@@ -1800,8 +1800,8 @@ function renderClaimDemosTable() {
 
     tr.innerHTML = `
       <td><strong>${idx + 1}</strong></td>
-      <td><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
-      <td>${formatDisplayTime(demo.time)}</td>
+      <td style="white-space: nowrap;"><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
+      <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
       <td>${demo.slot || '-'}</td>
       <td><strong>${demo.studentName}</strong></td>
       <td>${demo.age}</td>
