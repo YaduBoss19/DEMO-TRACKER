@@ -776,7 +776,7 @@ function handleLogin(e) {
   if (!nameInput || !codeInput) return;
 
   if (isAdminPage) {
-    // Admin login validation
+    // Admin / Coordinator login validation
     if (codeInput === window.ADMIN_ACCESS_CODE) {
       state.currentUser = {
         id: "admin",
@@ -786,21 +786,50 @@ function handleLogin(e) {
         avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=YaduAdmin"
       };
       loginSuccess();
+      return;
+    }
+
+    const user = state.tutors.find(t => 
+      (t.name || "").trim().toLowerCase() === nameInput.toLowerCase() && 
+      String(t.accessCode || t.accesscode || "").trim() === codeInput
+    );
+
+    if (user) {
+      const allowedAdminRoles = ["admin", "sales", "demo_manager"];
+      if (allowedAdminRoles.includes(user.role)) {
+        state.currentUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email || "",
+          role: user.role,
+          avatar: user.avatar || ""
+        };
+        loginSuccess();
+      } else {
+        showToast("Tutors cannot access the Admin Portal.", "warning");
+      }
     } else {
-      showToast("Invalid Admin Access Code.", "warning");
+      showToast("Invalid Credentials.", "warning");
     }
   } else if (isTutorPage) {
     // Tutor login validation
-    const tutor = state.tutors.find(t => (t.name || "").trim().toLowerCase() === nameInput.toLowerCase() && String(t.accessCode || "").trim() === codeInput);
+    const tutor = state.tutors.find(t => 
+      (t.name || "").trim().toLowerCase() === nameInput.toLowerCase() && 
+      String(t.accessCode || t.accesscode || "").trim() === codeInput
+    );
     if (tutor) {
-      state.currentUser = {
-        id: tutor.id,
-        name: tutor.name,
-        email: tutor.email,
-        role: "tutor",
-        avatar: tutor.avatar
-      };
-      loginSuccess();
+      if (tutor.role === "tutor" || !tutor.role) {
+        state.currentUser = {
+          id: tutor.id,
+          name: tutor.name,
+          email: tutor.email || "",
+          role: "tutor",
+          avatar: tutor.avatar || ""
+        };
+        loginSuccess();
+      } else {
+        showToast("Administrative accounts must log in via the Admin Portal.", "warning");
+      }
     } else {
       showToast("Invalid Tutor Name or Access Code.", "warning");
     }
@@ -1085,6 +1114,41 @@ function updateViews() {
     } else {
       if (headerTitle) headerTitle.textContent = `Welcome back, ${state.currentUser.name}`;
       if (headerSubtitle) headerSubtitle.textContent = "Performance Overview";
+    }
+  }
+
+  if (isAdminPage && state.currentUser) {
+    const role = state.currentUser.role || "admin";
+    const leaderboardTab = document.querySelector('.nav-item[data-tab="leaderboard"]');
+    const slabsTab = document.querySelector('.nav-item[data-tab="admin-slabs"]');
+    const brandingTab = document.querySelector('.nav-item[data-tab="admin-branding"]');
+    const tutorsTab = document.querySelector('.nav-item[data-tab="admin-tutors"]');
+    const navHeader = document.querySelector('.nav-header');
+
+    if (role === "sales") {
+      if (leaderboardTab) leaderboardTab.style.display = "none";
+      if (slabsTab) slabsTab.style.display = "none";
+      if (brandingTab) brandingTab.style.display = "none";
+      if (tutorsTab) tutorsTab.style.display = "none";
+      if (navHeader) navHeader.style.display = "none";
+      if (["leaderboard", "admin-slabs", "admin-branding", "admin-tutors"].includes(state.activeTab)) {
+        state.activeTab = "dashboard";
+      }
+    } else if (role === "demo_manager") {
+      if (leaderboardTab) leaderboardTab.style.display = "flex";
+      if (slabsTab) slabsTab.style.display = "none";
+      if (brandingTab) brandingTab.style.display = "none";
+      if (tutorsTab) tutorsTab.style.display = "flex";
+      if (navHeader) navHeader.style.display = "block";
+      if (["admin-slabs", "admin-branding"].includes(state.activeTab)) {
+        state.activeTab = "dashboard";
+      }
+    } else { // admin
+      if (leaderboardTab) leaderboardTab.style.display = "flex";
+      if (slabsTab) slabsTab.style.display = "flex";
+      if (brandingTab) brandingTab.style.display = "flex";
+      if (tutorsTab) tutorsTab.style.display = "flex";
+      if (navHeader) navHeader.style.display = "block";
     }
   }
 
@@ -1863,12 +1927,13 @@ function renderAdminTutors() {
   tbody.innerHTML = "";
 
   if (state.tutors.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:30px;">No tutors.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:30px;">No user profiles found.</td></tr>`;
     return;
   }
 
   state.tutors.forEach(t => {
     const tr = document.createElement("tr");
+    const roleLabel = t.role ? t.role.toUpperCase().replace("_", " ") : "TUTOR";
     tr.innerHTML = `
       <td>
         <div style="display:flex; align-items:center; gap:10px;">
@@ -1876,6 +1941,7 @@ function renderAdminTutors() {
           <strong>${t.name}</strong>
         </div>
       </td>
+      <td><span class="badge" style="background: rgba(224,122,95,0.12); color: var(--brand-secondary); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700; border: 1px solid rgba(224,122,95,0.2); text-transform: uppercase;">${roleLabel}</span></td>
       <td><code>${t.accessCode}</code></td>
       <td>
         <button class="btn btn-sm edit-tutor-btn-el" data-id="${t.id}">Edit</button>
@@ -2122,16 +2188,18 @@ function openTutorModal(tutorId = null) {
   document.getElementById("tutor-form").reset();
 
   if (tutorId) {
-    title.textContent = "Edit Tutor Profile";
+    title.textContent = "Edit User Profile";
     const tutor = state.tutors.find(t => t.id === tutorId);
     if (tutor) {
       document.getElementById("tutor-form-id").value = tutor.id;
       document.getElementById("tutor-form-name").value = tutor.name;
       document.getElementById("tutor-form-code").value = tutor.accessCode || tutor.accesscode || "";
+      document.getElementById("tutor-form-role").value = tutor.role || "tutor";
     }
   } else {
-    title.textContent = "Add Tutor Profile";
+    title.textContent = "Add User Profile";
     document.getElementById("tutor-form-id").value = "";
+    document.getElementById("tutor-form-role").value = "tutor";
   }
   modal.classList.add("open");
 }
@@ -2141,22 +2209,23 @@ async function handleTutorSubmit(e) {
   const id = document.getElementById("tutor-form-id").value;
   const name = document.getElementById("tutor-form-name").value.trim();
   const accessCode = document.getElementById("tutor-form-code").value.trim();
+  const role = document.getElementById("tutor-form-role").value;
 
   const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-  const tutorData = { name, accessCode, avatar };
+  const tutorData = { name, accessCode, role, avatar };
 
   if (id) {
     const idx = state.tutors.findIndex(t => t.id === id);
     if (idx !== -1) {
       state.tutors[idx] = { id, ...tutorData };
       await writeToSheets("updateTutor", { id, ...tutorData });
-      showToast("Tutor updated.");
+      showToast("User profile updated.");
     }
   } else {
     const newId = `tutor_${Date.now()}`;
     state.tutors.push({ id: newId, ...tutorData });
     await writeToSheets("addTutor", { id: newId, ...tutorData });
-    showToast("Tutor added.");
+    showToast("User profile added.");
   }
 
   saveToLocalStorage();
@@ -3480,14 +3549,15 @@ document.addEventListener("DOMContentLoaded", () => {
   if (state.currentUser) {
     // Session exists
     // Verify if page match is valid (tutor on admin page or vice versa)
-    if (isTutorPage && state.currentUser.role !== "tutor") {
+     if (isTutorPage && state.currentUser.role !== "tutor") {
       // Redirect or force logout
       sessionStorage.removeItem("CHESS_PORTAL_SESSION");
       state.currentUser = null;
       window.location.reload();
       return;
     }
-    if (isAdminPage && state.currentUser.role !== "admin") {
+    const allowedAdminRoles = ["admin", "sales", "demo_manager"];
+    if (isAdminPage && !allowedAdminRoles.includes(state.currentUser.role)) {
       sessionStorage.removeItem("CHESS_PORTAL_SESSION");
       state.currentUser = null;
       window.location.reload();

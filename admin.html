@@ -593,14 +593,15 @@
             </div>
             <div style="display:flex; gap:10px;">
               <button class="btn" id="bulk-import-tutors-btn">Bulk Import Tutors</button>
-              <button class="btn btn-primary" id="admin-add-tutor-btn">+ Add Tutor</button>
+              <button class="btn btn-primary" id="admin-add-tutor-btn">+ Add User</button>
             </div>
           </div>
           <div class="table-container">
             <table class="custom-table">
               <thead>
                 <tr>
-                  <th>Tutor Name</th>
+                  <th>Name</th>
+                  <th>Role</th>
                   <th>Access Code</th>
                   <th style="width:100px;">Actions</th>
                 </tr>
@@ -702,6 +703,15 @@
           <div class="form-group">
             <label for="tutor-form-code">Access Code</label>
             <input type="text" id="tutor-form-code" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label for="tutor-form-role">User Role</label>
+            <select id="tutor-form-role" class="form-control">
+              <option value="tutor">Tutor</option>
+              <option value="sales">Sales</option>
+              <option value="demo_manager">Demo Manager</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
