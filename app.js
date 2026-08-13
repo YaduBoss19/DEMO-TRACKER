@@ -530,7 +530,18 @@ async function writeToSheets(action, payload) {
 
   const restrictedActions = ["addTutor", "updateTutor", "deleteTutor", "updateSlab", "deleteSlab", "updateBranding", "clearDatabase"];
   if (restrictedActions.includes(action)) {
-    if (!state.currentUser || state.currentUser.role !== "admin") {
+    let isAllowed = false;
+    
+    // Tutors are allowed to update their own profile (for availability and zoom link settings)
+    if (action === "updateTutor" && state.currentUser && state.currentUser.role === "tutor" && state.currentUser.id === payload.id) {
+      isAllowed = true;
+    }
+    // Admins are allowed to perform all actions
+    if (state.currentUser && state.currentUser.role === "admin") {
+      isAllowed = true;
+    }
+
+    if (!isAllowed) {
       console.error(`Security violation: role ${state.currentUser?.role} attempted restricted action: ${action}`);
       showToast("Access Denied: Only Admins can modify system settings.", "error");
       return false;
