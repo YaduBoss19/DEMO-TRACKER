@@ -1616,6 +1616,8 @@ function renderDemosTable() {
 
     filteredDemos.forEach((demo, idx) => {
       const tr = document.createElement("tr");
+      tr.draggable = true;
+      tr.dataset.id = demo.id;
       
       let statusClass = "status-not-done";
       let rowClass = "row-status-not-done";
@@ -1679,21 +1681,16 @@ function renderDemosTable() {
       });
       agentSelectHtml += `</select>`;
 
-      let moveControls = "";
+      let dragHandle = "";
       if (state.currentUser && (state.currentUser.role === "admin" || state.currentUser.role === "demo_manager")) {
-        moveControls = `
-          <div style="display:flex; flex-direction:column; line-height:1; margin-right:4px;">
-            <button type="button" class="row-move-up-btn" data-id="${demo.id}" style="background:none; border:none; cursor:pointer; padding:1px; font-size:0.7rem; color:var(--text-muted); line-height:1;" title="Move Up">▲</button>
-            <button type="button" class="row-move-down-btn" data-id="${demo.id}" style="background:none; border:none; cursor:pointer; padding:1px; font-size:0.7rem; color:var(--text-muted); line-height:1;" title="Move Down">▼</button>
-          </div>
-        `;
+        dragHandle = `<span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-weight: bold; margin-right: 6px; user-select: none;" title="Drag to reorder">⋮⋮</span>`;
       }
 
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td>
           <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
-            ${moveControls}
+            ${dragHandle}
             <strong>${idx + 1}</strong>
           </div>
         </td>
@@ -1732,6 +1729,8 @@ function renderDemosTable() {
     if (typeof updateBulkDeleteButton === "function") {
       updateBulkDeleteButton();
     }
+
+    setupTableDragAndDrop(body);
 
   } else {
     // Tutor view Demos
@@ -1885,6 +1884,94 @@ async function moveDemoRow(demoId, direction) {
   await writeToSheets("updateDemo", item2);
   
   renderDemosTable();
+}
+
+function setupTableDragAndDrop(tbody) {
+  let dragEl = null;
+
+  tbody.querySelectorAll("tr").forEach(tr => {
+    // Only bind events if user is admin or demo_manager
+    if (!state.currentUser || (state.currentUser.role !== "admin" && state.currentUser.role !== "demo_manager")) {
+      tr.draggable = false;
+      return;
+    }
+
+    tr.addEventListener("dragstart", (e) => {
+      // Only drag if click started on the drag handle
+      const handle = e.target.closest(".drag-handle");
+      if (!handle && e.target.tagName.toLowerCase() !== "td") {
+        // Prevent dragging if editing inputs
+        e.preventDefault();
+        return;
+      }
+      dragEl = tr;
+      tr.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", tr.dataset.id);
+    });
+
+    tr.addEventListener("dragend", () => {
+      if (dragEl) {
+        dragEl.classList.remove("dragging");
+      }
+      tbody.querySelectorAll("tr").forEach(r => r.classList.remove("drag-over"));
+      dragEl = null;
+    });
+
+    tr.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const targetTr = e.target.closest("tr");
+      if (targetTr && targetTr !== dragEl) {
+        tbody.querySelectorAll("tr").forEach(r => r.classList.remove("drag-over"));
+        targetTr.classList.add("drag-over");
+      }
+    });
+
+    tr.addEventListener("dragleave", (e) => {
+      const targetTr = e.target.closest("tr");
+      if (targetTr) {
+        targetTr.classList.remove("drag-over");
+      }
+    });
+
+    tr.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      tbody.querySelectorAll("tr").forEach(r => r.classList.remove("drag-over"));
+      
+      const targetTr = e.target.closest("tr");
+      if (!targetTr || !dragEl || targetTr === dragEl) return;
+
+      const draggedId = dragEl.dataset.id;
+      const targetId = targetTr.dataset.id;
+
+      const filteredDemos = getFilteredDemosByRange();
+      const draggedIdx = filteredDemos.findIndex(d => d.id === draggedId);
+      const targetIdx = filteredDemos.findIndex(d => d.id === targetId);
+
+      if (draggedIdx !== -1 && targetIdx !== -1) {
+        const draggedItem = filteredDemos[draggedIdx];
+        
+        // Remove item from old position and insert at new position
+        filteredDemos.splice(draggedIdx, 1);
+        filteredDemos.splice(targetIdx, 0, draggedItem);
+
+        // Assign clean sequential position numbers
+        filteredDemos.forEach((d, idx) => {
+          d.position = idx * 10;
+        });
+
+        saveToLocalStorage();
+        renderDemosTable();
+        showToast("Row order updated.");
+
+        // Batch upload positions to database in background
+        filteredDemos.forEach(async (d) => {
+          await writeToSheets("updateDemo", d);
+        });
+      }
+    });
+  });
 }
 
 // --- VIEW: AVAILABLE/CLAIMABLE DEMOS ---
@@ -3999,6 +4086,32 @@ function updateBulkDeleteButton() {
 
 // --- App Entry Point ---
 document.addEventListener("DOMContentLoaded", () => {
+  // Inject drag and drop styles
+  const style = document.createElement("style");
+  style.textContent = `
+    tr[draggable="true"] {
+      cursor: grab;
+    }
+    tr[draggable="true"]:active {
+      cursor: grabbing;
+    }
+    tr.dragging {
+      opacity: 0.55;
+      background-color: rgba(14, 165, 233, 0.15) !important;
+      outline: 2px dashed #0ea5e9;
+    }
+    tr.drag-over {
+      border-top: 3px dashed #0ea5e9 !important;
+    }
+    .drag-handle {
+      cursor: grab;
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+  `;
+  document.head.appendChild(style);
+
   loadFromLocalStorage();
   applyBranding();
   initEventListeners();
