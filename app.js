@@ -196,7 +196,12 @@ async function fetchFromSupabase() {
             availability = typeof t.availability === "string" ? JSON.parse(t.availability) : t.availability;
           } catch(e) {}
         }
-        return { ...t, availability };
+        return {
+          ...t,
+          availability,
+          accessCode: t.accessCode || t.accesscode || "",
+          zoomLink: t.zoomLink || t.zoomlink || ""
+        };
       });
 
       // Preserve logged-in tutor profile if missing in database
@@ -2122,7 +2127,7 @@ function openTutorModal(tutorId = null) {
     if (tutor) {
       document.getElementById("tutor-form-id").value = tutor.id;
       document.getElementById("tutor-form-name").value = tutor.name;
-      document.getElementById("tutor-form-code").value = tutor.accessCode;
+      document.getElementById("tutor-form-code").value = tutor.accessCode || tutor.accesscode || "";
     }
   } else {
     title.textContent = "Add Tutor Profile";
