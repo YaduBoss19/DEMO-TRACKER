@@ -375,6 +375,7 @@
               <input type="file" id="demo-file-input" accept=".csv, .xlsx, .xls" style="display:none;">
               <button class="btn" id="copy-booking-link-btn" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">🔗 Copy Booking Link</button>
               <button class="btn" id="bulk-import-btn">Bulk Import Demos</button>
+              <button class="btn" id="download-template-btn" style="background-color: var(--brand-secondary); color: white;">📥 Get Import Template</button>
               <button class="btn" id="export-demos-btn">Export to Excel</button>
               <button class="btn btn-danger" id="bulk-delete-btn" style="display:none;">🗑️ Delete Selected (0)</button>
               <button class="btn btn-primary" id="add-demo-btn">+ Add Demo</button>
@@ -919,6 +920,65 @@
         <div class="modal-footer">
           <button type="button" class="btn" id="slot-modal-cancel">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Slot Configuration</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT NOTES & FEEDBACK -->
+  <div class="modal-backdrop" id="feedback-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Complete Demo Notes & Outcome</h4>
+        <button class="modal-close" type="button" id="feedback-modal-close">✕</button>
+      </div>
+      <form id="feedback-form">
+        <div class="modal-body">
+          <input type="hidden" id="feedback-demo-id">
+          <div class="form-group">
+            <label id="feedback-student-label" style="font-size: 1.15rem; font-weight: 700; color: var(--brand-secondary);">Student: -</label>
+            <p id="feedback-info-label" style="font-size:0.8rem; color:var(--text-muted); margin-top: 4px; margin-bottom:15px;">Date: - | Slot: -</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="feedback-notes-input" style="font-weight:700;">Feedback / Notes</label>
+            <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:80px; margin-top: 6px;" placeholder="Add class feedback notes..."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-status-select" style="font-weight:700;">Demo Status</label>
+            <select id="feedback-status-select" class="form-control" style="margin-top: 6px;">
+              <option value="DEMO NOT DONE">DEMO NOT DONE</option>
+              <option value="DEMO DONE">DEMO DONE</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-revision-select" style="font-weight:700;">Revision Needed?</label>
+            <select id="feedback-revision-select" class="form-control" style="margin-top: 6px;">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="feedback-topic-group" style="margin-top: 15px; display: none;">
+            <label for="feedback-topic-select" style="font-weight:700;">Topic To Start</label>
+            <select id="feedback-topic-select" class="form-control" style="margin-top: 6px;">
+              <option value="-">-</option>
+              <option value="Basics">Basics</option>
+              <option value="Tactics">Tactics</option>
+              <option value="Openings">Openings</option>
+              <option value="Middlegames">Middlegames</option>
+              <option value="Endgames">Endgames</option>
+              <option value="Game Analysis">Game Analysis</option>
+              <option value="Puzzle Solving">Puzzle Solving</option>
+              <option value="Tournament Prep">Tournament Prep</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="feedback-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Notes & Outcome</button>
         </div>
       </form>
     </div>

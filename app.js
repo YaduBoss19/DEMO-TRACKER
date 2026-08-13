@@ -1361,6 +1361,66 @@ function renderDashboard() {
     if (simDemos.dataset.dirty !== "true") simDemos.value = metrics.completed;
     if (simConv.dataset.dirty !== "true") simConv.value = Math.round(metrics.conversion);
   }
+  
+  // Dynamic next class quick start panel update
+  const quickStartContainer = document.getElementById("next-class-quick-start-container");
+  if (quickStartContainer) {
+    quickStartContainer.innerHTML = "";
+    if (isTutor) {
+      // Find all scheduled demos for this tutor that are DEMO NOT DONE or empty/not cancelled
+      const activeTutorDemos = state.demos.filter(d => {
+        if (d.tutorId !== state.currentUser.id) return false;
+        const st = (d.status || "").toUpperCase();
+        return st === "DEMO NOT DONE" || st === "";
+      });
+      
+      // Sort them chronologically by date/time
+      activeTutorDemos.sort((a, b) => getDemoDateTimeObject(a).getTime() - getDemoDateTimeObject(b).getTime());
+      
+      // Filter to find the next upcoming demo (today or in the future)
+      const now = new Date();
+      // subtract 1 hour buffer so a class that started 30 mins ago still shows up as active/joinable!
+      const bufferTime = new Date(now.getTime() - 60 * 60 * 1000); 
+      
+      const nextDemo = activeTutorDemos.find(d => {
+        const demoDT = getDemoDateTimeObject(d);
+        return demoDT >= bufferTime;
+      });
+      
+      if (nextDemo) {
+        const demoLink = getZoomLinkForSlot(nextDemo.slot);
+        quickStartContainer.innerHTML = `
+          <div class="card-panel" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); border: 1.5px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div style="background: #22c55e; color: white; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(34,197,94,0.3); animation: pulse 2s infinite;">
+                🟢
+              </div>
+              <div>
+                <h4 style="font-size: 1rem; font-weight: bold; margin: 0; color: var(--text-main);">Next Scheduled Demo Class</h4>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                  Student: <strong style="color: var(--brand-secondary); font-size: 0.95rem;">${nextDemo.studentName}</strong> | 
+                  Date: <strong>${formatDisplayDate(nextDemo.date || nextDemo.dateTime)}</strong> | 
+                  Time: <strong>${formatDisplayTime(nextDemo.time)}</strong> | 
+                  Slot: <strong>${nextDemo.slot || '-'}</strong>
+                </p>
+              </div>
+            </div>
+            <div>
+              <a href="${demoLink}" target="_blank" class="btn" style="background-color: #22c55e; color: white; font-weight: bold; padding: 10px 20px; border-radius: 8px; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: none; box-shadow: 0 4px 12px rgba(34,197,94,0.3); transition: transform 0.2s, background-color 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                🚀 Start Zoom Class
+              </a>
+            </div>
+          </div>
+        `;
+      } else {
+        quickStartContainer.innerHTML = `
+          <div class="card-panel" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 12px; justify-content: center; color: var(--text-muted); font-size: 0.85rem; font-style: italic;">
+            <span>📅</span> No upcoming scheduled classes for today.
+          </div>
+        `;
+      }
+    }
+  }
   updatePredictor();
 }
 
@@ -1637,10 +1697,16 @@ function renderDemosTable() {
     const statusQuery = document.getElementById("demo-filter-status").value;
 
     const filteredDemos = demos.filter(d => {
-      const matchesSearch = d.studentName.toLowerCase().includes(searchQuery) || 
-                            d.tutorName.toLowerCase().includes(searchQuery) ||
-                            (d.agentName && d.agentName.toLowerCase().includes(searchQuery));
-      const matchesStatus = statusQuery === "ALL" || d.status === statusQuery;
+      const student = (d.studentName || "").toLowerCase();
+      const tutor = (d.tutorName || "").toLowerCase();
+      const agent = (d.agentName || "").toLowerCase();
+      
+      const matchesSearch = student.includes(searchQuery) || 
+                            tutor.includes(searchQuery) ||
+                            agent.includes(searchQuery);
+                            
+      const matchesStatus = statusQuery === "ALL" || 
+                            (d.status && d.status.toUpperCase() === statusQuery.toUpperCase());
       return matchesSearch && matchesStatus;
     });
 
@@ -1708,36 +1774,48 @@ function renderDemosTable() {
       }
       agentSelectHtml += `</select>`;
 
-      tr.innerHTML = `
-        <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
-        <td><strong>${idx + 1}</strong></td>
-        <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-        <td style="white-space: nowrap;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:85px; padding:3px 6px;">
-            <button type="button" class="timezone-toggle-btn" data-id="${demo.id}">${getTimezoneSuffix(demo.time)}</button>
+        const hasFeedback = demo.feedback && demo.feedback.trim() !== "";
+        const truncatedFeedback = hasFeedback 
+          ? (demo.feedback.length > 20 ? demo.feedback.slice(0, 20) + "..." : demo.feedback)
+          : "Click to add...";
+        const feedbackStyle = hasFeedback ? "color: var(--brand-secondary); font-weight: 600;" : "color: var(--text-muted); font-style: italic;";
+        const feedbackMarkup = `
+          <div class="edit-feedback-btn" data-id="${demo.id}" style="display:flex; align-items:center; justify-content:space-between; gap:4px; cursor:pointer; width:130px; padding:3px 6px; border:1px solid rgba(255,255,255,0.08); border-radius:6px; background:rgba(255,255,255,0.02);" title="Click to view/edit full feedback">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${feedbackStyle}">${truncatedFeedback}</span>
+            <span style="font-size:0.85rem;">💬</span>
           </div>
-        </td>
-        <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
-        <td>${tutorSelectHtml}</td>
-        <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-        <td>
-          <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
-            <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
-            <option value="DEMO DONE" ${st === 'DEMO DONE' ? 'selected' : ''}>DEMO DONE</option>
-            <option value="CONVERTED" ${st === 'CONVERTED' ? 'selected' : ''}>CONVERTED</option>
-            <option value="CANCELLED" ${st === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
-            <option value="RESCHEDULE" ${st === 'RESCHEDULE' ? 'selected' : ''}>RESCHEDULE</option>
-          </select>
-        </td>
-        <td><input type="text" class="inline-age-input" data-id="${demo.id}" value="${demo.age !== '-' ? demo.age : ''}" style="width:40px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td>${agentSelectHtml}</td>
-        <td><input type="text" class="inline-location-input" data-id="${demo.id}" value="${demo.location !== '-' ? demo.location : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td><input type="text" class="inline-feedback-input" data-id="${demo.id}" value="${demo.feedback || ''}" style="width:150px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);" placeholder="Add feedback..."></td>
-        <td><input type="text" class="inline-revision-input" data-id="${demo.id}" value="${demo.revision !== '-' ? demo.revision : ''}" style="width:75px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        `;
+
+        tr.innerHTML = `
+          <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
+          <td><strong>${idx + 1}</strong></td>
+          <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
+          <td style="white-space: nowrap;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:85px; padding:3px 6px;">
+              <button type="button" class="timezone-toggle-btn" data-id="${demo.id}">${getTimezoneSuffix(demo.time)}</button>
+            </div>
+          </td>
+          <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
+          <td>${tutorSelectHtml}</td>
+          <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
+          <td>
+            <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
+              <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
+              <option value="DEMO DONE" ${st === 'DEMO DONE' ? 'selected' : ''}>DEMO DONE</option>
+              <option value="CONVERTED" ${st === 'CONVERTED' ? 'selected' : ''}>CONVERTED</option>
+              <option value="CANCELLED" ${st === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+              <option value="RESCHEDULE" ${st === 'RESCHEDULE' ? 'selected' : ''}>RESCHEDULE</option>
+            </select>
+          </td>
+          <td><input type="text" class="inline-age-input" data-id="${demo.id}" value="${demo.age !== '-' ? demo.age : ''}" style="width:40px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td>${agentSelectHtml}</td>
+          <td><input type="text" class="inline-location-input" data-id="${demo.id}" value="${demo.location !== '-' ? demo.location : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td>${feedbackMarkup}</td>
+          <td><input type="text" class="inline-revision-input" data-id="${demo.id}" value="${demo.revision !== '-' ? demo.revision : ''}" style="width:75px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td><input type="text" class="inline-topic-input" data-id="${demo.id}" value="${demo.topicToStart !== '-' ? demo.topicToStart : ''}" style="width:115px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td>
           <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
@@ -1848,7 +1926,14 @@ function renderDemosTable() {
         <td><strong>${idx + 1}</strong></td>
         <td style="white-space: nowrap;">${formatDisplayDate(demo.date || demo.dateTime)}</td>
         <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
-        <td><a href="${zoomLink}" target="_blank" style="color:var(--brand-secondary); text-decoration:underline; font-weight:600;" title="Click to join class">${demo.slot || '-'} 🔗</a></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>${demo.slot || '-'}</span>
+            <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Meeting">
+              🟢 Start Class
+            </a>
+          </div>
+        </td>
         <td><strong>${demo.studentName}</strong></td>
         <td>${demo.age}</td>
         <td>${demo.language}</td>
@@ -3853,7 +3938,8 @@ function initEventListeners() {
       }
     }
 
-    if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
+    const feedbackBtn = target.closest(".edit-feedback-btn");
+    if (feedbackBtn) openFeedbackModal(feedbackBtn.dataset.id);
 
     if (target.classList.contains("claim-demo-btn")) claimDemo(target.dataset.id);
 
@@ -4272,6 +4358,60 @@ function initEventListeners() {
   if (exportBtn) {
     exportBtn.addEventListener("click", exportDemosToExcel);
   }
+
+  const templateBtn = document.getElementById("download-template-btn");
+  if (templateBtn) {
+    templateBtn.addEventListener("click", downloadDemoImportTemplate);
+  }
+}
+
+function downloadDemoImportTemplate() {
+  const headers = [
+    "Date",
+    "Time",
+    "Slot",
+    "Tutor Name",
+    "Student Name",
+    "Status",
+    "Age",
+    "Language",
+    "Agent Name",
+    "Location",
+    "Mobile Number",
+    "Level"
+  ];
+  
+  const sampleRow = [
+    "2026-08-14",
+    "10:00 AM IST",
+    "Slot 1",
+    "Admin",
+    "John Doe",
+    "DEMO NOT DONE",
+    "10",
+    "English",
+    "Amit",
+    "New York",
+    "+1234567890",
+    "Beginner"
+  ];
+
+  // Prepend UTF-8 BOM for Excel compatibility
+  const csvContent = "\uFEFF" + [
+    headers.join(","),
+    sampleRow.join(",")
+  ].join("\n");
+  
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "demo_import_template.csv");
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("Import template downloaded.");
 }
 
 function exportDemosToExcel() {
@@ -4451,6 +4591,18 @@ document.addEventListener("DOMContentLoaded", () => {
       border: none !important;
       padding: 4px 24px 4px 10px !important;
       border-radius: 9999px !important;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+      }
     }
   `;
   document.head.appendChild(style);
