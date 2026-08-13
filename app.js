@@ -1615,11 +1615,11 @@ function renderDemosTable() {
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
-        <td style="white-space: nowrap;"><strong>${formatDisplayDate(demo.date || demo.dateTime)}</strong></td>
-        <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
+        <td style="white-space: nowrap;"><input type="text" class="inline-date-input" data-id="${demo.id}" value="${demo.date || ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
+        <td style="white-space: nowrap;"><input type="text" class="inline-time-input" data-id="${demo.id}" value="${demo.time || ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
         <td>${tutorSelectHtml}</td>
-        <td>${demo.studentName}</td>
+        <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
         <td>
           <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
             <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
@@ -1629,17 +1629,15 @@ function renderDemosTable() {
             <option value="RESCHEDULE" ${st === 'RESCHEDULE' ? 'selected' : ''}>RESCHEDULE</option>
           </select>
         </td>
-        <td>${demo.age}</td>
-        <td>${demo.language}</td>
+        <td><input type="text" class="inline-age-input" data-id="${demo.id}" value="${demo.age !== '-' ? demo.age : ''}" style="width:40px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td>${agentSelectHtml}</td>
-        <td>${demo.location || '-'}</td>
-        <td>${demo.mobileNumber || '-'}</td>
-        <td>${demo.level || '-'}</td>
-        <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${demo.feedback || 'No feedback'}">
-          ${demo.feedback || '<span style="color:var(--text-muted);font-style:italic;">No feedback</span>'}
-        </td>
-        <td>${demo.revision || '-'}</td>
-        <td>${demo.topicToStart || '-'}</td>
+        <td><input type="text" class="inline-location-input" data-id="${demo.id}" value="${demo.location !== '-' ? demo.location : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td><input type="text" class="inline-feedback-input" data-id="${demo.id}" value="${demo.feedback || ''}" style="width:150px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);" placeholder="Add feedback..."></td>
+        <td><input type="text" class="inline-revision-input" data-id="${demo.id}" value="${demo.revision !== '-' ? demo.revision : ''}" style="width:75px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+        <td><input type="text" class="inline-topic-input" data-id="${demo.id}" value="${demo.topicToStart !== '-' ? demo.topicToStart : ''}" style="width:115px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td>
           <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
           <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
@@ -3476,7 +3474,6 @@ function initEventListeners() {
         
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
-        renderDemosTable();
         renderDashboard();
         showToast("Assigned tutor updated.");
       }
@@ -3493,7 +3490,16 @@ function initEventListeners() {
         
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
-        renderDemosTable();
+        
+        // Dynamically update the Zoom link icon href next to the select without repainting
+        const parent = target.parentElement;
+        if (parent) {
+          const anchor = parent.querySelector("a");
+          if (anchor) {
+            anchor.href = getZoomLinkForSlot(slot);
+          }
+        }
+        
         renderDashboard();
         showToast("Demo slot updated.");
       }
@@ -3511,9 +3517,154 @@ function initEventListeners() {
         
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
-        renderDemosTable();
         renderDashboard();
         showToast("Agent name updated.");
+      }
+    }
+
+    // Inline Date Input
+    if (target.classList.contains("inline-date-input")) {
+      const id = target.dataset.id;
+      const date = target.value;
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].date = date;
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Date updated.");
+      }
+    }
+
+    // Inline Time Input
+    if (target.classList.contains("inline-time-input")) {
+      const id = target.dataset.id;
+      const time = target.value;
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].time = time;
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Time updated.");
+      }
+    }
+
+    // Inline Student Input
+    if (target.classList.contains("inline-student-input")) {
+      const id = target.dataset.id;
+      const studentName = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].studentName = studentName;
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Student name updated.");
+      }
+    }
+
+    // Inline Age Input
+    if (target.classList.contains("inline-age-input")) {
+      const id = target.dataset.id;
+      const age = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].age = age || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Student age updated.");
+      }
+    }
+
+    // Inline Language Input
+    if (target.classList.contains("inline-language-input")) {
+      const id = target.dataset.id;
+      const language = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].language = language || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Language updated.");
+      }
+    }
+
+    // Inline Location Input
+    if (target.classList.contains("inline-location-input")) {
+      const id = target.dataset.id;
+      const location = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].location = location || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Location updated.");
+      }
+    }
+
+    // Inline Mobile Input
+    if (target.classList.contains("inline-mobile-input")) {
+      const id = target.dataset.id;
+      const mobileNumber = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].mobileNumber = mobileNumber || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Mobile number updated.");
+      }
+    }
+
+    // Inline Level Input
+    if (target.classList.contains("inline-level-input")) {
+      const id = target.dataset.id;
+      const level = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].level = level || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Level updated.");
+      }
+    }
+
+    // Inline Feedback Input
+    if (target.classList.contains("inline-feedback-input")) {
+      const id = target.dataset.id;
+      const feedback = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].feedback = feedback || "";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Feedback updated.");
+      }
+    }
+
+    // Inline Revision Input
+    if (target.classList.contains("inline-revision-input")) {
+      const id = target.dataset.id;
+      const revision = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].revision = revision || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Revision updated.");
+      }
+    }
+
+    // Inline Topic Input
+    if (target.classList.contains("inline-topic-input")) {
+      const id = target.dataset.id;
+      const topicToStart = target.value.trim();
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        state.demos[idx].topicToStart = topicToStart || "-";
+        await writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        showToast("Topic to start updated.");
       }
     }
   });
