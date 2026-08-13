@@ -731,77 +731,91 @@
       <form id="demo-form">
         <div class="modal-body">
           <input type="hidden" id="demo-id">
-          <div class="form-group">
-            <label for="demo-tutor-select">Assigned Tutor</label>
-            <select id="demo-tutor-select" class="form-control"></select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="demo-student-name">Student Name</label>
-              <input type="text" id="demo-student-name" class="form-control" required>
-            </div>
-            <div class="form-group">
+          
+          <!-- Row 1: Key Schedule Info in a single line -->
+          <div class="form-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div class="form-group" style="flex: 1; min-width: 130px;">
               <label for="demo-date-input">Demo Date</label>
               <input type="date" id="demo-date-input" class="form-control" required>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1; min-width: 100px;">
               <label for="demo-time-input">Demo Time</label>
               <input type="text" id="demo-time-input" class="form-control" placeholder="e.g. 10:00 AM" required>
             </div>
-            <div class="form-group">
-              <label for="demo-slot">Slot Info (SLOT NUMBER)</label>
+            <div class="form-group" style="flex: 1; min-width: 130px;">
+              <label for="demo-slot">Demo Slot</label>
               <select id="demo-slot" class="form-control" required>
                 <option value="" disabled selected>-- Select Slot --</option>
               </select>
               <div id="demo-slot-custom-container" style="display: none; margin-top: 8px;">
-                <label for="demo-slot-custom" style="font-size: 0.78rem; color: var(--brand-secondary); display: block; margin-bottom: 4px;">Or Type Custom Slot Name:</label>
-                <input type="text" id="demo-slot-custom" class="form-control" placeholder="e.g. Slot 52, Special Trial">
+                <input type="text" id="demo-slot-custom" class="form-control" placeholder="Custom slot name">
               </div>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="demo-level">Level</label>
-              <input type="text" id="demo-level" class="form-control" placeholder="e.g. Beginner">
+            <div class="form-group" style="flex: 1.2; min-width: 150px;">
+              <label for="demo-tutor-select">Assigned Tutor</label>
+              <select id="demo-tutor-select" class="form-control tutor-select-el"></select>
             </div>
-            <div class="form-group">
-              <label for="demo-revision">Revision</label>
-              <input type="text" id="demo-revision" class="form-control" placeholder="e.g. Yes/No or Rev 1">
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom: 15px;">
-            <label for="demo-topic-start">Topic To Start</label>
-            <input type="text" id="demo-topic-start" class="form-control" placeholder="e.g. Openings, Endgames">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="demo-age">Student Age</label>
-              <input type="text" id="demo-age" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="demo-language">Language</label>
-              <input type="text" id="demo-language" class="form-control">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1.2; min-width: 150px;">
               <label for="demo-agent-name">Agent Name</label>
-              <input type="text" id="demo-agent-name" class="form-control">
+              <select id="demo-agent-name" class="form-control">
+                <option value="Admin">Admin</option>
+                <option value="Rajesh">Rajesh</option>
+                <option value="Meera">Meera</option>
+                <option value="Amit">Amit</option>
+                <option value="Sarah">Sarah</option>
+                <option value="John">John</option>
+              </select>
             </div>
-            <div class="form-group">
+          </div>
+
+          <!-- Row 2: Student Details -->
+          <div class="form-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div class="form-group" style="flex: 2; min-width: 200px;">
+              <label for="demo-student-name">Student Name</label>
+              <input type="text" id="demo-student-name" class="form-control" required>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label for="demo-mobile-number">Mobile Number</label>
+              <input type="text" id="demo-mobile-number" class="form-control" placeholder="e.g. +91 98765...">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 120px;">
               <label for="demo-location">Location</label>
-              <input type="text" id="demo-location" class="form-control">
+              <input type="text" id="demo-location" class="form-control" placeholder="City/Country">
             </div>
           </div>
-          <div class="form-group">
-            <label for="demo-mobile-number">Mobile Number (MOBILE NUMBER)</label>
-            <input type="text" id="demo-mobile-number" class="form-control">
+
+          <!-- Row 3: Demographics -->
+          <div class="form-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div class="form-group" style="flex: 1; min-width: 100px;">
+              <label for="demo-age">Student Age</label>
+              <input type="text" id="demo-age" class="form-control" placeholder="e.g. 10">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="demo-language">Language</label>
+              <input type="text" id="demo-language" class="form-control" placeholder="e.g. English">
+            </div>
+            <div class="form-group" style="flex: 1.5; min-width: 150px;">
+              <label for="demo-level">Level</label>
+              <input type="text" id="demo-level" class="form-control" placeholder="e.g. Beginner/Intermediate">
+            </div>
           </div>
-          <div class="form-group">
+
+          <!-- Row 4: Class Outcomes -->
+          <div class="form-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="demo-revision">Revision Required?</label>
+              <input type="text" id="demo-revision" class="form-control" placeholder="e.g. Yes/No">
+            </div>
+            <div class="form-group" style="flex: 2; min-width: 200px;">
+              <label for="demo-topic-start">Topic To Start</label>
+              <input type="text" id="demo-topic-start" class="form-control" placeholder="e.g. Basics, Openings">
+            </div>
+          </div>
+
+          <!-- Row 5: Notes -->
+          <div class="form-group" style="margin-bottom: 15px;">
             <label for="demo-feedback">Feedback & Notes</label>
-            <textarea id="demo-feedback" class="form-control" style="resize:vertical; min-height:80px;"></textarea>
+            <textarea id="demo-feedback" class="form-control" style="resize:vertical; min-height:80px;" placeholder="Add class outcome notes..."></textarea>
           </div>
         </div>
         <div class="modal-footer">

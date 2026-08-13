@@ -2425,6 +2425,29 @@ function openDemoModal(demoId = null) {
     slotSelect.appendChild(customOp);
   }
 
+  const agentSelect = document.getElementById("demo-agent-name");
+  if (agentSelect) {
+    const uniqueAgents = new Set(["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"]);
+    state.demos.forEach(d => {
+      if (d.agentName && d.agentName !== "-" && d.agentName.trim() !== "") {
+        uniqueAgents.add(d.agentName.trim());
+      }
+    });
+    state.tutors.forEach(t => {
+      if (t.role === "sales" || t.role === "demo_manager") {
+        uniqueAgents.add(t.name);
+      }
+    });
+    
+    agentSelect.innerHTML = "";
+    uniqueAgents.forEach(agent => {
+      const op = document.createElement("option");
+      op.value = agent;
+      op.textContent = agent;
+      agentSelect.appendChild(op);
+    });
+  }
+
   document.getElementById("demo-form").reset();
   
   if (demoId) {
