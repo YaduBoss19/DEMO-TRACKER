@@ -1052,6 +1052,35 @@ function parseDateString(dateStr) {
   return new Date(0);
 }
 
+// Helper to construct a Date object for a demo's combined Date and Time
+function getDemoDateTimeObject(demo) {
+  if (!demo) return new Date(0);
+  
+  let dateObj = parseDateString(demo.date || demo.dateTime);
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    dateObj = new Date(0);
+  }
+  
+  const timeStr = String(demo.time || "").replace(/IST/i, "").trim().toUpperCase();
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+  if (match) {
+    let hrs = parseInt(match[1]);
+    const mins = parseInt(match[2]);
+    const ampm = match[3];
+    
+    if (ampm === "PM" && hrs < 12) hrs += 12;
+    if (ampm === "AM" && hrs === 12) hrs = 0;
+    
+    dateObj.setHours(hrs, mins, 0, 0);
+  } else {
+    const match24 = timeStr.match(/^(\d{2}):(\d{2})$/);
+    if (match24) {
+      dateObj.setHours(parseInt(match24[1]), parseInt(match24[2]), 0, 0);
+    }
+  }
+  return dateObj;
+}
+
 function getFilteredDemosByRange() {
   const rangeSelectorId = isAdminPage ? "demo-filter-range" : "tutor-filter-range";
   const rangeEl = document.getElementById(rangeSelectorId);
@@ -1090,7 +1119,8 @@ function getFilteredDemosByRange() {
     list = getMonthYearFilteredDemos();
   }
   
-  return list.sort((a, b) => (a.position || 0) - (b.position || 0));
+  // Sort chronologically by date and time automatically
+  return list.sort((a, b) => getDemoDateTimeObject(a).getTime() - getDemoDateTimeObject(b).getTime());
 }
 
 function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
@@ -1616,7 +1646,6 @@ function renderDemosTable() {
 
     filteredDemos.forEach((demo, idx) => {
       const tr = document.createElement("tr");
-      tr.draggable = true;
       tr.dataset.id = demo.id;
       
       let statusClass = "status-not-done";
@@ -1681,19 +1710,9 @@ function renderDemosTable() {
       });
       agentSelectHtml += `</select>`;
 
-      let dragHandle = "";
-      if (state.currentUser && (state.currentUser.role === "admin" || state.currentUser.role === "demo_manager")) {
-        dragHandle = `<span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-weight: bold; margin-right: 6px; user-select: none;" title="Drag to reorder">⋮⋮</span>`;
-      }
-
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
-        <td>
-          <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
-            ${dragHandle}
-            <strong>${idx + 1}</strong>
-          </div>
-        </td>
+        <td><strong>${idx + 1}</strong></td>
         <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
         <td style="white-space: nowrap;"><input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
@@ -1729,8 +1748,6 @@ function renderDemosTable() {
     if (typeof updateBulkDeleteButton === "function") {
       updateBulkDeleteButton();
     }
-
-    setupTableDragAndDrop(body);
 
   } else {
     // Tutor view Demos
