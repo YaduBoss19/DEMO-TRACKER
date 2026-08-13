@@ -794,6 +794,11 @@
     if (savedBranding) {
       try {
         branding = { ...branding, ...JSON.parse(savedBranding) };
+        if (window.DEFAULT_BRANDING.connectorType === "supabase" && window.DEFAULT_BRANDING.supabaseKey && !window.DEFAULT_BRANDING.supabaseKey.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
+          branding.connectorType = "supabase";
+          branding.supabaseUrl = window.DEFAULT_BRANDING.supabaseUrl;
+          branding.supabaseKey = window.DEFAULT_BRANDING.supabaseKey;
+        }
       } catch (e) {
         console.warn("Could not load custom branding settings, using defaults.");
       }

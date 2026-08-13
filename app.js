@@ -668,6 +668,13 @@ function loadFromLocalStorage() {
           ...(parsed.themeColors || {})
         }
       };
+      
+      // Override with new Supabase defaults if set in mockData.js
+      if (window.DEFAULT_BRANDING.connectorType === "supabase" && window.DEFAULT_BRANDING.supabaseKey && !window.DEFAULT_BRANDING.supabaseKey.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
+        state.branding.connectorType = "supabase";
+        state.branding.supabaseUrl = window.DEFAULT_BRANDING.supabaseUrl;
+        state.branding.supabaseKey = window.DEFAULT_BRANDING.supabaseKey;
+      }
     } catch (e) {
       state.branding = { ...window.DEFAULT_BRANDING };
     }
