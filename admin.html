@@ -547,6 +547,38 @@
             </form>
           </div>
 
+          <!-- Slots and Agents Management -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Manage Dropdown Options</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Slots Manager -->
+              <div>
+                <h4 style="font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: var(--brand-secondary);">Slots List</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                  <input type="text" id="new-slot-input" class="form-control" placeholder="e.g. Slot 49" style="padding: 4px 8px; font-size: 0.85rem;">
+                  <button type="button" class="btn btn-sm btn-primary" id="add-slot-btn">Add</button>
+                </div>
+                <div id="slots-manager-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg);">
+                  <!-- Dynamic slots with delete buttons -->
+                </div>
+              </div>
+              
+              <!-- Agents Manager -->
+              <div>
+                <h4 style="font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: var(--brand-secondary);">Agents List</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                  <input type="text" id="new-agent-input" class="form-control" placeholder="e.g. Amit" style="padding: 4px 8px; font-size: 0.85rem;">
+                  <button type="button" class="btn btn-sm btn-primary" id="add-agent-btn">Add</button>
+                </div>
+                <div id="agents-manager-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg);">
+                  <!-- Dynamic agents with delete buttons -->
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Login Preview -->
           <div class="card-panel">
             <div class="panel-header">

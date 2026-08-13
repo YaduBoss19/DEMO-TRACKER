@@ -172,6 +172,7 @@ async function fetchFromSupabase() {
             : brandingData.timetableTemplate;
         } catch(e) {}
       }
+      initializeBrandingLists();
     }
 
     // 2. Fetch Slabs
@@ -523,6 +524,7 @@ async function fetchFromSheets() {
         if (data.branding.inviteTemplate) {
           state.inviteTemplate = data.branding.inviteTemplate;
         }
+        initializeBrandingLists();
       }
       if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
       if (data.tutors && data.tutors.length > 0) {
@@ -733,6 +735,7 @@ function loadFromLocalStorage() {
   } else {
     state.branding = { ...window.DEFAULT_BRANDING };
   }
+  initializeBrandingLists();
   const localTemplate = localStorage.getItem("DEMO_INVITE_TEMPLATE");
   state.inviteTemplate = localTemplate || DEFAULT_INVITE_TEMPLATE;
   try {
@@ -1558,10 +1561,16 @@ function formatDateForInput(dateStr) {
 }
 
 // Time format conversions between 12-hour AM/PM and 24-hour HH:MM
+function getTimezoneSuffix(timeStr) {
+  if (!timeStr) return "IST";
+  if (String(timeStr).toUpperCase().includes("GMT")) return "GMT";
+  return "IST";
+}
+
 function formatTimeForInput(timeStr) {
   if (!timeStr) return "";
-  // Strip IST suffix if present so native time pickers can parse
-  const clean = String(timeStr).replace(/IST/i, "").trim().toUpperCase();
+  // Strip both IST and GMT suffixes so native time pickers can parse
+  const clean = String(timeStr).replace(/IST/i, "").replace(/GMT/i, "").trim().toUpperCase();
   const match = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
   if (!match) {
     const match24 = clean.match(/^(\d{2}):(\d{2})$/);
@@ -1578,7 +1587,7 @@ function formatTimeForInput(timeStr) {
   return `${String(hrs).padStart(2, "0")}:${mins}`;
 }
 
-function formatTimeForDatabase(time24) {
+function formatTimeForDatabase(time24, zone = "IST") {
   if (!time24) return "";
   const match = time24.match(/^(\d{2}):(\d{2})$/);
   if (!match) return time24;
@@ -1587,7 +1596,7 @@ function formatTimeForDatabase(time24) {
   const ampm = hrs >= 12 ? "PM" : "AM";
   hrs = hrs % 12;
   if (hrs === 0) hrs = 12;
-  return `${hrs}:${mins} ${ampm} IST`;
+  return `${hrs}:${mins} ${ampm} ${zone}`;
 }
 
 // --- VIEW: DEMOS LIST ---
@@ -1669,22 +1678,18 @@ function renderDemosTable() {
       const zoomLink = getZoomLinkForSlot(demo.slot);
 
       // Build inline Slot dropdown select
-      let slotSelectHtml = `<select class="inline-slot-select" data-id="${demo.id}" style="width:105px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-weight:600; font-family:var(--font-main);">`;
-      for (let i = 1; i <= 48; i++) {
-        const sName = `Slot ${i}`;
+      let slotSelectHtml = `<select class="inline-slot-select" data-id="${demo.id}" style="width:105px;">`;
+      const slots = state.branding.themeColors?.slotsList || [];
+      slots.forEach(sName => {
         slotSelectHtml += `<option value="${sName}" ${demo.slot === sName ? 'selected' : ''}>${sName}</option>`;
-      }
-      let isStandardSlot = false;
-      for (let i = 1; i <= 48; i++) {
-        if (demo.slot === `Slot ${i}`) { isStandardSlot = true; break; }
-      }
-      if (demo.slot && !isStandardSlot) {
+      });
+      if (demo.slot && !slots.includes(demo.slot)) {
         slotSelectHtml += `<option value="${demo.slot}" selected>${demo.slot}</option>`;
       }
       slotSelectHtml += `</select>`;
 
       // Build inline Tutor dropdown select
-      let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-weight:600; font-family:var(--font-main);">`;
+      let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px;">`;
       state.tutors.forEach(t => {
         if (t.role === "tutor" || !t.role) {
           tutorSelectHtml += `<option value="${t.id}" ${demo.tutorId === t.id ? 'selected' : ''}>${t.name}</option>`;
@@ -1693,64 +1698,26 @@ function renderDemosTable() {
       tutorSelectHtml += `</select>`;
 
       // Build inline Agent dropdown select
-      const uniqueAgents = new Set(["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"]);
-      state.demos.forEach(d => {
-        if (d.agentName && d.agentName !== "-" && d.agentName.trim() !== "") {
-          uniqueAgents.add(d.agentName.trim());
-        }
-      });
-      state.tutors.forEach(t => {
-        if (t.role === "sales" || t.role === "demo_manager") {
-          uniqueAgents.add(t.name);
-        }
-      });
-      let agentSelectHtml = `<select class="inline-agent-select" data-id="${demo.id}" style="width:115px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-family:var(--font-main);">`;
-      uniqueAgents.forEach(agent => {
+      let agentSelectHtml = `<select class="inline-agent-select" data-id="${demo.id}" style="width:115px;">`;
+      const agents = state.branding.themeColors?.agentsList || [];
+      agents.forEach(agent => {
         agentSelectHtml += `<option value="${agent}" ${(demo.agentName || "Admin") === agent ? 'selected' : ''}>${agent}</option>`;
       });
+      if (demo.agentName && !agents.includes(demo.agentName)) {
+        agentSelectHtml += `<option value="${demo.agentName}" selected>${demo.agentName}</option>`;
+      }
       agentSelectHtml += `</select>`;
-
-      // Build inline Time dropdown select including AM/PM and IST
-      let timeSelectHtml = `<select class="inline-time-select" data-id="${demo.id}" style="width:125px; padding:3px 6px; border-radius:6px; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); font-family:var(--font-main);">`;
-      const standardTimes = [];
-      for (let hour = 6; hour <= 23; hour++) {
-        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        const ampm = hour >= 12 ? "PM" : "AM";
-        standardTimes.push(`${displayHour}:00 ${ampm} IST`);
-        standardTimes.push(`${displayHour}:30 ${ampm} IST`);
-      }
-      let cleanCurrentTime = String(demo.time || "").trim();
-      if (cleanCurrentTime && !cleanCurrentTime.includes("IST") && (cleanCurrentTime.includes("AM") || cleanCurrentTime.includes("PM"))) {
-        cleanCurrentTime = `${cleanCurrentTime} IST`;
-      }
-      const timeOptions = new Set(standardTimes);
-      if (cleanCurrentTime) {
-        timeOptions.add(cleanCurrentTime);
-      }
-      const sortedTimeOptions = Array.from(timeOptions).sort((a, b) => {
-        const parseTimeStr = (s) => {
-          const cleanT = s.replace(/IST/i, "").trim().toUpperCase();
-          const m = cleanT.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
-          if (!m) return 0;
-          let h = parseInt(m[1]);
-          const min = parseInt(m[2]);
-          const amp = m[3];
-          if (amp === "PM" && h < 12) h += 12;
-          if (amp === "AM" && h === 12) h = 0;
-          return h * 60 + min;
-        };
-        return parseTimeStr(a) - parseTimeStr(b);
-      });
-      sortedTimeOptions.forEach(tOption => {
-        timeSelectHtml += `<option value="${tOption}" ${cleanCurrentTime === tOption ? 'selected' : ''}>${tOption}</option>`;
-      });
-      timeSelectHtml += `</select>`;
 
       tr.innerHTML = `
         <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
         <td><strong>${idx + 1}</strong></td>
         <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-        <td style="white-space: nowrap;">${timeSelectHtml}</td>
+        <td style="white-space: nowrap;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:85px; padding:3px 6px;">
+            <button type="button" class="timezone-toggle-btn" data-id="${demo.id}">${getTimezoneSuffix(demo.time)}</button>
+          </div>
+        </td>
         <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
         <td>${tutorSelectHtml}</td>
         <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
@@ -2220,6 +2187,59 @@ function renderAdminSlabs() {
   });
 }
 
+// Helper to guarantee Slots and Agents lists are initialized in branding
+function initializeBrandingLists() {
+  if (!state.branding.themeColors) {
+    state.branding.themeColors = {};
+  }
+  if (!state.branding.themeColors.slotsList || !Array.isArray(state.branding.themeColors.slotsList) || state.branding.themeColors.slotsList.length === 0) {
+    state.branding.themeColors.slotsList = Array.from({length: 48}, (_, i) => `Slot ${i + 1}`);
+  }
+  if (!state.branding.themeColors.agentsList || !Array.isArray(state.branding.themeColors.agentsList) || state.branding.themeColors.agentsList.length === 0) {
+    state.branding.themeColors.agentsList = ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
+  }
+}
+
+function renderSettingsDropdownLists() {
+  const slotsListDiv = document.getElementById("slots-manager-list");
+  const agentsListDiv = document.getElementById("agents-manager-list");
+  if (!slotsListDiv || !agentsListDiv) return;
+
+  initializeBrandingLists();
+
+  // Render Slots list
+  slotsListDiv.innerHTML = "";
+  if (state.branding.themeColors.slotsList.length === 0) {
+    slotsListDiv.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:10px;">No slots created.</p>`;
+  } else {
+    state.branding.themeColors.slotsList.forEach(slot => {
+      const row = document.createElement("div");
+      row.style = "display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;";
+      row.innerHTML = `
+        <span>${slot}</span>
+        <button type="button" class="delete-slot-option-btn" data-slot="${slot}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:0 2px;">🗑️</button>
+      `;
+      slotsListDiv.appendChild(row);
+    });
+  }
+
+  // Render Agents list
+  agentsListDiv.innerHTML = "";
+  if (state.branding.themeColors.agentsList.length === 0) {
+    agentsListDiv.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:10px;">No agents created.</p>`;
+  } else {
+    state.branding.themeColors.agentsList.forEach(agent => {
+      const row = document.createElement("div");
+      row.style = "display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;";
+      row.innerHTML = `
+        <span>${agent}</span>
+        <button type="button" class="delete-agent-option-btn" data-agent="${agent}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:0 2px;">🗑️</button>
+      `;
+      agentsListDiv.appendChild(row);
+    });
+  }
+}
+
 // --- VIEW: ADMIN BRANDING ---
 function renderAdminBranding() {
   const branding = state.branding;
@@ -2272,6 +2292,8 @@ function renderAdminBranding() {
       slotContainer.appendChild(div);
     }
   }
+
+  renderSettingsDropdownLists();
 }
 
 // --- VIEW: ADMIN TUTORS ---
@@ -2720,12 +2742,13 @@ function openDemoModal(demoId = null) {
   const slotSelect = document.getElementById("demo-slot");
   if (slotSelect) {
     slotSelect.innerHTML = '<option value="" disabled selected>-- Select Slot --</option>';
-    for (let i = 1; i <= 48; i++) {
+    const slots = state.branding.themeColors?.slotsList || [];
+    slots.forEach(slot => {
       const op = document.createElement("option");
-      op.value = `Slot ${i}`;
-      op.textContent = `Slot ${i}`;
+      op.value = slot;
+      op.textContent = slot;
       slotSelect.appendChild(op);
-    }
+    });
     const customOp = document.createElement("option");
     customOp.value = "CUSTOM";
     customOp.textContent = "-- Type Custom Slot --";
@@ -2734,20 +2757,9 @@ function openDemoModal(demoId = null) {
 
   const agentSelect = document.getElementById("demo-agent-name");
   if (agentSelect) {
-    const uniqueAgents = new Set(["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"]);
-    state.demos.forEach(d => {
-      if (d.agentName && d.agentName !== "-" && d.agentName.trim() !== "") {
-        uniqueAgents.add(d.agentName.trim());
-      }
-    });
-    state.tutors.forEach(t => {
-      if (t.role === "sales" || t.role === "demo_manager") {
-        uniqueAgents.add(t.name);
-      }
-    });
-    
     agentSelect.innerHTML = "";
-    uniqueAgents.forEach(agent => {
+    const agents = state.branding.themeColors?.agentsList || [];
+    agents.forEach(agent => {
       const op = document.createElement("option");
       op.value = agent;
       op.textContent = agent;
@@ -3449,6 +3461,48 @@ function initEventListeners() {
     });
   }
 
+  // Add Slot option in Settings
+  const addSlotBtn = document.getElementById("add-slot-btn");
+  if (addSlotBtn) {
+    addSlotBtn.addEventListener("click", async () => {
+      const input = document.getElementById("new-slot-input");
+      const val = input.value.trim();
+      if (!val) return;
+      initializeBrandingLists();
+      if (state.branding.themeColors.slotsList.includes(val)) {
+        showToast("Slot already exists.", "warning");
+        return;
+      }
+      state.branding.themeColors.slotsList.push(val);
+      input.value = "";
+      renderSettingsDropdownLists();
+      await writeToSheets("updateBranding", state.branding);
+      showToast("Slot added and saved.");
+      renderDashboard();
+    });
+  }
+
+  // Add Agent option in Settings
+  const addAgentBtn = document.getElementById("add-agent-btn");
+  if (addAgentBtn) {
+    addAgentBtn.addEventListener("click", async () => {
+      const input = document.getElementById("new-agent-input");
+      const val = input.value.trim();
+      if (!val) return;
+      initializeBrandingLists();
+      if (state.branding.themeColors.agentsList.includes(val)) {
+        showToast("Agent already exists.", "warning");
+        return;
+      }
+      state.branding.themeColors.agentsList.push(val);
+      input.value = "";
+      renderSettingsDropdownLists();
+      await writeToSheets("updateBranding", state.branding);
+      showToast("Agent added and saved.");
+      renderDashboard();
+    });
+  }
+
   // Unified Database Connection Tester
   const testConnectionBtn = document.getElementById("test-connection-btn");
   if (testConnectionBtn) {
@@ -3695,6 +3749,55 @@ function initEventListeners() {
     if (target.classList.contains("row-move-down-btn")) {
       e.preventDefault();
       moveDemoRow(target.dataset.id, "down");
+    }
+
+    // Timezone Toggle (IST <-> GMT)
+    if (target.classList.contains("timezone-toggle-btn")) {
+      e.preventDefault();
+      const id = target.dataset.id;
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        const currentTime = state.demos[idx].time || "";
+        const currentZone = getTimezoneSuffix(currentTime);
+        const newZone = currentZone === "IST" ? "GMT" : "IST";
+        
+        let newTime = currentTime;
+        if (currentTime.toLowerCase().includes("ist") || currentTime.toLowerCase().includes("gmt")) {
+          newTime = currentTime.replace(/ist/i, newZone).replace(/gmt/i, newZone);
+        } else {
+          newTime = currentTime ? `${currentTime} ${newZone}` : "";
+        }
+        
+        state.demos[idx].time = newTime;
+        writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast(`Timezone toggled to ${newZone}.`);
+      }
+    }
+
+    // Delete custom Slot option
+    if (target.classList.contains("delete-slot-option-btn")) {
+      e.preventDefault();
+      const slotVal = target.dataset.slot;
+      initializeBrandingLists();
+      state.branding.themeColors.slotsList = state.branding.themeColors.slotsList.filter(s => s !== slotVal);
+      renderSettingsDropdownLists();
+      writeToSheets("updateBranding", state.branding);
+      showToast("Slot removed and saved.");
+      renderDashboard();
+    }
+
+    // Delete custom Agent option
+    if (target.classList.contains("delete-agent-option-btn")) {
+      e.preventDefault();
+      const agentVal = target.dataset.agent;
+      initializeBrandingLists();
+      state.branding.themeColors.agentsList = state.branding.themeColors.agentsList.filter(a => a !== agentVal);
+      renderSettingsDropdownLists();
+      writeToSheets("updateBranding", state.branding);
+      showToast("Agent removed and saved.");
+      renderDashboard();
     }
 
     if (target.classList.contains("edit-feedback-btn")) openFeedbackModal(target.dataset.id);
@@ -4138,28 +4241,130 @@ function updateBulkDeleteButton() {
 
 // --- App Entry Point ---
 document.addEventListener("DOMContentLoaded", () => {
-  // Inject drag and drop styles
+  // Inject premium UI styling
   const style = document.createElement("style");
   style.textContent = `
-    tr[draggable="true"] {
-      cursor: grab;
+    /* Premium Table Styling */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 15px;
     }
-    tr[draggable="true"]:active {
-      cursor: grabbing;
+    th {
+      font-size: 0.72rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      color: var(--text-muted) !important;
+      font-weight: 700 !important;
+      padding: 12px 14px !important;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.06) !important;
+      background-color: rgba(255, 255, 255, 0.01) !important;
     }
-    tr.dragging {
-      opacity: 0.55;
-      background-color: rgba(14, 165, 233, 0.15) !important;
-      outline: 2px dashed #0ea5e9;
+    td {
+      padding: 10px 12px !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+      vertical-align: middle !important;
     }
-    tr.drag-over {
-      border-top: 3px dashed #0ea5e9 !important;
+    tr {
+      transition: background-color 0.15s ease-in-out;
     }
-    .drag-handle {
-      cursor: grab;
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.02) !important;
     }
-    .drag-handle:active {
-      cursor: grabbing;
+    
+    /* Elegant Form Controls */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 8px !important;
+      color: var(--text-main) !important;
+      padding: 6px 12px !important;
+      font-size: 0.85rem !important;
+      font-family: var(--font-main) !important;
+      outline: none !important;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    input[type="time"]:focus,
+    select:focus {
+      border-color: var(--brand-secondary) !important;
+      background: rgba(255, 255, 255, 0.04) !important;
+      box-shadow: 0 0 0 2px rgba(224, 122, 95, 0.15) !important;
+    }
+    
+    /* Custom Dropdown Styling */
+    select {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
+      background-position: right 0.5rem center !important;
+      background-repeat: no-repeat !important;
+      background-size: 1em !important;
+      padding-right: 1.8rem !important;
+    }
+    
+    /* Custom Checkbox Styling */
+    input[type="checkbox"] {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      width: 16px !important;
+      height: 16px !important;
+      border: 1.5px solid var(--border-color) !important;
+      border-radius: 4px !important;
+      background: transparent !important;
+      outline: none !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: background 0.15s ease, border-color 0.15s ease !important;
+    }
+    input[type="checkbox"]:checked {
+      background: var(--brand-secondary) !important;
+      border-color: var(--brand-secondary) !important;
+    }
+    input[type="checkbox"]:checked::after {
+      content: "✓" !important;
+      color: white !important;
+      font-size: 0.65rem !important;
+      font-weight: bold !important;
+    }
+    
+    /* Timezone Button Styling */
+    .timezone-toggle-btn {
+      padding: 4px 8px !important;
+      font-size: 0.7rem !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      border-radius: 6px !important;
+      border: 1px solid var(--border-color) !important;
+      background: rgba(255, 255, 255, 0.04) !important;
+      color: var(--text-main) !important;
+      cursor: pointer !important;
+      transition: background-color 0.15s ease, border-color 0.15s ease !important;
+    }
+    .timezone-toggle-btn:hover {
+      background: var(--brand-secondary) !important;
+      border-color: var(--brand-secondary) !important;
+      color: white !important;
+    }
+    
+    /* Status Pill Base */
+    .status-pill-select {
+      font-weight: 700 !important;
+      font-size: 0.72rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.02em !important;
+      border: none !important;
+      padding: 4px 24px 4px 10px !important;
+      border-radius: 9999px !important;
     }
   `;
   document.head.appendChild(style);
