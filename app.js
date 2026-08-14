@@ -1417,7 +1417,9 @@ function renderDashboard() {
       });
       
       if (nextDemo) {
-        const demoLink = getZoomLinkForSlot(nextDemo.slot);
+        const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
+        const rawLink = nextDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(nextDemo.slot);
+        const demoLink = formatZoomStartLink(rawLink);
         quickStartContainer.innerHTML = `
           <div class="card-panel" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); border: 1.5px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 15px;">
