@@ -241,7 +241,7 @@ async function fetchFromSupabase() {
     // 4. Fetch Demos
     const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
     if (dErr) throw dErr;
-    if (demosData && demosData.length > 0) {
+    if (demosData) {
       state.demos = demosData.map((d, index) => mapSheetDemoToApp(d, index + 2));
     }
 
@@ -2160,6 +2160,7 @@ async function claimDemo(id) {
   // Update locally
   demo.tutorId = state.currentUser.id;
   demo.tutorName = state.currentUser.name;
+  demo.feedback = "Tutor Locked";
   if (tutorZoom) {
     demo.zoomLink = tutorZoom;
   }
@@ -2174,7 +2175,8 @@ async function claimDemo(id) {
     // Revert local state if sync failed
     demo.tutorId = "";
     demo.tutorName = "Unassigned";
-    showToast("Failed to claim demo on Google Sheets. Please try again.", "warning");
+    demo.feedback = "";
+    showToast("Failed to claim demo in the database. Please try again.", "warning");
   }
 }
 
