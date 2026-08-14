@@ -939,6 +939,76 @@
     </div>
   </div>
 
+  <!-- MODAL: DEMO REPORT VIEW -->
+  <div class="modal-backdrop" id="report-modal">
+    <div class="modal-content" style="max-width: 600px; border: 1.5px solid rgba(255,255,255,0.15);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+        <h4 class="modal-title" style="display:flex; align-items:center; gap:8px;">📋 Demo Class Report Card</h4>
+        <button class="modal-close" type="button" id="report-modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="report-modal-print-area" style="padding: 20px 0; font-family: var(--font-main);">
+        <!-- Printable Report Content -->
+        <div style="text-align:center; margin-bottom: 20px; border-bottom: 2px solid var(--brand-secondary); padding-bottom: 15px;">
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--text-main); margin: 0; text-transform: uppercase;" class="company-name-text">Eight Times Eight Chess Academy</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Official Evaluation & Demo Report</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 0.85rem;">
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+            <h5 style="margin: 0 0 8px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Student Profile</h5>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <span>Name: <strong id="rep-student-name" style="color:var(--text-main);">-</strong></span>
+              <span>Age: <strong id="rep-student-age">-</strong></span>
+              <span>Language: <strong id="rep-student-lang">-</strong></span>
+              <span>Level: <strong id="rep-student-level" style="color:var(--brand-secondary);">-</strong></span>
+              <span>Location: <strong id="rep-student-loc">-</strong></span>
+            </div>
+          </div>
+          
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+            <h5 style="margin: 0 0 8px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Class Particulars</h5>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <span>Tutor: <strong id="rep-tutor-name" style="color:var(--text-main);">-</strong></span>
+              <span>Date: <strong id="rep-class-date">-</strong></span>
+              <span>Time: <strong id="rep-class-time">-</strong></span>
+              <span>Slot: <strong id="rep-class-slot">-</strong></span>
+              <span>Agent: <strong id="rep-agent-name">-</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <h5 style="margin: 0 0 10px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Class Evaluation & Outcomes</h5>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size: 0.85rem; margin-bottom: 10px;">
+            <div>
+              <span>Status:</span>
+              <div id="rep-class-status" style="margin-top: 4px; display:inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">-</div>
+            </div>
+            <div>
+              <span>Compulsory Topic To Start:</span>
+              <div style="margin-top: 4px; font-weight: 700; color: var(--text-main);" id="rep-class-topic">-</div>
+            </div>
+          </div>
+          <div style="font-size: 0.85rem; border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 10px;">
+            <span>Revision Details:</span>
+            <p id="rep-class-revision" style="margin: 4px 0 0 0; color: var(--text-muted); font-style: italic;">-</p>
+          </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; font-size: 0.9rem;">
+          <h5 style="margin: 0 0 8px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Detailed Tutor Notes</h5>
+          <p id="rep-class-feedback" style="margin: 4px 0 0 0; font-weight: 700; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: pre-line;">-</p>
+        </div>
+      </div>
+      
+      <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 15px; display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="btn" id="report-print-btn" style="background-color: var(--brand-secondary); color: white; font-weight:bold;">🖨️ Print Report</button>
+        <button type="button" class="btn" id="report-edit-btn" style="background-color: rgba(255,255,255,0.05); border:1px solid var(--border-color); color:var(--text-main);">✏️ Edit Notes</button>
+        <button type="button" class="btn" id="report-modal-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: EDIT NOTES & FEEDBACK -->
   <div class="modal-backdrop" id="feedback-modal">
     <div class="modal-content">
@@ -989,7 +1059,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Excel Spreadsheet Reader library (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="mockData.js?v=18"></script>
-  <script src="app.js?v=18"></script>
+  <script src="mockData.js?v=19"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

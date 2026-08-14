@@ -3233,6 +3233,65 @@ async function sendDemoInvite(demoId) {
   });
 }
 
+function openReportModal(demoId) {
+  const modal = document.getElementById("report-modal");
+  if (!modal) return;
+  const demo = state.demos.find(d => d.id === demoId);
+  if (!demo) return;
+
+  // Set fields
+  const companyNameEl = modal.querySelector(".company-name-text");
+  if (companyNameEl) {
+    companyNameEl.textContent = state.branding.companyName || "Eight Times Eight Chess Academy";
+  }
+
+  document.getElementById("rep-student-name").textContent = demo.studentName || "-";
+  document.getElementById("rep-student-age").textContent = demo.age || "-";
+  document.getElementById("rep-student-lang").textContent = demo.language || "-";
+  document.getElementById("rep-student-level").textContent = demo.level || "-";
+  document.getElementById("rep-student-loc").textContent = demo.location || "-";
+
+  document.getElementById("rep-tutor-name").textContent = demo.tutorName || "-";
+  document.getElementById("rep-class-date").textContent = formatDisplayDate(demo.date || demo.dateTime) || "-";
+  document.getElementById("rep-class-time").textContent = formatDisplayTime(demo.time) || "-";
+  document.getElementById("rep-class-slot").textContent = demo.slot || "-";
+  document.getElementById("rep-agent-name").textContent = demo.agentName || "-";
+
+  const statusEl = document.getElementById("rep-class-status");
+  if (statusEl) {
+    const st = (demo.status || "DEMO NOT DONE").toUpperCase();
+    statusEl.textContent = st;
+    
+    // Status colors
+    let bg = "rgba(255,255,255,0.08)";
+    let fg = "var(--text-main)";
+    if (st === "DEMO DONE") {
+      bg = "rgba(34, 197, 94, 0.2)";
+      fg = "#22c55e";
+    } else if (st === "CONVERTED") {
+      bg = "rgba(59, 130, 246, 0.2)";
+      fg = "#3b82f6";
+    } else if (st === "CANCELLED") {
+      bg = "rgba(239, 68, 68, 0.2)";
+      fg = "#ef4444";
+    }
+    statusEl.style.backgroundColor = bg;
+    statusEl.style.color = fg;
+  }
+
+  document.getElementById("rep-class-topic").textContent = demo.topicToStart || "-";
+  document.getElementById("rep-class-revision").textContent = (demo.revision && demo.revision !== "-") ? demo.revision : "None required";
+  document.getElementById("rep-class-feedback").textContent = demo.feedback || "No feedback notes entered.";
+
+  // Save demoId onto edit button
+  const editBtn = document.getElementById("report-edit-btn");
+  if (editBtn) {
+    editBtn.dataset.id = demo.id;
+  }
+
+  modal.classList.add("open");
+}
+
 // Tutor Feedback edit popup
 function openFeedbackModal(demoId) {
   const modal = document.getElementById("feedback-modal");
@@ -3483,6 +3542,61 @@ function initEventListeners() {
   
   document.getElementById("feedback-modal-close")?.addEventListener("click", () => document.getElementById("feedback-modal").classList.remove("open"));
   document.getElementById("feedback-modal-cancel")?.addEventListener("click", () => document.getElementById("feedback-modal").classList.remove("open"));
+
+  // Report modal controls
+  document.getElementById("report-modal-close")?.addEventListener("click", () => document.getElementById("report-modal").classList.remove("open"));
+  document.getElementById("report-modal-cancel")?.addEventListener("click", () => document.getElementById("report-modal").classList.remove("open"));
+  
+  document.getElementById("report-edit-btn")?.addEventListener("click", (e) => {
+    const demoId = e.target.dataset.id;
+    document.getElementById("report-modal").classList.remove("open");
+    openFeedbackModal(demoId);
+  });
+
+  document.getElementById("report-print-btn")?.addEventListener("click", () => {
+    const printContents = document.getElementById("report-modal-print-area").innerHTML;
+    const printWindow = window.open('', '', 'height=700,width=800');
+    if (!printWindow) {
+      showToast("Pop-up blocker is preventing print view. Please allow pop-ups.", "warning");
+      return;
+    }
+    printWindow.document.write('<html><head><title>Demo Class Report</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write(`
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #0f172a;
+        background: #ffffff;
+        padding: 30px;
+        margin: 0;
+      }
+      strong { color: #000000; }
+      span { display: block; margin-bottom: 4px; font-size: 13px; color: #475569; }
+      p { margin: 4px 0 0 0; line-height: 1.4; font-size: 13px; }
+      h2 { color: #0f172a; margin: 0; font-size: 20px; text-transform: uppercase; }
+      h5 { margin: 0 0 8px 0; color: #f97316; font-size: 14px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; text-transform: uppercase; }
+      .print-grid { display: block; width: 100%; }
+      .print-col { display: inline-block; width: 48%; vertical-align: top; margin-right: 2%; box-sizing: border-box; }
+      .print-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 15px; background: #f8fafc; }
+      .print-status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; background: #e2e8f0; color: #0f172a; font-size: 11px; }
+    `);
+    printWindow.document.write('</style></head><body>');
+    
+    let formattedHtml = printContents;
+    formattedHtml = formattedHtml.replace(/grid-template-columns:\s*1fr\s*1fr/g, '');
+    formattedHtml = formattedHtml.replace(/background:\s*rgba\(255,255,255,0\.02\)/g, 'background:#f8fafc; border:1px solid #e2e8f0; color:#0f172a;');
+    formattedHtml = formattedHtml.replace(/color:\s*var\(--text-main\)/g, 'color:#000000;');
+    
+    printWindow.document.write(formattedHtml);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  });
 
   // Forms submit triggers
   document.getElementById("slab-form")?.addEventListener("submit", handleSlabSubmit);
@@ -4125,7 +4239,13 @@ function initEventListeners() {
     }
 
     const feedbackBtn = target.closest(".edit-feedback-btn");
-    if (feedbackBtn) openFeedbackModal(feedbackBtn.dataset.id);
+    if (feedbackBtn) {
+      if (isTutorPage) {
+        openFeedbackModal(feedbackBtn.dataset.id);
+      } else {
+        openReportModal(feedbackBtn.dataset.id);
+      }
+    }
 
     if (target.classList.contains("claim-demo-btn")) claimDemo(target.dataset.id);
 
