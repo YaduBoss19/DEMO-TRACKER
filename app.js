@@ -242,7 +242,12 @@ async function fetchFromSupabase() {
     const { data: demosData, error: dErr } = await supabaseClient.from('demos').select('*');
     if (dErr) throw dErr;
     if (demosData) {
-      state.demos = demosData.map((d, index) => mapSheetDemoToApp(d, index + 2));
+      // Defensive check: filter out any corrupted rows that lack a student name
+      const validDemos = demosData.filter(d => {
+        const sName = d.studentName || d.studentname || "";
+        return sName.trim() !== "";
+      });
+      state.demos = validDemos.map((d, index) => mapSheetDemoToApp(d, index + 2));
     }
 
     saveToLocalStorage();
