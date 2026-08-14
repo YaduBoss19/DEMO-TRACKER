@@ -3620,6 +3620,59 @@ function initEventListeners() {
     });
   }
 
+  // Bulk add slots upload option
+  const bulkFileEl = document.getElementById("bulk-slots-file");
+  const bulkBtnEl = document.getElementById("bulk-slots-upload-btn");
+  if (bulkBtnEl && bulkFileEl) {
+    bulkBtnEl.addEventListener("click", () => bulkFileEl.click());
+    bulkFileEl.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        if (!text) {
+          showToast("Empty file.", "warning");
+          return;
+        }
+
+        let rawLines = [];
+        if (file.name.endsWith(".csv")) {
+          rawLines = text.split(/[\r\n,]+/);
+        } else {
+          rawLines = text.split(/[\r\n]+/);
+        }
+
+        initializeBrandingLists();
+        let addedCount = 0;
+        rawLines.forEach(line => {
+          const slotVal = line.trim();
+          if (slotVal && !state.branding.themeColors.slotsList.includes(slotVal)) {
+            const lowerVal = slotVal.toLowerCase();
+            if (lowerVal !== "slot" && lowerVal !== "slots" && lowerVal !== "name") {
+              state.branding.themeColors.slotsList.push(slotVal);
+              addedCount++;
+            }
+          }
+        });
+
+        bulkFileEl.value = ""; // reset
+
+        if (addedCount > 0) {
+          renderSettingsDropdownLists();
+          await writeToSheets("updateBranding", state.branding);
+          showToast(`Successfully added ${addedCount} slots in bulk.`, "success");
+          renderDashboard();
+        } else {
+          showToast("No new unique slots found in file.", "warning");
+        }
+      };
+      reader.onerror = () => showToast("Error reading file.", "error");
+      reader.readAsText(file);
+    });
+  }
+
   // Add Agent option in Settings
   const addAgentBtn = document.getElementById("add-agent-btn");
   if (addAgentBtn) {

@@ -566,8 +566,16 @@
                   <input type="text" id="new-slot-input" class="form-control" placeholder="e.g. Slot 49" style="padding: 4px 8px; font-size: 0.85rem;">
                   <button type="button" class="btn btn-sm btn-primary" id="add-slot-btn">Add</button>
                 </div>
-                <div id="slots-manager-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg);">
+                <div id="slots-manager-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg); margin-bottom: 10px;">
                   <!-- Dynamic slots with delete buttons -->
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">📂 Bulk Add Slots (CSV / TXT)</span>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="file" id="bulk-slots-file" accept=".csv,.txt" style="display:none;">
+                    <button type="button" class="btn btn-sm" id="bulk-slots-upload-btn" style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:var(--text-main); font-size:0.75rem; padding:4px 10px;">Choose File</button>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">One slot name per line</span>
+                  </div>
                 </div>
               </div>
               
@@ -993,7 +1001,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Excel Spreadsheet Reader library (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="mockData.js?v=13"></script>
-  <script src="app.js?v=13"></script>
+  <script src="mockData.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>
