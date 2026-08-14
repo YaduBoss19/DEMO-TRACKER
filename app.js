@@ -1027,6 +1027,20 @@ function getMonthYearFilteredDemos() {
   });
 }
 
+function getAmpmSuffix(timeStr) {
+  if (!timeStr) return "AM";
+  if (timeStr.toLowerCase().includes("pm")) return "PM";
+  return "AM";
+}
+
+function formatZoomStartLink(url) {
+  if (!url) return "";
+  if (url.toLowerCase().includes("zoom.us")) {
+    return url.replace(/\/j\//i, "/s/");
+  }
+  return url;
+}
+
 function parseDateString(dateStr) {
   if (!dateStr) return new Date(0);
   const clean = String(dateStr).trim();
@@ -1793,6 +1807,7 @@ function renderDemosTable() {
           <td style="white-space: nowrap;">
             <div style="display:flex; align-items:center; gap:6px;">
               <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:115px; padding:3px 6px;">
+              <button type="button" class="ampm-toggle-btn timezone-toggle-btn" data-id="${demo.id}">${getAmpmSuffix(demo.time)}</button>
               <button type="button" class="timezone-toggle-btn" data-id="${demo.id}">${getTimezoneSuffix(demo.time)}</button>
             </div>
           </td>
@@ -3878,8 +3893,34 @@ function initEventListeners() {
       moveDemoRow(target.dataset.id, "down");
     }
 
+    // AM/PM Toggle (AM <-> PM)
+    if (target.classList.contains("ampm-toggle-btn")) {
+      e.preventDefault();
+      const id = target.dataset.id;
+      const idx = state.demos.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        const currentTime = state.demos[idx].time || "";
+        const currentAmpm = getAmpmSuffix(currentTime);
+        const newAmpm = currentAmpm === "AM" ? "PM" : "AM";
+        
+        let newTime = currentTime;
+        if (currentTime.toLowerCase().includes("am") || currentTime.toLowerCase().includes("pm")) {
+          newTime = currentTime.replace(/am/i, newAmpm).replace(/pm/i, newAmpm);
+        } else {
+          const zone = getTimezoneSuffix(currentTime);
+          const cleanTime = currentTime.replace(/ist/i, "").replace(/gmt/i, "").trim();
+          newTime = `${cleanTime} ${newAmpm} ${zone}`;
+        }
+        
+        state.demos[idx].time = newTime;
+        writeToSheets("updateDemo", state.demos[idx]);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast(`Time toggled to ${newAmpm}.`);
+      }
+    }
     // Timezone Toggle (IST <-> GMT)
-    if (target.classList.contains("timezone-toggle-btn")) {
+    else if (target.classList.contains("timezone-toggle-btn")) {
       e.preventDefault();
       const id = target.dataset.id;
       const idx = state.demos.findIndex(d => d.id === id);
@@ -4062,13 +4103,16 @@ function initEventListeners() {
       }
     }
 
-    // Inline Time Dropdown Select
-    if (target.classList.contains("inline-time-select")) {
+    // Inline Time Input Change (24-hour clock)
+    if (target.classList.contains("inline-time-input")) {
       const id = target.dataset.id;
-      const formattedTime = target.value;
+      const time24 = target.value;
       const idx = state.demos.findIndex(d => d.id === id);
       if (idx !== -1) {
-        state.demos[idx].time = formattedTime;
+        const currentSuffix = getTimezoneSuffix(state.demos[idx].time);
+        const formatted = formatTimeForDatabase(time24, currentSuffix);
+        state.demos[idx].time = formatted;
+        
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
         renderDashboard();
