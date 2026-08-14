@@ -586,9 +586,12 @@
                   <input type="text" id="new-agent-input" class="form-control" placeholder="e.g. Amit" style="padding: 4px 8px; font-size: 0.85rem;">
                   <button type="button" class="btn btn-sm btn-primary" id="add-agent-btn">Add</button>
                 </div>
-                <div id="agents-manager-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg);">
+                <div id="agents-manager-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--card-bg); margin-bottom: 12px;">
                   <!-- Dynamic agents with delete buttons -->
                 </div>
+                
+                <h4 style="font-size: 0.9rem; font-weight: bold; margin-bottom: 6px; color: var(--brand-secondary);">Agent Access Code</h4>
+                <input type="text" id="agent-access-code-input" class="form-control" placeholder="e.g. AGENT123" style="padding: 4px 8px; font-size: 0.85rem;">
               </div>
             </div>
           </div>
@@ -875,6 +878,12 @@
             <label for="demo-feedback">Feedback & Notes</label>
             <textarea id="demo-feedback" class="form-control" style="resize:vertical; min-height:80px;" placeholder="Add class outcome notes..."></textarea>
           </div>
+
+          <!-- Row 6: Agent Note -->
+          <div class="form-group" style="margin-bottom: 15px;">
+            <label for="demo-agent-note">Agent Note (One Line - Invisible to Tutors)</label>
+            <input type="text" id="demo-agent-note" class="form-control" placeholder="Add custom agent-only notes here...">
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn" id="demo-modal-cancel">Cancel</button>
@@ -998,6 +1007,11 @@
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; font-size: 0.9rem;">
           <h5 style="margin: 0 0 8px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Detailed Tutor Notes</h5>
           <p id="rep-class-feedback" style="margin: 4px 0 0 0; font-weight: 700; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: pre-line;">-</p>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; font-size: 0.9rem; margin-top: 12px;">
+          <h5 style="margin: 0 0 8px 0; color: var(--brand-secondary); font-size: 0.9rem; font-weight: 700; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">Agent Note (Private - Hidden from Tutors)</h5>
+          <p id="rep-class-agent-note" style="margin: 4px 0 0 0; font-weight: 700; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: pre-line;">-</p>
         </div>
       </div>
       

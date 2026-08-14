@@ -78,6 +78,7 @@ function mapSheetDemoToApp(s, rowNum) {
     zoomLink: s.zoomLink || s.zoomlink || s["ZOOM LINK"] || s["CLASS LINK"] || "",
     revision: s.revision || s["REVISION"] || "-",
     topicToStart: s.topicToStart || s.topictostart || s["TOPIC TO START"] || "-",
+    agentNote: s.agentNote || s.agentnote || s["AGENT NOTE"] || "",
     position: parseInt(s.position) || (rowNum ? parseInt(rowNum) : 0)
   };
 }
@@ -102,6 +103,8 @@ function mapAppDemoToSheet(a) {
     "ZOOM LINK": a.zoomLink || "",
     "REVISION": a.revision || "-",
     "TOPIC TO START": a.topicToStart || "-",
+    agentNote: a.agentNote || "",
+    agentnote: a.agentNote || "",
     position: a.position || 0
   };
 }
@@ -2421,6 +2424,9 @@ function renderAdminBranding() {
   document.getElementById("color-primary").value = branding.themeColors.primary;
   document.getElementById("color-secondary").value = branding.themeColors.secondary;
 
+  const accessCodeEl = document.getElementById("agent-access-code-input");
+  if (accessCodeEl) accessCodeEl.value = branding.themeColors.agentAccessCode || "AGENT123";
+
   renderSettingsDropdownLists();
   renderSlotLinksSettingsTable();
 }
@@ -2951,6 +2957,7 @@ function openDemoModal(demoId = null) {
       document.getElementById("demo-location").value = demo.location || "";
       document.getElementById("demo-mobile-number").value = demo.mobileNumber || "";
       document.getElementById("demo-feedback").value = demo.feedback || "";
+      document.getElementById("demo-agent-note").value = demo.agentNote || "";
     }
   } else {
     title.textContent = "Add Demo Log";
@@ -2970,6 +2977,7 @@ function openDemoModal(demoId = null) {
     document.getElementById("demo-agent-name").value = "";
     document.getElementById("demo-location").value = "";
     document.getElementById("demo-mobile-number").value = "";
+    document.getElementById("demo-agent-note").value = "";
   }
 
   modal.classList.add("open");
@@ -3000,6 +3008,7 @@ async function handleDemoSubmit(e) {
   const location = document.getElementById("demo-location").value.trim() || "-";
   const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
   const feedback = document.getElementById("demo-feedback").value.trim() || "";
+  const agentNote = document.getElementById("demo-agent-note").value.trim() || "";
 
   let status = "DEMO NOT DONE";
   let shouldTriggerWhatsApp = false;
@@ -3042,6 +3051,7 @@ async function handleDemoSubmit(e) {
     location,
     mobileNumber,
     feedback,
+    agentNote,
     zoomLink: tutor.zoomLink || ""
   };
 
@@ -3289,6 +3299,10 @@ function openReportModal(demoId) {
   document.getElementById("rep-class-topic").textContent = demo.topicToStart || "-";
   document.getElementById("rep-class-revision").textContent = (demo.revision && demo.revision !== "-") ? demo.revision : "None required";
   document.getElementById("rep-class-feedback").textContent = demo.feedback || "No feedback notes entered.";
+  const repAgentNoteEl = document.getElementById("rep-class-agent-note");
+  if (repAgentNoteEl) {
+    repAgentNoteEl.textContent = demo.agentNote || "No agent notes entered.";
+  }
 
   // Save demoId onto edit button
   const editBtn = document.getElementById("report-edit-btn");
@@ -3404,6 +3418,7 @@ async function handleBrandingSubmit(e) {
   const whatsappInstanceId = document.getElementById("brand-whatsapp-instance")?.value.trim() || "";
   const whatsappToken = document.getElementById("brand-whatsapp-token")?.value.trim() || "";
   const whatsappAdminNumber = document.getElementById("brand-whatsapp-test-num")?.value.trim() || "";
+  const agentAccessCode = document.getElementById("agent-access-code-input")?.value.trim() || "AGENT123";
 
   state.branding.companyName = name;
   state.branding.currency = currency;
@@ -3413,6 +3428,7 @@ async function handleBrandingSubmit(e) {
   state.branding.supabaseKey = supabaseKey;
   state.branding.themeColors.primary = primary;
   state.branding.themeColors.secondary = secondary;
+  state.branding.themeColors.agentAccessCode = agentAccessCode;
   
   state.branding.whatsappEnabled = whatsappEnabled;
   state.branding.whatsappInstanceId = whatsappInstanceId;
