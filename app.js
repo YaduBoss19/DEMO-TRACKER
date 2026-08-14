@@ -1792,7 +1792,7 @@ function renderDemosTable() {
           <td style="white-space: nowrap;"><input type="date" class="inline-date-input" data-id="${demo.id}" value="${formatDateForInput(demo.date || demo.dateTime)}" style="padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
           <td style="white-space: nowrap;">
             <div style="display:flex; align-items:center; gap:6px;">
-              <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:85px; padding:3px 6px;">
+              <input type="time" class="inline-time-input" data-id="${demo.id}" value="${formatTimeForInput(demo.time)}" style="width:115px; padding:3px 6px;">
               <button type="button" class="timezone-toggle-btn" data-id="${demo.id}">${getTimezoneSuffix(demo.time)}</button>
             </div>
           </td>
@@ -1850,6 +1850,7 @@ function renderDemosTable() {
         <th>LEVEL</th>
         <th>feedback</th>
         <th>DEMO STATUS</th>
+        <th>ACTION</th>
       </tr>
     `;
 
@@ -1921,19 +1922,14 @@ function renderDemosTable() {
         tutorStatusOptions += `<option value="RESCHEDULE" selected disabled>RESCHEDULE (Closed)</option>`;
       }
 
-      const zoomLink = getZoomLinkForSlot(demo.slot);
+      const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
+      const zoomLink = demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot);
+      
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
         <td style="white-space: nowrap;">${formatDisplayDate(demo.date || demo.dateTime)}</td>
         <td style="white-space: nowrap;">${formatDisplayTime(demo.time)}</td>
-        <td>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span>${demo.slot || '-'}</span>
-            <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Meeting">
-              🟢 Start Class
-            </a>
-          </div>
-        </td>
+        <td>${demo.slot || '-'}</td>
         <td><strong>${demo.studentName}</strong></td>
         <td>${demo.age}</td>
         <td>${demo.language}</td>
@@ -1943,6 +1939,11 @@ function renderDemosTable() {
           <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
             ${tutorStatusOptions}
           </select>
+        </td>
+        <td>
+          <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
+            🟢 Start Class
+          </a>
         </td>
       `;
       body.appendChild(tr);
@@ -2513,9 +2514,15 @@ function renderTutorSlots() {
       if (bookedDemo) {
         // Red Color for Class Booked
         cell.className = "calendar-cell booked";
+        cell.style.cursor = "pointer";
+        cell.title = `Click to start class for ${bookedDemo.studentName}`;
         cell.innerHTML = `🎓 ${bookedDemo.studentName}`;
         cell.addEventListener("click", () => {
-          showToast(`This slot is locked for ${bookedDemo.studentName}'s demo class!`, "warning");
+          const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
+          const zoomLink = bookedDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(bookedDemo.slot);
+          if (confirm(`Do you want to start the class for ${bookedDemo.studentName}?`)) {
+            window.open(zoomLink, "_blank");
+          }
         });
       } else {
         // Green Color for Available
