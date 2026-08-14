@@ -1885,7 +1885,7 @@ function renderDemosTable() {
       }
 
       const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-      const zoomLink = demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot);
+      const zoomLink = formatZoomStartLink(demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot));
       
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
@@ -2473,7 +2473,7 @@ function renderTutorSlots() {
         cell.innerHTML = `🎓 ${bookedDemo.studentName}`;
         cell.addEventListener("click", () => {
           const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-          const zoomLink = bookedDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(bookedDemo.slot);
+          const zoomLink = formatZoomStartLink(bookedDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(bookedDemo.slot));
           if (confirm(`Do you want to start the class for ${bookedDemo.studentName}?`)) {
             window.open(zoomLink, "_blank");
           }
