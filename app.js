@@ -474,88 +474,10 @@ async function writeToSupabase(action, payload) {
 }
 
 async function fetchFromSheets() {
-  const connector = state.branding.connectorType || "sheets";
-  if (connector === "supabase") {
-    return await fetchFromSupabase();
-  }
-
-  let url = state.branding.sheetsUrl;
-  if (!url) return false;
-  url = url.trim();
-
-  // Validate that the user pasted the Web App URL instead of the Spreadsheet or Editor URL
-  if (!url.includes("/exec")) {
-    showToast("Sync failed: The URL does not look like a deployed Web App. Make sure it ends in /exec.", "error");
-    return false;
-  }
-
-  const statusIndicator = document.getElementById("sheets-sync-status");
-  if (statusIndicator) statusIndicator.style.display = "inline-flex";
-
-  try {
-    const response = await fetch(`${url}?action=readAll`, {
-      method: "GET",
-      mode: "cors"
-    });
-    const result = await response.json();
-    
-    if (result && result.status === "success" && result.data) {
-      const data = result.data;
-      if (data.branding) {
-        state.branding = {
-          ...state.branding,
-          companyName: data.branding.name || data.branding.companyName || state.branding.companyName,
-          logoUrl: data.branding.logo || data.branding.logoUrl || state.branding.logoUrl,
-          currency: data.branding.currency || state.branding.currency,
-          themeColors: {
-            ...state.branding.themeColors,
-            ...(data.branding.themeColors || {})
-          }
-        };
-        if (data.branding.timetableTemplate) {
-          try {
-            state.timetable = typeof data.branding.timetableTemplate === "string"
-              ? JSON.parse(data.branding.timetableTemplate)
-              : data.branding.timetableTemplate;
-          } catch (e) {
-            console.error("Failed to parse loaded timetableTemplate:", e);
-          }
-        }
-        if (data.branding.inviteTemplate) {
-          state.inviteTemplate = data.branding.inviteTemplate;
-        }
-        initializeBrandingLists();
-      }
-      if (data.slabs && data.slabs.length > 0) state.slabs = data.slabs;
-      if (data.tutors && data.tutors.length > 0) {
-        const fetchedTutors = data.tutors;
-        if (state.currentUser && state.currentUser.role === "tutor") {
-          const hasCurrentTutor = fetchedTutors.some(t => t.id === state.currentUser.id);
-          if (!hasCurrentTutor) {
-            const localTutor = state.tutors.find(t => t.id === state.currentUser.id);
-            if (localTutor) fetchedTutors.push(localTutor);
-          }
-        }
-        state.tutors = fetchedTutors;
-      }
-      if (data.demos && data.demos.length > 0) {
-        state.demos = data.demos.map((d, index) => mapSheetDemoToApp(d, index + 2));
-      }
-      
-      saveToLocalStorage();
-      return true;
-    }
-  } catch (err) {
-    console.error("Failed to fetch from Google Sheets: ", err);
-    showToast("Sheets sync failed. Running in Offline Mode.", "warning");
-  } finally {
-    if (statusIndicator) statusIndicator.style.display = "none";
-  }
-  return false;
+  return await fetchFromSupabase();
 }
-async function writeToSheets(action, payload) {
-  const connector = state.branding.connectorType || "sheets";
 
+async function writeToSheets(action, payload) {
   const restrictedActions = ["addTutor", "updateTutor", "deleteTutor", "updateSlab", "deleteSlab", "updateBranding", "clearDatabase"];
   if (restrictedActions.includes(action)) {
     let isAllowed = false;
@@ -576,59 +498,7 @@ async function writeToSheets(action, payload) {
     }
   }
 
-  if (connector === "supabase") {
-    return await writeToSupabase(action, payload);
-  }
-
-  let url = state.branding.sheetsUrl;
-  if (!url) return false;
-  url = url.trim();
-
-  const statusIndicator = document.getElementById("sheets-sync-status");
-  if (statusIndicator) statusIndicator.style.display = "inline-flex";
-
-  let mappedPayload = payload;
-  let finalAction = action;
-
-  // Intercept and translate payloads/actions for sheet layout compatibility
-  if (action === "addDemo" || action === "updateDemo") {
-    mappedPayload = mapAppDemoToSheet(payload);
-  } else if (action === "updateDemoStatus") {
-    finalAction = "updateDemoCell";
-    mappedPayload = { id: payload.id, columnName: "DEMO STATUS", value: payload.status };
-  } else if (action === "updateDemoFeedback") {
-    finalAction = "updateDemoCell";
-    mappedPayload = { id: payload.id, columnName: "feedback", value: payload.feedback };
-  } else if (action === "addDemosBulk") {
-    mappedPayload = payload.map(mapAppDemoToSheet);
-  } else if (action === "updateBranding") {
-    mappedPayload = {
-      name: payload.companyName,
-      logo: payload.logoUrl,
-      currency: payload.currency,
-      themeColors: payload.themeColors,
-      timetableTemplate: JSON.stringify(payload.timetableTemplate || [])
-    };
-  }
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      mode: "cors",
-      headers: {
-        "Content-Type": "text/plain"
-      },
-      body: JSON.stringify({ action: finalAction, data: mappedPayload })
-    });
-    const result = await response.json();
-    return result && result.status === "success";
-  } catch (err) {
-    console.error("Failed to write to Google Sheets: ", err);
-    showToast("Write failed. Saved locally.", "warning");
-    return false;
-  } finally {
-    if (statusIndicator) statusIndicator.style.display = "none";
-  }
+  return await writeToSupabase(action, payload);
 }
 
 function generateDefaultTimetable() {
@@ -1054,6 +924,66 @@ function formatZoomStartLink(url) {
   }
   
   return url;
+}
+
+function normalizePhoneNumber(phone) {
+  if (!phone) return "";
+  let cleaned = String(phone).replace(/[^\d]/g, "");
+  // If it starts with 0 and has 11 digits, strip the leading 0 (e.g. 09876543210 -> 9876543210)
+  if (cleaned.startsWith("0") && cleaned.length > 10) {
+    cleaned = cleaned.substring(1);
+  }
+  // If it has 10 digits (common local format), append default country code '91'
+  if (cleaned.length === 10) {
+    cleaned = "91" + cleaned;
+  }
+  return cleaned;
+}
+
+async function sendBackgroundWhatsApp(to, body) {
+  const enabled = state.branding.whatsappEnabled;
+  const instanceId = state.branding.whatsappInstanceId;
+  const token = state.branding.whatsappToken;
+
+  if (!enabled || !instanceId || !token) {
+    console.log("WhatsApp dispatch skipped: Reminders are not enabled or credentials are empty.");
+    return false;
+  }
+
+  const cleanPhone = normalizePhoneNumber(to);
+  if (!cleanPhone) {
+    console.error("WhatsApp dispatch aborted: Invalid phone number.");
+    return false;
+  }
+
+  const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
+  
+  const payload = new URLSearchParams();
+  payload.append("token", token);
+  payload.append("to", cleanPhone);
+  payload.append("body", body);
+  payload.append("priority", "10");
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: payload.toString()
+    });
+    const result = await response.json();
+    if (result && (result.sent === "true" || result.sent === true || result.success)) {
+      console.log(`WhatsApp message successfully sent to ${cleanPhone}.`);
+      return true;
+    } else {
+      console.error("WhatsApp API responded with error:", result);
+      return false;
+    }
+  } catch (err) {
+    console.error("Failed to send WhatsApp message via UltraMsg:", err);
+    return false;
+  }
 }
 
 function parseDateString(dateStr) {
@@ -2406,35 +2336,27 @@ function renderAdminBranding() {
   document.getElementById("brand-name").value = branding.companyName;
   document.getElementById("brand-currency").value = branding.currency;
   
-  const connType = branding.connectorType || "sheets";
-  const connTypeEl = document.getElementById("brand-connector-type");
-  if (connTypeEl) connTypeEl.value = connType;
-
-  const sheetsUrlEl = document.getElementById("brand-sheets-url");
-  if (sheetsUrlEl) sheetsUrlEl.value = branding.sheetsUrl || "";
-
   const subUrlEl = document.getElementById("brand-supabase-url");
   if (subUrlEl) subUrlEl.value = branding.supabaseUrl || "";
 
   const subKeyEl = document.getElementById("brand-supabase-key");
   if (subKeyEl) subKeyEl.value = branding.supabaseKey || "";
   
+  // Load WhatsApp Settings
+  const whatsappEnabledEl = document.getElementById("brand-whatsapp-enabled");
+  if (whatsappEnabledEl) whatsappEnabledEl.checked = !!branding.whatsappEnabled;
+
+  const whatsappInstanceEl = document.getElementById("brand-whatsapp-instance");
+  if (whatsappInstanceEl) whatsappInstanceEl.value = branding.whatsappInstanceId || "";
+
+  const whatsappTokenEl = document.getElementById("brand-whatsapp-token");
+  if (whatsappTokenEl) whatsappTokenEl.value = branding.whatsappToken || "";
+
+  const whatsappTestNumEl = document.getElementById("brand-whatsapp-test-num");
+  if (whatsappTestNumEl) whatsappTestNumEl.value = branding.whatsappAdminNumber || "";
+
   document.getElementById("color-primary").value = branding.themeColors.primary;
   document.getElementById("color-secondary").value = branding.themeColors.secondary;
-
-  // Toggle visible config fields based on type
-  const groupSheets = document.getElementById("settings-group-sheets");
-  const groupSupabase = document.getElementById("settings-group-supabase");
-  
-  if (groupSheets && groupSupabase) {
-    if (connType === "supabase") {
-      groupSheets.style.display = "none";
-      groupSupabase.style.display = "block";
-    } else {
-      groupSheets.style.display = "block";
-      groupSupabase.style.display = "none";
-    }
-  }
 
   renderSettingsDropdownLists();
   renderSlotLinksSettingsTable();
@@ -3010,9 +2932,25 @@ async function handleDemoSubmit(e) {
   const feedback = document.getElementById("demo-feedback").value.trim() || "";
 
   let status = "DEMO NOT DONE";
+  let shouldTriggerWhatsApp = false;
+  let targetDemoId = id;
+
   if (id) {
     const oldDemo = state.demos.find(d => d.id === id);
-    if (oldDemo) status = oldDemo.status || "DEMO NOT DONE";
+    if (oldDemo) {
+      status = oldDemo.status || "DEMO NOT DONE";
+      const isScheduled = (status.toUpperCase() === "DEMO NOT DONE" || status === "");
+      const dateChanged = oldDemo.date !== date;
+      const timeChanged = oldDemo.time !== time;
+      const slotChanged = oldDemo.slot !== slot;
+      const tutorChanged = oldDemo.tutorId !== tutorId;
+      
+      if (isScheduled && (dateChanged || timeChanged || slotChanged || tutorChanged)) {
+        shouldTriggerWhatsApp = true;
+      }
+    }
+  } else {
+    shouldTriggerWhatsApp = true;
   }
 
   const tutor = state.tutors.find(t => t.id === tutorId) || { name: "Unassigned", zoomLink: "" };
@@ -3043,12 +2981,52 @@ async function handleDemoSubmit(e) {
       state.demos[idx] = { id, ...demoData };
       await writeToSheets("updateDemo", { id, ...demoData });
       showToast("Demo log updated.");
+      targetDemoId = id;
     }
   } else {
     const newId = `demo_${Date.now()}`;
     state.demos.push({ id: newId, ...demoData });
     await writeToSheets("addDemo", { id: newId, ...demoData });
     showToast("Demo log registered.");
+    targetDemoId = newId;
+  }
+
+  // Trigger background WhatsApp if needed
+  if (shouldTriggerWhatsApp && state.branding.whatsappEnabled && mobileNumber && mobileNumber !== "-") {
+    const demoObj = state.demos.find(d => d.id === targetDemoId);
+    if (demoObj) {
+      const studentNameVal = demoObj.studentName || "Student";
+      const dateVal = demoObj.date || demoObj.dateTime || "";
+      let dateFormatted = dateVal;
+      if (dateVal.includes("-")) {
+        const parts = dateVal.split("-");
+        if (parts.length === 3) {
+          const year = parts[0].slice(-2);
+          const month = parts[1];
+          const day = parts[2];
+          dateFormatted = `${day}/${month}/${year}`;
+        }
+      }
+      const timeVal = demoObj.time || "";
+      const slotVal = demoObj.slot || "Slot 1";
+      const tutorVal = demoObj.tutorName || "Assigning soon";
+      const zoomLink = demoObj.zoomLink || getZoomLinkForSlot(slotVal);
+
+      let template = state.inviteTemplate || localStorage.getItem("DEMO_INVITE_TEMPLATE") || DEFAULT_INVITE_TEMPLATE;
+      let text = template
+        .replace(/{DATE}/gi, dateFormatted)
+        .replace(/{TIME}/gi, timeVal)
+        .replace(/{SLOT}/gi, slotVal)
+        .replace(/{LINK}/gi, zoomLink)
+        .replace(/{STUDENT}/gi, studentNameVal)
+        .replace(/{TUTOR}/gi, tutorVal);
+
+      sendBackgroundWhatsApp(mobileNumber, text).then(sent => {
+        if (sent) {
+          showToast("Automated WhatsApp notification sent!", "success");
+        }
+      });
+    }
   }
 
   saveToLocalStorage();
@@ -3092,7 +3070,7 @@ function getZoomLinkForSlot(slotName) {
   return "https://eighttimeseight.onlineclass.site/join";
 }
 
-function sendDemoInvite(demoId) {
+async function sendDemoInvite(demoId) {
   const demo = state.demos.find(d => d.id === demoId);
   if (!demo) return;
   
@@ -3128,6 +3106,29 @@ function sendDemoInvite(demoId) {
     .replace(/{STUDENT}/gi, student)
     .replace(/{TUTOR}/gi, tutor);
   
+  const enabled = state.branding.whatsappEnabled;
+  const instanceId = state.branding.whatsappInstanceId;
+  const token = state.branding.whatsappToken;
+
+  if (enabled && instanceId && token) {
+    const choice = confirm(`Do you want to send this WhatsApp invite automatically in the background?\n\n• Click OK to send automatically via UltraMsg API to ${mobile || "the student"}.\n• Click Cancel to share manually via WhatsApp Web.`);
+    if (choice) {
+      const targetPhone = mobile || demo.mobileNumber;
+      if (!targetPhone) {
+        showToast("No mobile number provided to send WhatsApp.", "warning");
+        return;
+      }
+      showToast("Sending WhatsApp in background...", "info");
+      const sent = await sendBackgroundWhatsApp(targetPhone, text);
+      if (sent) {
+        showToast("WhatsApp invitation sent successfully!", "success");
+      } else {
+        showToast("Failed to send WhatsApp invitation. Check console or try manually.", "error");
+      }
+      return;
+    }
+  }
+
   // Copy to clipboard first
   navigator.clipboard.writeText(text).then(() => {
     showToast("Invitation message copied to clipboard!", "success");
@@ -3239,12 +3240,6 @@ async function handleBrandingSubmit(e) {
   const name = document.getElementById("brand-name").value.trim();
   const currency = document.getElementById("brand-currency").value.trim();
   
-  const connectorType = document.getElementById("brand-connector-type").value;
-  let sheetsUrl = document.getElementById("brand-sheets-url").value.trim();
-  if (sheetsUrl.includes("/macros/s/") && !sheetsUrl.includes("/exec")) {
-    sheetsUrl = sheetsUrl.endsWith("/") ? sheetsUrl + "exec" : sheetsUrl + "/exec";
-    document.getElementById("brand-sheets-url").value = sheetsUrl;
-  }
   let supabaseUrl = document.getElementById("brand-supabase-url").value.trim();
   // Strip trailing /rest/v1/ or /rest/v1 if present in Supabase URL
   if (supabaseUrl.endsWith("/rest/v1/")) {
@@ -3262,30 +3257,36 @@ async function handleBrandingSubmit(e) {
   const primary = document.getElementById("color-primary").value;
   const secondary = document.getElementById("color-secondary").value;
 
+  // Save WhatsApp settings values
+  const whatsappEnabled = document.getElementById("brand-whatsapp-enabled")?.checked || false;
+  const whatsappInstanceId = document.getElementById("brand-whatsapp-instance")?.value.trim() || "";
+  const whatsappToken = document.getElementById("brand-whatsapp-token")?.value.trim() || "";
+  const whatsappAdminNumber = document.getElementById("brand-whatsapp-test-num")?.value.trim() || "";
+
   state.branding.companyName = name;
   state.branding.currency = currency;
-  state.branding.connectorType = connectorType;
-  state.branding.sheetsUrl = sheetsUrl;
+  state.branding.connectorType = "supabase"; // Exclusively Supabase
+  state.branding.sheetsUrl = "";
   state.branding.supabaseUrl = supabaseUrl;
   state.branding.supabaseKey = supabaseKey;
   state.branding.themeColors.primary = primary;
   state.branding.themeColors.secondary = secondary;
+  
+  state.branding.whatsappEnabled = whatsappEnabled;
+  state.branding.whatsappInstanceId = whatsappInstanceId;
+  state.branding.whatsappToken = whatsappToken;
+  state.branding.whatsappAdminNumber = whatsappAdminNumber;
 
-  if (connectorType === "supabase") {
-    initSupabase();
-  }
+  initSupabase();
 
   saveToLocalStorage();
   applyBranding();
   await writeToSheets("updateBranding", state.branding);
   
-  const isConnected = connectorType === "supabase" || !!sheetsUrl;
-  if (isConnected) {
-    await syncFullState();
-  }
+  await syncFullState();
 
   updateViews();
-  showToast("Branding options updated.");
+  showToast("Settings and branding updated successfully.");
 }
 
 function handleBrandingReset() {
@@ -3663,96 +3664,96 @@ function initEventListeners() {
   }
 
   // Unified Database Connection Tester
+  // Unified Database Connection Tester (Supabase Exclusive)
   const testConnectionBtn = document.getElementById("test-connection-btn");
   if (testConnectionBtn) {
     testConnectionBtn.addEventListener("click", async () => {
       const statusMsg = document.getElementById("connection-status-msg");
       if (!statusMsg) return;
 
-      const connectorType = document.getElementById("brand-connector-type").value;
+      let urlInput = document.getElementById("brand-supabase-url").value.trim();
+      // Strip trailing /rest/v1/ or /rest/v1 if present in Supabase URL
+      if (urlInput.endsWith("/rest/v1/")) {
+        urlInput = urlInput.slice(0, -9);
+      } else if (urlInput.endsWith("/rest/v1")) {
+        urlInput = urlInput.slice(0, -8);
+      }
+      if (urlInput.endsWith("/")) {
+        urlInput = urlInput.slice(0, -1);
+      }
+      document.getElementById("brand-supabase-url").value = urlInput;
 
-      if (connectorType === "supabase") {
-        let urlInput = document.getElementById("brand-supabase-url").value.trim();
-        // Strip trailing /rest/v1/ or /rest/v1 if present in Supabase URL
-        if (urlInput.endsWith("/rest/v1/")) {
-          urlInput = urlInput.slice(0, -9);
-        } else if (urlInput.endsWith("/rest/v1")) {
-          urlInput = urlInput.slice(0, -8);
-        }
-        if (urlInput.endsWith("/")) {
-          urlInput = urlInput.slice(0, -1);
-        }
-        document.getElementById("brand-supabase-url").value = urlInput;
+      const keyInput = document.getElementById("brand-supabase-key").value.trim();
+      
+      if (!urlInput || !keyInput) {
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "⚠️ Enter Supabase URL and public anon key first.";
+        return;
+      }
 
-        const keyInput = document.getElementById("brand-supabase-key").value.trim();
+      // Validate URL format for Supabase Project URL
+      if (!urlInput.startsWith("http://") && !urlInput.startsWith("https://")) {
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = "⚠️ Invalid URL: Supabase Project URL must start with http:// or https://";
+        return;
+      }
+
+      statusMsg.style.color = "#4b5563"; // muted gray
+      statusMsg.textContent = "⏳ Testing Supabase API connection...";
+
+      try {
+        const testClient = window.supabase.createClient(urlInput, keyInput);
+        const { error } = await testClient.from('branding').select('id').limit(1);
+        if (error) throw error;
         
-        if (!urlInput || !keyInput) {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "⚠️ Enter Supabase URL and public anon key first.";
-          return;
-        }
+        statusMsg.style.color = "#16a34a"; // green
+        statusMsg.textContent = "✔️ Connected successfully! Schema verified.";
+        showToast("Supabase connection verified successfully.", "success");
+      } catch (err) {
+        console.error("Supabase connection test failed:", err);
+        statusMsg.style.color = "#dc2626"; // red
+        statusMsg.textContent = `❌ Connection failed: ${err.message || "Verify your tables & credentials."}`;
+      }
+    });
+  }
 
-        // Validate URL format for Supabase Project URL
-        if (!urlInput.startsWith("http://") && !urlInput.startsWith("https://")) {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "⚠️ Invalid URL: Supabase Project URL must start with http:// or https://";
-          return;
-        }
+  // WhatsApp test message dispatcher
+  const whatsappTestBtn = document.getElementById("whatsapp-test-btn");
+  if (whatsappTestBtn) {
+    whatsappTestBtn.addEventListener("click", async () => {
+      const testNum = document.getElementById("brand-whatsapp-test-num")?.value.trim();
+      const instanceId = document.getElementById("brand-whatsapp-instance")?.value.trim();
+      const token = document.getElementById("brand-whatsapp-token")?.value.trim();
 
-        statusMsg.style.color = "#4b5563"; // muted gray
-        statusMsg.textContent = "⏳ Testing Supabase API connection...";
+      if (!testNum || !instanceId || !token) {
+        showToast("Please enter Instance ID, API Token, and Test Number.", "warning");
+        return;
+      }
 
-        try {
-          const testClient = window.supabase.createClient(urlInput, keyInput);
-          const { error } = await testClient.from('branding').select('id').limit(1);
-          if (error) throw error;
-          
-          statusMsg.style.color = "#16a34a"; // green
-          statusMsg.textContent = "✔️ Connected successfully! Schema verified.";
-          showToast("Supabase connection verified successfully.", "success");
-        } catch (err) {
-          console.error("Supabase connection test failed:", err);
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = `❌ Connection failed: ${err.message || "Verify your tables & credentials."}`;
-        }
+      whatsappTestBtn.disabled = true;
+      whatsappTestBtn.textContent = "Sending...";
+
+      const oldEnabled = state.branding.whatsappEnabled;
+      const oldInstance = state.branding.whatsappInstanceId;
+      const oldToken = state.branding.whatsappToken;
+
+      state.branding.whatsappEnabled = true;
+      state.branding.whatsappInstanceId = instanceId;
+      state.branding.whatsappToken = token;
+
+      const success = await sendBackgroundWhatsApp(testNum, `Hello! This is a test message from your Chess Academy Demo Tracker. Connection verified successfully! ♟️✅`);
+
+      state.branding.whatsappEnabled = oldEnabled;
+      state.branding.whatsappInstanceId = oldInstance;
+      state.branding.whatsappToken = oldToken;
+
+      whatsappTestBtn.disabled = false;
+      whatsappTestBtn.textContent = "Send Test";
+
+      if (success) {
+        showToast("Test WhatsApp message sent successfully!", "success");
       } else {
-        // Google Sheets
-        let urlInput = document.getElementById("brand-sheets-url").value.trim();
-        if (!urlInput) {
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "⚠️ Enter a Google Sheets Web App URL first.";
-          return;
-        }
-
-        // Automatically append /exec if missing from Google Script macros URL
-        if (urlInput.includes("/macros/s/") && !urlInput.includes("/exec")) {
-          urlInput = urlInput.endsWith("/") ? urlInput + "exec" : urlInput + "/exec";
-          document.getElementById("brand-sheets-url").value = urlInput;
-        }
-
-        statusMsg.style.color = "#4b5563"; // muted gray
-        statusMsg.textContent = "⏳ Pinging Sheets API...";
-
-        try {
-          const response = await fetch(`${urlInput}?action=readAll`, {
-            method: "GET",
-            mode: "cors"
-          });
-          const result = await response.json();
-          
-          if (result && result.status === "success") {
-            statusMsg.style.color = "#16a34a"; // green
-            statusMsg.textContent = "✔️ Connected successfully! Ready to sync.";
-            showToast("Sheets API response verified successfully.", "success");
-          } else {
-            statusMsg.style.color = "#dc2626"; // red
-            statusMsg.textContent = "❌ Connection failed. Check script settings.";
-          }
-        } catch (err) {
-          console.error("Sheets connection test failed:", err);
-          statusMsg.style.color = "#dc2626"; // red
-          statusMsg.textContent = "❌ Network error. Make sure access is set to 'Anyone' and you deployed as a 'Web App'.";
-        }
+        showToast("Failed to send test message. Check Instance ID/Token or developer console.", "error");
       }
     });
   }

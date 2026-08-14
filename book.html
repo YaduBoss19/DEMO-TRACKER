@@ -1393,6 +1393,34 @@
         document.getElementById("form-panel").style.display = "none";
         document.getElementById("success-panel").style.display = "flex";
         
+        // Trigger automated background WhatsApp if enabled
+        if (branding.whatsappEnabled && mobileNumber) {
+          let dateFormatted = date;
+          if (date.includes("-")) {
+            const parts = date.split("-");
+            if (parts.length === 3) {
+              const year = parts[0].slice(-2);
+              const month = parts[1];
+              const day = parts[2];
+              dateFormatted = `${day}/${month}/${year}`;
+            }
+          }
+          let template = branding.inviteTemplate || localStorage.getItem("DEMO_INVITE_TEMPLATE") || `Dear Sir/Ma'am\n\nGreetings from Eight Times Eight Chess Academy!\n\nYour demo has been successfully scheduled.\n\nDATE : {DATE}\nTIME : {TIME}\n\nKindly join the demo class using the link below.\n{SLOT}\n{LINK}\n\nPlease join 5 minutes before the class.\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
+          const text = template
+            .replace(/{DATE}/gi, dateFormatted)
+            .replace(/{TIME}/gi, timeVal)
+            .replace(/{SLOT}/gi, slot)
+            .replace(/{LINK}/gi, zoomLinkVal)
+            .replace(/{STUDENT}/gi, studentName)
+            .replace(/{TUTOR}/gi, tutorName);
+            
+          sendBackgroundWhatsApp(mobileNumber, text).then(sent => {
+            if (sent) {
+              console.log("Automated background booking confirmation WhatsApp sent successfully!");
+            }
+          });
+        }
+
         // Refresh calendar availability in background
         if (window.allDemos) {
           window.allDemos.push(demoPayload);
@@ -1447,98 +1475,110 @@
       });
     });
 
-    // Helper: Dynamic DB writer
+    function normalizePhoneNumber(phone) {
+      if (!phone) return "";
+      let cleaned = String(phone).replace(/[^\d]/g, "");
+      if (cleaned.startsWith("0") && cleaned.length > 10) {
+        cleaned = cleaned.substring(1);
+      }
+      if (cleaned.length === 10) {
+        cleaned = "91" + cleaned;
+      }
+      return cleaned;
+    }
+
+    async function sendBackgroundWhatsApp(to, body) {
+      const enabled = branding.whatsappEnabled;
+      const instanceId = branding.whatsappInstanceId;
+      const token = branding.whatsappToken;
+
+      if (!enabled || !instanceId || !token) {
+        console.log("WhatsApp dispatch skipped: Reminders are not enabled or credentials are empty.");
+        return false;
+      }
+
+      const cleanPhone = normalizePhoneNumber(to);
+      if (!cleanPhone) {
+        console.error("WhatsApp dispatch aborted: Invalid phone number.");
+        return false;
+      }
+
+      const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
+      
+      const payload = new URLSearchParams();
+      payload.append("token", token);
+      payload.append("to", cleanPhone);
+      payload.append("body", body);
+      payload.append("priority", "10");
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: payload.toString()
+        });
+        const result = await response.json();
+        return result && (result.sent === "true" || result.sent === true || result.success);
+      } catch (err) {
+        console.error("Failed to send WhatsApp message via UltraMsg:", err);
+        return false;
+      }
+    }
+
+    // Helper: Dynamic DB writer (Supabase Exclusive)
     async function writeToDatabase(action, payload) {
-      if (branding.connectorType === "supabase") {
-        if (!window.supabaseClient) {
-          const url = branding.supabaseUrl;
-          const key = branding.supabaseKey;
-          if (url && key) {
-            if (typeof window.supabase === "undefined") {
-              await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-            }
-            window.supabaseClient = window.supabase.createClient(url, key);
+      if (!window.supabaseClient) {
+        const url = branding.supabaseUrl;
+        const key = branding.supabaseKey;
+        if (url && key) {
+          if (typeof window.supabase === "undefined") {
+            await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
           }
+          window.supabaseClient = window.supabase.createClient(url, key);
         }
-        if (!window.supabaseClient) return false;
-        
-        try {
-          if (action === "addDemo") {
-            const dbPayload = {
-              id: payload.id,
-              tutorId: payload.tutorId,
-              tutorid: payload.tutorId,
-              tutorName: payload.tutorName,
-              tutorname: payload.tutorName,
-              studentName: payload.studentName,
-              studentname: payload.studentName,
-              date: payload.date,
-              time: payload.time,
-              dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
-              datetime: payload.dateTime || `${payload.date} ${payload.time}`,
-              slot: payload.slot,
-              status: payload.status,
-              age: payload.age,
-              language: payload.language,
-              agentName: payload.agentName,
-              agentname: payload.agentName,
-              location: payload.location,
-              mobileNumber: payload.mobileNumber,
-              mobilenumber: payload.mobileNumber,
-              level: payload.level,
-              feedback: payload.feedback || "",
-              revision: payload.revision || "-",
-              topicToStart: payload.topicToStart || "-",
-              topictostart: payload.topicToStart || "-"
-            };
-            const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
-            return !error;
-          }
-          return false;
-        } catch(e) {
-          console.error("Supabase write failed:", e);
-          const errMsg = e.message || e.details || (typeof e === "object" ? JSON.stringify(e) : String(e));
-          alert("Database write failed: " + errMsg);
-          return false;
+      }
+      if (!window.supabaseClient) return false;
+      
+      try {
+        if (action === "addDemo") {
+          const dbPayload = {
+            id: payload.id,
+            tutorId: payload.tutorId,
+            tutorid: payload.tutorId,
+            tutorName: payload.tutorName,
+            tutorname: payload.tutorName,
+            studentName: payload.studentName,
+            studentname: payload.studentName,
+            date: payload.date,
+            time: payload.time,
+            dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
+            datetime: payload.dateTime || `${payload.date} ${payload.time}`,
+            slot: payload.slot,
+            status: payload.status,
+            age: payload.age,
+            language: payload.language,
+            agentName: payload.agentName,
+            agentname: payload.agentName,
+            location: payload.location,
+            mobileNumber: payload.mobileNumber,
+            mobilenumber: payload.mobileNumber,
+            level: payload.level,
+            feedback: payload.feedback || "",
+            revision: payload.revision || "-",
+            topicToStart: payload.topicToStart || "-",
+            topictostart: payload.topicToStart || "-"
+          };
+          const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
+          return !error;
         }
-      } else {
-        // Google Sheets
-        const url = branding.sheetsUrl;
-        if (!url) return false;
-        
-        const mappedPayload = {
-          id: payload.id,
-          tutorId: payload.tutorId,
-          "TUTOR NAME": payload.tutorName,
-          "STUDENT NAME": payload.studentName,
-          "DATE": payload.date,
-          "TIME": payload.time,
-          "SLOT NUMBER": payload.slot,
-          "DEMO STATUS": payload.status,
-          "AGE": payload.age,
-          "LANGUAGE": payload.language,
-          "AGENT NAME": payload.agentName,
-          "LOCATION": payload.location,
-          "MOBILE NUMBER": payload.mobileNumber,
-          "LEVEL": payload.level,
-          feedback: payload.feedback,
-          "REVISION": payload.revision || "-",
-          "TOPIC TO START": payload.topicToStart || "-"
-        };
-        
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: action, data: mappedPayload })
-          });
-          const result = await response.json();
-          return result && result.status === "success";
-        } catch (err) {
-          console.error("Google Sheets write failed:", err);
-          return false;
-        }
+        return false;
+      } catch(e) {
+        console.error("Supabase write failed:", e);
+        const errMsg = e.message || e.details || (typeof e === "object" ? JSON.stringify(e) : String(e));
+        alert("Database write failed: " + errMsg);
+        return false;
       }
     }
 

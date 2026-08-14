@@ -499,38 +499,43 @@
                 </div>
               </div>
 
-              <div class="form-group" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                <label for="brand-connector-type">Database Backend Connector</label>
-                <select id="brand-connector-type" class="form-control" style="margin-bottom: 12px;">
-                  <option value="sheets">Google Sheets (via Google Apps Script)</option>
-                  <option value="supabase">Supabase (PostgreSQL Cloud Database)</option>
-                </select>
-              </div>
-
-              <!-- Google Sheets Connector Configuration -->
-              <div id="settings-group-sheets" class="connector-settings-group">
+              <!-- Supabase Connector Configuration (Exclusive Backend) -->
+              <div id="settings-group-supabase" class="connector-settings-group" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 <div class="form-group">
-                  <label for="brand-sheets-url" style="color:var(--brand-secondary)">🟢 Google Apps Script Web App URL</label>
-                  <input type="text" id="brand-sheets-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:6px; line-height:1.4;">
-                    <strong>Deployment Steps:</strong> In Apps Script editor, click <strong>Deploy</strong> &gt; <strong>New Deployment</strong>. Set type to <strong>Web App</strong>, select execute as <strong>Me</strong>, and Who has access to <strong>Anyone</strong>. Copy the URL ending in <code>/exec</code> and paste it here.
-                  </p>
-                </div>
-              </div>
-
-              <!-- Supabase Connector Configuration -->
-              <div id="settings-group-supabase" class="connector-settings-group" style="display: none;">
-                <div class="form-group">
-                  <label for="brand-supabase-url" style="color:var(--color-info)">⚡ Supabase Project URL</label>
+                  <label for="brand-supabase-url" style="color:var(--brand-secondary); font-weight: 700;">⚡ Supabase Project URL</label>
                   <input type="text" id="brand-supabase-url" class="form-control" placeholder="https://xyz.supabase.co">
                 </div>
                 <div class="form-group" style="margin-top: 10px;">
-                  <label for="brand-supabase-key" style="color:var(--color-info)">🔑 Supabase Anon public API Key</label>
+                  <label for="brand-supabase-key" style="color:var(--brand-secondary); font-weight: 700;">🔑 Supabase Anon public API Key</label>
                   <input type="text" id="brand-supabase-key" class="form-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
                 </div>
               </div>
 
-              <div class="form-group" style="margin-top: 10px;">
+              <!-- Automated WhatsApp Reminders (UltraMsg API) -->
+              <div class="form-group" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <h4 style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--brand-secondary);">🤖 Automated WhatsApp Reminders (UltraMsg API)</h4>
+                <div class="form-group" style="display:flex; flex-direction:row; align-items:center; gap:8px; margin-bottom: 15px;">
+                  <input type="checkbox" id="brand-whatsapp-enabled" style="width:18px; height:18px; cursor:pointer;">
+                  <label for="brand-whatsapp-enabled" style="font-weight:bold; cursor:pointer; margin:0;">Enable Automated WhatsApp Reminders</label>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label for="brand-whatsapp-instance" style="font-weight:700;">UltraMsg Instance ID</label>
+                  <input type="text" id="brand-whatsapp-instance" class="form-control" placeholder="e.g. instance12345">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <label for="brand-whatsapp-token" style="font-weight:700;">UltraMsg API Token</label>
+                  <input type="password" id="brand-whatsapp-token" class="form-control" placeholder="e.g. abcd1234efgh5678">
+                </div>
+                <div class="form-group">
+                  <label for="brand-whatsapp-test-num" style="font-weight:700;">Test Mobile Number (with country code, e.g. 919876543210)</label>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="brand-whatsapp-test-num" class="form-control" placeholder="e.g. 919876543210" style="flex-grow:1;">
+                    <button type="button" class="btn" id="whatsapp-test-btn" style="white-space:nowrap; padding:8px 16px;">Send Test</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 15px;">
                 <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                   <button type="button" class="btn btn-sm" id="test-connection-btn">🔌 Test Connection</button>
                   <button type="button" class="btn btn-sm" id="copy-key-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main);">📋 Copy Key for mockData.js</button>
