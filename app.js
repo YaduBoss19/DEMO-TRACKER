@@ -1035,9 +1035,24 @@ function getAmpmSuffix(timeStr) {
 
 function formatZoomStartLink(url) {
   if (!url) return "";
-  if (url.toLowerCase().includes("zoom.us")) {
+  const lowercaseUrl = url.toLowerCase();
+  
+  // 1. Handle Zoom links (/j/ -> /s/)
+  if (lowercaseUrl.includes("zoom.us")) {
     return url.replace(/\/j\//i, "/s/");
   }
+  
+  // 2. Handle onlineclass.site redirect links (/joinPublic -> /startPublic, /join -> /start)
+  if (lowercaseUrl.includes("onlineclass.site")) {
+    let result = url;
+    if (lowercaseUrl.includes("joinpublic")) {
+      result = result.replace(/\/joinpublic/i, "/startPublic");
+    } else if (lowercaseUrl.includes("/join")) {
+      result = result.replace(/\/join/i, "/start");
+    }
+    return result;
+  }
+  
   return url;
 }
 
