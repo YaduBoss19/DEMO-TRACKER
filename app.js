@@ -162,6 +162,26 @@ async function fetchFromSupabase() {
           ...(brandingData.themeColors || {})
         }
       };
+      
+      // Pull fields from JSONB back to state.branding for application-wide use
+      if (state.branding.themeColors) {
+        if (state.branding.themeColors.slotLinks) {
+          state.branding.slotLinks = state.branding.themeColors.slotLinks;
+        }
+        if (state.branding.themeColors.whatsappEnabled !== undefined) {
+          state.branding.whatsappEnabled = state.branding.themeColors.whatsappEnabled;
+        }
+        if (state.branding.themeColors.whatsappInstanceId !== undefined) {
+          state.branding.whatsappInstanceId = state.branding.themeColors.whatsappInstanceId;
+        }
+        if (state.branding.themeColors.whatsappToken !== undefined) {
+          state.branding.whatsappToken = state.branding.themeColors.whatsappToken;
+        }
+        if (state.branding.themeColors.whatsappAdminNumber !== undefined) {
+          state.branding.whatsappAdminNumber = state.branding.themeColors.whatsappAdminNumber;
+        }
+      }
+
       if (brandingData.inviteTemplate) {
         state.inviteTemplate = brandingData.inviteTemplate;
       }
@@ -255,6 +275,14 @@ async function writeToSupabase(action, payload) {
   try {
     switch (action) {
       case "updateBranding":
+        // Pack slotsList, slotLinks and WhatsApp settings inside themeColors JSONB for cloud persistence
+        if (!payload.themeColors) payload.themeColors = {};
+        payload.themeColors.slotLinks = payload.slotLinks || [];
+        payload.themeColors.whatsappEnabled = payload.whatsappEnabled || false;
+        payload.themeColors.whatsappInstanceId = payload.whatsappInstanceId || "";
+        payload.themeColors.whatsappToken = payload.whatsappToken || "";
+        payload.themeColors.whatsappAdminNumber = payload.whatsappAdminNumber || "";
+        
         const bPayload = {
           id: 'default',
           name: payload.companyName,
@@ -4771,10 +4799,18 @@ document.addEventListener("DOMContentLoaded", () => {
       updateViews();
     });
 
-    // Auto-refresh background poll (every 30 seconds) to fetch external updates
+    // Auto-refresh background poll (every 6 seconds) to fetch external updates
     setInterval(async () => {
       const isConnected = state.branding.connectorType === "supabase" || !!state.branding.sheetsUrl;
       if (isConnected) {
+        // Skip background fetching if a modal is open or if user is active in an input field
+        const openModals = document.querySelectorAll(".modal.open");
+        const activeEl = document.activeElement;
+        const isEditing = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.tagName === "SELECT");
+        if (openModals.length > 0 || isEditing) {
+          return;
+        }
+
         const updated = await fetchFromSheets();
         if (updated) {
           if (isTutorPage && state.currentUser) {
@@ -4790,7 +4826,7 @@ document.addEventListener("DOMContentLoaded", () => {
           updateViews();
         }
       }
-    }, 30000);
+    }, 6000);
   } else {
     // Require Login
     document.getElementById("login-screen").style.display = "flex";
