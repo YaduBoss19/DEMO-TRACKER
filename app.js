@@ -1377,11 +1377,14 @@ function renderDashboard() {
       
       if (nextDemo) {
         const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-        const demoLink = nextDemo.zoomLink 
-          ? formatZoomStartLink(nextDemo.zoomLink) 
-          : (tutor && tutor.zoomLink 
-             ? formatZoomStartLink(tutor.zoomLink) 
-             : getTeacherZoomLinkForSlot(nextDemo.slot));
+        let demoLink = "";
+        if (nextDemo.slot) {
+          demoLink = getTeacherZoomLinkForSlot(nextDemo.slot);
+        }
+        if (!demoLink || demoLink.includes("onlineclass.site/home") || demoLink.includes("onlineclass.site/join")) {
+          const raw = nextDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(nextDemo.slot);
+          demoLink = formatZoomStartLink(raw);
+        }
         quickStartContainer.innerHTML = `
           <div class="card-panel" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); border: 1.5px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -1917,11 +1920,14 @@ function renderDemosTable() {
       }
 
       const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-      const zoomLink = demo.zoomLink 
-        ? formatZoomStartLink(demo.zoomLink) 
-        : (tutor && tutor.zoomLink 
-           ? formatZoomStartLink(tutor.zoomLink) 
-           : getTeacherZoomLinkForSlot(demo.slot));
+      let zoomLink = "";
+      if (demo.slot) {
+        zoomLink = getTeacherZoomLinkForSlot(demo.slot);
+      }
+      if (!zoomLink || zoomLink.includes("onlineclass.site/home") || zoomLink.includes("onlineclass.site/join")) {
+        const raw = demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot);
+        zoomLink = formatZoomStartLink(raw);
+      }
       
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
@@ -2523,11 +2529,14 @@ function renderTutorSlots() {
         cell.innerHTML = `🎓 ${bookedDemo.studentName}`;
         cell.addEventListener("click", () => {
           const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-          const zoomLink = bookedDemo.zoomLink 
-            ? formatZoomStartLink(bookedDemo.zoomLink) 
-            : (tutor && tutor.zoomLink 
-               ? formatZoomStartLink(tutor.zoomLink) 
-               : getTeacherZoomLinkForSlot(bookedDemo.slot));
+          let zoomLink = "";
+          if (bookedDemo.slot) {
+            zoomLink = getTeacherZoomLinkForSlot(bookedDemo.slot);
+          }
+          if (!zoomLink || zoomLink.includes("onlineclass.site/home") || zoomLink.includes("onlineclass.site/join")) {
+            const raw = bookedDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(bookedDemo.slot);
+            zoomLink = formatZoomStartLink(raw);
+          }
           if (confirm(`Do you want to start the class for ${bookedDemo.studentName}?`)) {
             window.open(zoomLink, "_blank");
           }
