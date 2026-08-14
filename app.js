@@ -912,15 +912,16 @@ function formatZoomStartLink(url) {
     return url.replace(/\/j\//i, "/s/");
   }
   
-  // 2. Handle onlineclass.site redirect links (/joinPublic -> /startPublic, /join -> /start)
+  // 2. Handle onlineclass.site redirect links (/joinPublic/{id} -> /teacher/classes/{id}/overview?type=live)
   if (lowercaseUrl.includes("onlineclass.site")) {
-    let result = url;
-    if (lowercaseUrl.includes("joinpublic")) {
-      result = result.replace(/\/joinpublic/i, "/startPublic");
-    } else if (lowercaseUrl.includes("/join")) {
-      result = result.replace(/\/join/i, "/start");
+    const matchPublic = url.match(/\/joinPublic\/([a-zA-Z0-9]+)/i);
+    if (matchPublic && matchPublic[1]) {
+      return `https://eighttimeseight.onlineclass.site/teacher/classes/${matchPublic[1]}/overview?type=live`;
     }
-    return result;
+    const matchJoin = url.match(/\/join\/([a-zA-Z0-9]+)/i);
+    if (matchJoin && matchJoin[1]) {
+      return `https://eighttimeseight.onlineclass.site/teacher/classes/${matchJoin[1]}/overview?type=live`;
+    }
   }
   
   return url;
