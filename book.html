@@ -31,13 +31,6 @@
     body {
       font-family: var(--font-outfit);
       background-color: #0c0f17;
-      background-image: 
-        linear-gradient(45deg, #111420 25%, transparent 25%), 
-        linear-gradient(-45deg, #111420 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #111420 75%), 
-        linear-gradient(-45deg, transparent 75%, #111420 75%);
-      background-size: 80px 80px;
-      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -46,6 +39,16 @@
       justify-content: flex-start;
       padding: 40px 20px;
       overflow-x: hidden;
+    }
+
+    body.checkered-bg {
+      background-image: 
+        linear-gradient(45deg, #111420 25%, transparent 25%), 
+        linear-gradient(-45deg, #111420 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #111420 75%), 
+        linear-gradient(-45deg, transparent 75%, #111420 75%);
+      background-size: 80px 80px;
+      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
     }
 
     /* Container Card with Glassmorphism */
@@ -611,7 +614,7 @@
     }
   </style>
 </head>
-<body>
+<body class="checkered-bg">
 
   <!-- ♟️ Floating Chess Pieces Background Animation -->
   <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite;">♞</div>
@@ -1405,14 +1408,17 @@
           document.getElementById("agent-navbar").style.display = "flex";
           document.getElementById("agent-logged-in-name").textContent = session.name;
           document.getElementById("agent-name").value = session.name;
+          document.body.classList.remove("checkered-bg");
           renderAgentDemosTable();
         } catch (e) {
           sessionStorage.removeItem("CHESS_AGENT_SESSION");
+          document.body.classList.add("checkered-bg");
         }
       } else {
         document.getElementById("agent-login-screen").style.display = "flex";
         document.getElementById("booking-workspace").style.display = "none";
         document.getElementById("agent-navbar").style.display = "none";
+        document.body.classList.add("checkered-bg");
       }
     }
 
