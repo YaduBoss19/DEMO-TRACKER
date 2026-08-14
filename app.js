@@ -1377,8 +1377,11 @@ function renderDashboard() {
       
       if (nextDemo) {
         const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-        const rawLink = nextDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(nextDemo.slot);
-        const demoLink = formatZoomStartLink(rawLink);
+        const demoLink = nextDemo.zoomLink 
+          ? formatZoomStartLink(nextDemo.zoomLink) 
+          : (tutor && tutor.zoomLink 
+             ? formatZoomStartLink(tutor.zoomLink) 
+             : getTeacherZoomLinkForSlot(nextDemo.slot));
         quickStartContainer.innerHTML = `
           <div class="card-panel" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); border: 1.5px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -1914,7 +1917,11 @@ function renderDemosTable() {
       }
 
       const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-      const zoomLink = formatZoomStartLink(demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot));
+      const zoomLink = demo.zoomLink 
+        ? formatZoomStartLink(demo.zoomLink) 
+        : (tutor && tutor.zoomLink 
+           ? formatZoomStartLink(tutor.zoomLink) 
+           : getTeacherZoomLinkForSlot(demo.slot));
       
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
@@ -2275,11 +2282,22 @@ function initializeBrandingLists() {
       list.push({
         id: `slot_${i}`,
         name: `Slot ${i}`,
-        link: "https://eighttimeseight.onlineclass.site/join"
+        link: "https://eighttimeseight.onlineclass.site/join",
+        teacherLink: ""
       });
     }
     state.branding.slotLinks = list;
   }
+  
+  // Defensive check: Ensure all existing slots have a teacherLink property
+  if (state.branding.slotLinks && Array.isArray(state.branding.slotLinks)) {
+    state.branding.slotLinks.forEach(s => {
+      if (s.teacherLink === undefined) {
+        s.teacherLink = "";
+      }
+    });
+  }
+
   // Synchronize slotsList for compatibility
   state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
 
@@ -2337,7 +2355,7 @@ function renderSlotLinksSettingsTable() {
   tbody.innerHTML = "";
   const slotLinks = state.branding.slotLinks || [];
   if (slotLinks.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">No slot configurations found. Click '+ Add Slot Link' to create one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">No slot configurations found. Click '+ Add Slot Link' to create one.</td></tr>`;
     return;
   }
 
@@ -2348,7 +2366,10 @@ function renderSlotLinksSettingsTable() {
         <input type="text" class="slot-setting-name-input form-control" data-id="${slotItem.id}" value="${slotItem.name}" style="width:100%; font-weight:bold; padding:4px 8px; font-size:0.85rem;">
       </td>
       <td>
-        <input type="text" class="slot-setting-link-input form-control" data-id="${slotItem.id}" value="${slotItem.link || ''}" style="width:100%; padding:4px 8px; font-size:0.85rem;" placeholder="e.g. https://zoom.us/j/...">
+        <input type="text" class="slot-setting-link-input form-control" data-id="${slotItem.id}" value="${slotItem.link || ''}" style="width:100%; padding:4px 8px; font-size:0.85rem;" placeholder="e.g. https://.../joinPublic/... (Student)">
+      </td>
+      <td>
+        <input type="text" class="slot-setting-teacher-link-input form-control" data-id="${slotItem.id}" value="${slotItem.teacherLink || ''}" style="width:100%; padding:4px 8px; font-size:0.85rem;" placeholder="e.g. https://.../teacher/... (Tutor)">
       </td>
       <td style="text-align:center; vertical-align:middle;">
         <button type="button" class="btn btn-sm btn-danger delete-slot-link-setting-btn" data-id="${slotItem.id}">Delete</button>
@@ -2502,7 +2523,11 @@ function renderTutorSlots() {
         cell.innerHTML = `🎓 ${bookedDemo.studentName}`;
         cell.addEventListener("click", () => {
           const tutor = state.tutors.find(t => t.id === state.currentUser?.id);
-          const zoomLink = formatZoomStartLink(bookedDemo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(bookedDemo.slot));
+          const zoomLink = bookedDemo.zoomLink 
+            ? formatZoomStartLink(bookedDemo.zoomLink) 
+            : (tutor && tutor.zoomLink 
+               ? formatZoomStartLink(tutor.zoomLink) 
+               : getTeacherZoomLinkForSlot(bookedDemo.slot));
           if (confirm(`Do you want to start the class for ${bookedDemo.studentName}?`)) {
             window.open(zoomLink, "_blank");
           }
@@ -3097,6 +3122,25 @@ function getZoomLinkForSlot(slotName) {
   
   // 4. Standard default fallback
   return "https://eighttimeseight.onlineclass.site/join";
+}
+
+function getTeacherZoomLinkForSlot(slotName) {
+  if (!slotName) return "https://eighttimeseight.onlineclass.site/home";
+  
+  if (state.branding && state.branding.slotLinks) {
+    const found = state.branding.slotLinks.find(s => s.name.toLowerCase() === slotName.toLowerCase());
+    if (found) {
+      if (found.teacherLink) return found.teacherLink;
+      if (found.link) return formatZoomStartLink(found.link);
+    }
+  }
+
+  if (state.timetable && state.timetable.length > 0) {
+    const slotObj = state.timetable.find(s => s.name.toLowerCase() === slotName.toLowerCase());
+    if (slotObj && slotObj.zoomLink) return formatZoomStartLink(slotObj.zoomLink);
+  }
+
+  return formatZoomStartLink(getZoomLinkForSlot(slotName));
 }
 
 async function sendDemoInvite(demoId) {
@@ -4368,6 +4412,21 @@ function initEventListeners() {
         saveToLocalStorage();
         renderDashboard();
         showToast("Slot link updated.");
+      }
+    }
+
+    // Custom Slot Settings Teacher Link Input
+    if (target.classList.contains("slot-setting-teacher-link-input")) {
+      const id = target.dataset.id;
+      const val = target.value.trim();
+      initializeBrandingLists();
+      const found = state.branding.slotLinks.find(s => s.id === id);
+      if (found) {
+        found.teacherLink = val;
+        writeToSheets("updateBranding", state.branding);
+        saveToLocalStorage();
+        renderDashboard();
+        showToast("Teacher slot link updated.");
       }
     }
   });
