@@ -612,6 +612,117 @@
     .modal-backdrop.open {
       display: flex;
     }
+
+    /* Branded Login styles copied for Sales login screen */
+    .login-header-group {
+      text-align: center;
+      margin-bottom: 24px;
+      z-index: 10;
+    }
+
+    .login-brand-logo {
+      width: 100px;
+      height: 100px;
+      background-color: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+      color: white;
+    }
+
+    .login-title {
+      color: white;
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      max-width: 600px;
+    }
+
+    .login-subtitle {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 6px;
+    }
+
+    .login-card {
+      width: 90%;
+      max-width: 380px;
+      background: rgba(30, 41, 59, 0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 30px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    .login-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .login-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+    }
+
+    .login-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px;
+      color: white;
+      font-size: 0.88rem;
+      outline: none;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .login-input:focus {
+      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .login-btn {
+      background-color: white;
+      color: #0f172a;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .login-btn:hover {
+      background-color: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .login-footer-text {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-align: center;
+      margin-top: 16px;
+      z-index: 10;
+    }
   </style>
 </head>
 <body class="checkered-bg">
@@ -623,10 +734,10 @@
   <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
   <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
 
-  <!-- AGENT NAVBAR -->
+  <!-- SALES NAVBAR -->
   <div id="agent-navbar" style="display:none; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin:20px auto; padding:12px 20px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; z-index:10; position:relative; flex-wrap:wrap; gap:10px;">
     <div style="font-size:0.85rem; color:var(--text-muted);">
-      Agent: <strong id="agent-logged-in-name" style="color:var(--brand-secondary); font-size: 0.95rem;">-</strong>
+      Sales: <strong id="agent-logged-in-name" style="color:var(--brand-secondary); font-size: 0.95rem;">-</strong>
     </div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <button type="button" class="btn-nav" id="show-calendar-btn" style="margin:0; padding:8px 16px; background:var(--brand-secondary); color:#0c0f17; font-weight:700;">📅 Booking Calendar</button>
@@ -699,12 +810,12 @@
       <div class="calendar-header-nav" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom:15px; margin-bottom: 15px; flex-wrap:wrap; gap:12px;">
         <h3 style="font-family: var(--font-outfit); font-size:1.25rem; font-weight:800; color:#ffffff; margin:0;">📋 Booked Demos & Corrections Sheet</h3>
         <div style="display:flex; gap:10px; align-items:center;">
-          <input type="text" id="agent-search-input" placeholder="Search by student name..." style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; padding:8px 12px; border-radius:8px; font-size:0.85rem; outline:none; min-width:240px;">
+          <input type="text" id="sales-search-input" placeholder="Search by student name..." style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; padding:8px 12px; border-radius:8px; font-size:0.85rem; outline:none; min-width:240px;">
         </div>
       </div>
       
       <div class="table-container" style="overflow-x:auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01);">
-        <table class="custom-table" id="agent-demos-table" style="min-width:100% !important; table-layout:auto !important; width:100%; border-collapse: collapse; font-size: 0.82rem;">
+        <table class="custom-table" id="sales-demos-table" style="min-width:100% !important; table-layout:auto !important; width:100%; border-collapse: collapse; font-size: 0.82rem;">
           <thead>
             <tr style="background:rgba(255,255,255,0.03);">
               <th style="padding:12px; color:var(--text-muted); font-weight:700;">#</th>
@@ -719,11 +830,11 @@
               <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Mobile</th>
               <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Tutor</th>
               <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Status</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Agent Note</th>
+              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Sales Note</th>
               <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:center;">Actions</th>
             </tr>
           </thead>
-          <tbody id="agent-demos-tbody">
+          <tbody id="sales-demos-tbody">
             <!-- Dynamic rows -->
           </tbody>
         </table>
@@ -793,8 +904,8 @@
           </div>
 
           <div class="form-group" style="margin-top: 15px;">
-            <label for="agent-note">Agent Note (One Line - Invisible to Tutors)</label>
-            <input type="text" id="agent-note" class="form-control" placeholder="Add custom agent-only notes here...">
+            <label for="agent-note">Sales Note (One Line - Invisible to Tutors)</label>
+            <input type="text" id="agent-note" class="form-control" placeholder="Add custom sales-only notes here...">
           </div>
 
           <!-- Hidden Agent Identifier -->
@@ -1389,33 +1500,33 @@
       renderTimetableGrid();
     }
 
-    // --- 🔐 Agent Portal Security & View Management ---
-    function populateAgentDropdowns() {
+    // --- 🔐 Sales Portal Security & View Management ---
+    function populateSalesDropdowns() {
       const agents = (branding.themeColors && branding.themeColors.agentsList) || ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
-      const selectEl = document.getElementById("agent-login-name");
+      const selectEl = document.getElementById("sales-login-name");
       if (selectEl) {
         selectEl.innerHTML = agents.map(name => `<option value="${name}">${name}</option>`).join("");
       }
     }
 
-    function checkAgentSession() {
-      const sessionStr = sessionStorage.getItem("CHESS_AGENT_SESSION");
+    function checkSalesSession() {
+      const sessionStr = sessionStorage.getItem("CHESS_SALES_SESSION");
       if (sessionStr) {
         try {
           const session = JSON.parse(sessionStr);
-          document.getElementById("agent-login-screen").style.display = "none";
+          document.getElementById("sales-login-screen").style.display = "none";
           document.getElementById("booking-workspace").style.display = "flex";
           document.getElementById("agent-navbar").style.display = "flex";
           document.getElementById("agent-logged-in-name").textContent = session.name;
           document.getElementById("agent-name").value = session.name;
           document.body.classList.remove("checkered-bg");
-          renderAgentDemosTable();
+          renderSalesDemosTable();
         } catch (e) {
-          sessionStorage.removeItem("CHESS_AGENT_SESSION");
+          sessionStorage.removeItem("CHESS_SALES_SESSION");
           document.body.classList.add("checkered-bg");
         }
       } else {
-        document.getElementById("agent-login-screen").style.display = "flex";
+        document.getElementById("sales-login-screen").style.display = "flex";
         document.getElementById("booking-workspace").style.display = "none";
         document.getElementById("agent-navbar").style.display = "none";
         document.body.classList.add("checkered-bg");
@@ -1423,25 +1534,28 @@
     }
 
     // Populate dropdowns initially on file read using fallback defaults
-    populateAgentDropdowns();
+    populateSalesDropdowns();
 
     // Login Form Submit Listener
-    document.getElementById("agent-login-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const selectedAgent = document.getElementById("agent-login-name").value;
-      const accessCode = document.getElementById("agent-login-code").value;
-      
-      const configCode = (branding.themeColors && branding.themeColors.agentAccessCode) || "AGENT123";
-      
-      if (accessCode === configCode) {
-        sessionStorage.setItem("CHESS_AGENT_SESSION", JSON.stringify({ name: selectedAgent }));
-        checkAgentSession();
-        // Reset password box
-        document.getElementById("agent-login-code").value = "";
-      } else {
-        alert("Invalid Agent Access Code. Please try again.");
-      }
-    });
+    const loginFormEl = document.getElementById("sales-login-form");
+    if (loginFormEl) {
+      loginFormEl.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const selectedAgent = document.getElementById("sales-login-name").value;
+        const accessCode = document.getElementById("sales-login-code").value;
+        
+        const configCode = (branding.themeColors && branding.themeColors.agentAccessCode) || "AGENT123";
+        
+        if (accessCode === configCode) {
+          sessionStorage.setItem("CHESS_SALES_SESSION", JSON.stringify({ name: selectedAgent }));
+          checkSalesSession();
+          // Reset password box
+          document.getElementById("sales-login-code").value = "";
+        } else {
+          alert("Invalid Sales Access Code. Please try again.");
+        }
+      });
+    }
 
     // Navigation Switchers
     document.getElementById("show-calendar-btn").addEventListener("click", () => {
@@ -1464,13 +1578,13 @@
       document.getElementById("show-calendar-btn").style.background = "rgba(255,255,255,0.05)";
       document.getElementById("show-calendar-btn").style.color = "#ffffff";
       document.getElementById("show-calendar-btn").style.fontWeight = "400";
-      renderAgentDemosTable();
+      renderSalesDemosTable();
     });
 
     document.getElementById("agent-signout-btn").addEventListener("click", () => {
       if (confirm("Are you sure you want to sign out?")) {
-        sessionStorage.removeItem("CHESS_AGENT_SESSION");
-        checkAgentSession();
+        sessionStorage.removeItem("CHESS_SALES_SESSION");
+        checkSalesSession();
       }
     });
 
@@ -1492,12 +1606,12 @@
       return dateStr;
     }
 
-    // Render Agent booked demos & corrections sheet
-    function renderAgentDemosTable() {
-      const tbody = document.getElementById("agent-demos-tbody");
+    // Render Sales booked demos & corrections sheet
+    function renderSalesDemosTable() {
+      const tbody = document.getElementById("sales-demos-tbody");
       if (!tbody) return;
       
-      const searchVal = document.getElementById("agent-search-input").value.toLowerCase();
+      const searchVal = document.getElementById("sales-search-input").value.toLowerCase();
       
       // Sort demos by dateTime descending (latest first)
       const sortedDemos = [...(window.allDemos || [])].sort((a, b) => {
@@ -1578,7 +1692,7 @@
     }
 
     // Search bar event listener
-    document.getElementById("agent-search-input").addEventListener("input", renderAgentDemosTable);
+    document.getElementById("sales-search-input").addEventListener("input", renderSalesDemosTable);
 
     // Global hook for correction modal
     window.openCorrectionModal = function(demoId) {
@@ -1592,7 +1706,7 @@
       document.getElementById("corr-student-level").value = demo.level || "Beginner";
       document.getElementById("corr-student-loc").value = demo.location || "";
       document.getElementById("corr-student-mobile").value = demo.mobileNumber || demo.mobilenumber || "";
-      document.getElementById("corr-agent-note").value = demo.agentNote || demo.agentnote || "";
+      document.getElementById("corr-sales-note").value = demo.agentNote || demo.agentnote || "";
       
       document.getElementById("correction-modal").style.display = "flex";
     };
@@ -1626,8 +1740,8 @@
         location: document.getElementById("corr-student-loc").value.trim(),
         mobileNumber: document.getElementById("corr-student-mobile").value.trim(),
         mobilenumber: document.getElementById("corr-student-mobile").value.trim(),
-        agentNote: document.getElementById("corr-agent-note").value.trim(),
-        agentnote: document.getElementById("corr-agent-note").value.trim()
+        agentNote: document.getElementById("corr-sales-note").value.trim(),
+        agentnote: document.getElementById("corr-sales-note").value.trim()
       };
       
       const success = await writeToDatabase("updateDemo", updatedPayload);
@@ -1639,7 +1753,7 @@
         }
         alert("Corrections saved successfully!");
         document.getElementById("correction-modal").style.display = "none";
-        renderAgentDemosTable();
+        renderSalesDemosTable();
         renderTimetableGrid();
       } else {
         alert("Failed to save corrections. Please check connection and try again.");
@@ -1961,33 +2075,43 @@
     }
   </script>
 
-  <!-- AGENT LOGIN SCREEN -->
-  <div class="modal-backdrop" id="agent-login-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: transparent; z-index: 200000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-    <!-- Floating chess pieces background inside login screen -->
+  <!-- SALES LOGIN SCREEN -->
+  <div id="sales-login-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: transparent; z-index: 200000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow: hidden;">
+    <!-- ♟️ Floating Chess Pieces Background Animation -->
     <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♞</div>
     <div class="floating-piece" style="top: 62%; left: 4%; animation: float-medium 10s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♟</div>
     <div class="floating-piece" style="top: 14%; right: 8%; animation: float-fast 8s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♛</div>
     <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♜</div>
-    
-    <div style="text-align: center; margin-bottom: 25px;">
-      <h1 style="font-family: var(--font-outfit); font-size: 2rem; font-weight: 800; color: #ffffff;">Agent Portal</h1>
-      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 5px;">Eight Times Eight Chess Academy</p>
+    <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
+
+    <div class="login-header-group">
+      <div class="login-brand-logo" id="login-logo-slot">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+      </div>
+      <h1 class="login-title" id="login-brand-name">Eight Times Eight Chess Academy</h1>
+      <div class="login-subtitle">Sales Portal</div>
     </div>
-    
-    <div class="booking-card" style="max-width: 400px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index:210000;">
-      <form id="agent-login-form">
-        <div class="form-group" style="margin-bottom:15px; text-align:left;">
-          <label for="agent-login-name" style="display:block; margin-bottom:6px; font-weight:600; font-size:0.85rem; color:var(--text-muted);">Select Agent Name</label>
-          <select id="agent-login-name" class="form-control" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; padding:10px; border-radius:8px;" required>
-            <!-- Dynamically populated agents -->
+
+    <div class="login-card" style="z-index: 210000;">
+      <form id="sales-login-form">
+        <div class="login-form-group">
+          <label class="login-label" for="sales-login-name">Select Sales Name</label>
+          <select id="sales-login-name" class="login-input" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; padding:10px; border-radius:8px; cursor:pointer;" required>
+            <!-- Dynamically populated sales representatives -->
           </select>
         </div>
-        <div class="form-group" style="margin-bottom:20px; text-align:left;">
-          <label for="agent-login-code" style="display:block; margin-bottom:6px; font-weight:600; font-size:0.85rem; color:var(--text-muted);">Agent Access Code</label>
-          <input type="password" id="agent-login-code" class="form-control" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; padding:10px; border-radius:8px;" placeholder="Enter agent code" required>
+        <div class="login-form-group" style="margin-bottom: 24px;">
+          <label class="login-label" for="sales-login-code">Sales Access Code</label>
+          <input type="password" id="sales-login-code" class="login-input" placeholder="Enter sales access code" required>
         </div>
-        <button type="submit" class="btn" style="background:var(--brand-secondary); color:#0c0f17; font-weight:700; width:100%; border:none; padding:12px; border-radius:8px;">Sign In</button>
+        <button type="submit" class="login-btn">
+          ↥ View Sales Dashboard
+        </button>
       </form>
+    </div>
+
+    <div class="login-footer-text">
+      Enter your sales credentials to schedule and manage demos
     </div>
   </div>
 
@@ -2034,8 +2158,8 @@
           <input type="text" id="corr-student-mobile" class="form-control" required>
         </div>
         <div class="form-group" style="margin-bottom:15px;">
-          <label for="corr-agent-note">Agent Note (One Line - Invisible to Tutors)</label>
-          <input type="text" id="corr-agent-note" class="form-control" placeholder="Add custom agent-only notes here...">
+          <label for="corr-sales-note">Sales Note (One Line - Invisible to Tutors)</label>
+          <input type="text" id="corr-sales-note" class="form-control" placeholder="Add custom sales-only notes here...">
         </div>
         
         <div class="modal-footer" style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">

@@ -2324,7 +2324,7 @@ function initializeBrandingLists() {
 
 function renderSettingsDropdownLists() {
   const slotsListDiv = document.getElementById("slots-manager-list");
-  const agentsListDiv = document.getElementById("agents-manager-list");
+  const agentsListDiv = document.getElementById("sales-manager-list");
   if (!slotsListDiv || !agentsListDiv) return;
 
   initializeBrandingLists();
@@ -2345,10 +2345,10 @@ function renderSettingsDropdownLists() {
     });
   }
 
-  // Render Agents list
+  // Render Sales list
   agentsListDiv.innerHTML = "";
   if (state.branding.themeColors.agentsList.length === 0) {
-    agentsListDiv.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:10px;">No agents created.</p>`;
+    agentsListDiv.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:10px;">No sales representatives created.</p>`;
   } else {
     state.branding.themeColors.agentsList.forEach(agent => {
       const row = document.createElement("div");
@@ -2424,7 +2424,7 @@ function renderAdminBranding() {
   document.getElementById("color-primary").value = branding.themeColors.primary;
   document.getElementById("color-secondary").value = branding.themeColors.secondary;
 
-  const accessCodeEl = document.getElementById("agent-access-code-input");
+  const accessCodeEl = document.getElementById("sales-access-code-input");
   if (accessCodeEl) accessCodeEl.value = branding.themeColors.agentAccessCode || "AGENT123";
 
   renderSettingsDropdownLists();
@@ -2903,7 +2903,7 @@ function openDemoModal(demoId = null) {
     slotSelect.appendChild(customOp);
   }
 
-  const agentSelect = document.getElementById("demo-agent-name");
+  const agentSelect = document.getElementById("demo-sales-name");
   if (agentSelect) {
     agentSelect.innerHTML = "";
     const agents = state.branding.themeColors?.agentsList || [];
@@ -2953,11 +2953,11 @@ function openDemoModal(demoId = null) {
       document.getElementById("demo-level").value = demo.level || "";
       document.getElementById("demo-revision").value = demo.revision || "";
       document.getElementById("demo-topic-start").value = demo.topicToStart || "";
-      document.getElementById("demo-agent-name").value = demo.agentName || "";
+      document.getElementById("demo-sales-name").value = demo.agentName || "";
       document.getElementById("demo-location").value = demo.location || "";
       document.getElementById("demo-mobile-number").value = demo.mobileNumber || "";
       document.getElementById("demo-feedback").value = demo.feedback || "";
-      document.getElementById("demo-agent-note").value = demo.agentNote || "";
+      document.getElementById("demo-sales-note").value = demo.agentNote || "";
     }
   } else {
     title.textContent = "Add Demo Log";
@@ -2974,10 +2974,10 @@ function openDemoModal(demoId = null) {
     document.getElementById("demo-level").value = "";
     document.getElementById("demo-revision").value = "";
     document.getElementById("demo-topic-start").value = "";
-    document.getElementById("demo-agent-name").value = "";
+    document.getElementById("demo-sales-name").value = "";
     document.getElementById("demo-location").value = "";
     document.getElementById("demo-mobile-number").value = "";
-    document.getElementById("demo-agent-note").value = "";
+    document.getElementById("demo-sales-note").value = "";
   }
 
   modal.classList.add("open");
@@ -3004,11 +3004,11 @@ async function handleDemoSubmit(e) {
   const level = document.getElementById("demo-level").value.trim() || "-";
   const revision = document.getElementById("demo-revision").value.trim() || "-";
   const topicToStart = document.getElementById("demo-topic-start").value.trim() || "-";
-  const agentName = document.getElementById("demo-agent-name").value.trim() || "-";
+  const agentName = document.getElementById("demo-sales-name").value.trim() || "-";
   const location = document.getElementById("demo-location").value.trim() || "-";
   const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
   const feedback = document.getElementById("demo-feedback").value.trim() || "";
-  const agentNote = document.getElementById("demo-agent-note").value.trim() || "";
+  const agentNote = document.getElementById("demo-sales-note").value.trim() || "";
 
   let status = "DEMO NOT DONE";
   let shouldTriggerWhatsApp = false;
@@ -3299,9 +3299,9 @@ function openReportModal(demoId) {
   document.getElementById("rep-class-topic").textContent = demo.topicToStart || "-";
   document.getElementById("rep-class-revision").textContent = (demo.revision && demo.revision !== "-") ? demo.revision : "None required";
   document.getElementById("rep-class-feedback").textContent = demo.feedback || "No feedback notes entered.";
-  const repAgentNoteEl = document.getElementById("rep-class-agent-note");
+  const repAgentNoteEl = document.getElementById("rep-class-sales-note");
   if (repAgentNoteEl) {
-    repAgentNoteEl.textContent = demo.agentNote || "No agent notes entered.";
+    repAgentNoteEl.textContent = demo.agentNote || "No sales notes entered.";
   }
 
   // Save demoId onto edit button
@@ -3876,23 +3876,23 @@ function initEventListeners() {
     });
   }
 
-  // Add Agent option in Settings
-  const addAgentBtn = document.getElementById("add-agent-btn");
+  // Add Sales representative option in Settings
+  const addAgentBtn = document.getElementById("add-sales-btn");
   if (addAgentBtn) {
     addAgentBtn.addEventListener("click", async () => {
-      const input = document.getElementById("new-agent-input");
+      const input = document.getElementById("new-sales-input");
       const val = input.value.trim();
       if (!val) return;
       initializeBrandingLists();
       if (state.branding.themeColors.agentsList.includes(val)) {
-        showToast("Agent already exists.", "warning");
+        showToast("Sales representative already exists.", "warning");
         return;
       }
       state.branding.themeColors.agentsList.push(val);
       input.value = "";
       renderSettingsDropdownLists();
       await writeToSheets("updateBranding", state.branding);
-      showToast("Agent added and saved.");
+      showToast("Sales representative added and saved.");
       renderDashboard();
     });
   }
@@ -4231,7 +4231,7 @@ function initEventListeners() {
       renderDashboard();
     }
 
-    // Delete custom Agent option
+    // Delete custom Sales representative option
     if (target.classList.contains("delete-agent-option-btn")) {
       e.preventDefault();
       const agentVal = target.dataset.agent;
@@ -4239,7 +4239,7 @@ function initEventListeners() {
       state.branding.themeColors.agentsList = state.branding.themeColors.agentsList.filter(a => a !== agentVal);
       renderSettingsDropdownLists();
       writeToSheets("updateBranding", state.branding);
-      showToast("Agent removed and saved.");
+      showToast("Sales representative removed and saved.");
       renderDashboard();
     }
 
@@ -4353,7 +4353,7 @@ function initEventListeners() {
       }
     }
 
-    // Inline Agent Select
+    // Inline Sales Select
     if (target.classList.contains("inline-agent-select")) {
       const id = target.dataset.id;
       const agentName = target.value;
@@ -4366,7 +4366,7 @@ function initEventListeners() {
         await writeToSheets("updateDemo", state.demos[idx]);
         saveToLocalStorage();
         renderDashboard();
-        showToast("Agent name updated.");
+        showToast("Sales name updated.");
       }
     }
 
@@ -4722,7 +4722,7 @@ function downloadDemoImportTemplate() {
     "Status",
     "Age",
     "Language",
-    "Agent Name",
+    "Sales Name",
     "Location",
     "Mobile Number",
     "Level"
@@ -4784,7 +4784,7 @@ function exportDemosToExcel() {
     "Status": d.status,
     "Age": d.age || "",
     "Language": d.language || "",
-    "Agent Name": d.agentName || "",
+    "Sales Name": d.agentName || "",
     "Location": d.location || "",
     "Mobile Number": d.mobileNumber || "",
     "Level": d.level || "",
