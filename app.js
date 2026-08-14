@@ -1774,7 +1774,7 @@ function renderDemosTable() {
         const truncatedFeedback = hasFeedback 
           ? (demo.feedback.length > 20 ? demo.feedback.slice(0, 20) + "..." : demo.feedback)
           : "Click to add...";
-        const feedbackStyle = hasFeedback ? "color: var(--brand-secondary); font-weight: 600;" : "color: var(--text-muted); font-style: italic;";
+        const feedbackStyle = hasFeedback ? "color: var(--brand-secondary); font-weight: 700;" : "color: var(--text-muted); font-style: italic;";
         const feedbackMarkup = `
           <div class="edit-feedback-btn" data-id="${demo.id}" style="display:flex; align-items:center; justify-content:space-between; gap:4px; cursor:pointer; width:130px; padding:3px 6px; border:1px solid rgba(255,255,255,0.08); border-radius:6px; background:rgba(255,255,255,0.02);" title="Click to view/edit full feedback">
             <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; ${feedbackStyle}">${truncatedFeedback}</span>
@@ -1883,14 +1883,14 @@ function renderDemosTable() {
       // Format notes, revision, and topic combined inside the feedback cell
       let combinedNotesMarkup = "";
       if (demo.feedback) {
-        combinedNotesMarkup += `<div style="font-size:0.85rem; margin-bottom: 4px; word-break: break-word;">${demo.feedback}</div>`;
+        combinedNotesMarkup += `<div style="font-size:0.85rem; margin-bottom: 4px; word-break: break-word; font-weight: 700; color: var(--brand-secondary);"><strong>${demo.feedback}</strong></div>`;
       }
       
       const hasRevision = demo.revision && demo.revision !== "-";
       const hasTopic = demo.topicToStart && demo.topicToStart !== "-";
       
       if (hasRevision || hasTopic) {
-        combinedNotesMarkup += `<div style="font-size:0.75rem; color:var(--brand-secondary); display:flex; flex-direction:column; gap:2px; margin-top: 4px; text-align: left;">`;
+        combinedNotesMarkup += `<div style="font-size:0.75rem; color:var(--text-muted); display:flex; flex-direction:column; gap:2px; margin-top: 4px; text-align: left;">`;
         if (hasRevision) combinedNotesMarkup += `<span><strong>Revision:</strong> ${demo.revision}</span>`;
         if (hasTopic) combinedNotesMarkup += `<span><strong>Topic:</strong> ${demo.topicToStart}</span>`;
         combinedNotesMarkup += `</div>`;
@@ -3260,20 +3260,14 @@ function openFeedbackModal(demoId) {
     }
   }
 
-  const revisionVal = (demo.revision === "Yes" || demo.revision === "Yes Needed") ? "Yes" : "No";
-  const revisionSelect = document.getElementById("feedback-revision-select");
-  if (revisionSelect) {
-    revisionSelect.value = revisionVal;
+  const revisionInput = document.getElementById("feedback-revision-input");
+  if (revisionInput) {
+    revisionInput.value = (demo.revision && demo.revision !== "-") ? demo.revision : "";
   }
   
-  const topicGroup = document.getElementById("feedback-topic-group");
-  if (topicGroup) {
-    topicGroup.style.display = revisionVal === "Yes" ? "block" : "none";
-  }
-
-  const topicSelect = document.getElementById("feedback-topic-select");
-  if (topicSelect) {
-    topicSelect.value = demo.topicToStart || "-";
+  const topicInput = document.getElementById("feedback-topic-input");
+  if (topicInput) {
+    topicInput.value = (demo.topicToStart && demo.topicToStart !== "-") ? demo.topicToStart : "";
   }
   
   modal.classList.add("open");
@@ -3284,12 +3278,12 @@ async function handleFeedbackSubmit(e) {
   const id = document.getElementById("feedback-demo-id").value;
   const feedback = document.getElementById("feedback-notes-input").value.trim();
   const statusSelect = document.getElementById("feedback-status-select");
-  const revisionSelect = document.getElementById("feedback-revision-select");
-  const topicSelect = document.getElementById("feedback-topic-select");
+  const revisionInput = document.getElementById("feedback-revision-input");
+  const topicInput = document.getElementById("feedback-topic-input");
   
   const status = statusSelect ? statusSelect.value : "DEMO NOT DONE";
-  const revision = revisionSelect ? revisionSelect.value : "No";
-  const topicToStart = (revision === "Yes" && topicSelect) ? topicSelect.value : "-";
+  const revision = revisionInput ? (revisionInput.value.trim() || "-") : "-";
+  const topicToStart = topicInput ? (topicInput.value.trim() || "-") : "-";
 
   const idx = state.demos.findIndex(d => d.id === id);
   if (idx !== -1) {
@@ -3495,16 +3489,7 @@ function initEventListeners() {
   document.getElementById("tutor-form")?.addEventListener("submit", handleTutorSubmit);
   document.getElementById("demo-form")?.addEventListener("submit", handleDemoSubmit);
   document.getElementById("feedback-form")?.addEventListener("submit", handleFeedbackSubmit);
-  document.getElementById("feedback-revision-select")?.addEventListener("change", (e) => {
-    const topicGroup = document.getElementById("feedback-topic-group");
-    if (topicGroup) {
-      topicGroup.style.display = e.target.value === "Yes" ? "block" : "none";
-    }
-    if (e.target.value !== "Yes") {
-      const topicSelect = document.getElementById("feedback-topic-select");
-      if (topicSelect) topicSelect.value = "-";
-    }
-  });
+
   document.getElementById("branding-form")?.addEventListener("submit", handleBrandingSubmit);
   document.getElementById("reset-branding-btn")?.addEventListener("click", handleBrandingReset);
   document.getElementById("save-slot-links-btn")?.addEventListener("click", handleSaveSlotLinks);

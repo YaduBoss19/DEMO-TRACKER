@@ -955,7 +955,7 @@
           </div>
           
           <div class="form-group">
-            <label for="feedback-notes-input" style="font-weight:700;">Feedback / Notes</label>
+            <label for="feedback-notes-input" style="font-weight:700; color: var(--brand-secondary);">📝 Feedback / Notes (Use for any IMPORTANT updates - WILL BE BOLDED)</label>
             <textarea id="feedback-notes-input" class="form-control" style="resize:vertical; min-height:80px; margin-top: 6px;" placeholder="Add class feedback notes..."></textarea>
           </div>
 
@@ -968,26 +968,13 @@
           </div>
 
           <div class="form-group" style="margin-top: 15px;">
-            <label for="feedback-revision-select" style="font-weight:700;">Revision Needed?</label>
-            <select id="feedback-revision-select" class="form-control" style="margin-top: 6px;">
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
-            </select>
+            <label for="feedback-revision-input" style="font-weight:700;">Revision Details (e.g. drills or topic info to revise)</label>
+            <input type="text" id="feedback-revision-input" class="form-control" style="margin-top: 6px;" placeholder="Leave empty if no revision is needed">
           </div>
 
-          <div class="form-group" id="feedback-topic-group" style="margin-top: 15px; display: none;">
-            <label for="feedback-topic-select" style="font-weight:700;">Topic To Start</label>
-            <select id="feedback-topic-select" class="form-control" style="margin-top: 6px;">
-              <option value="-">-</option>
-              <option value="Basics">Basics</option>
-              <option value="Tactics">Tactics</option>
-              <option value="Openings">Openings</option>
-              <option value="Middlegames">Middlegames</option>
-              <option value="Endgames">Endgames</option>
-              <option value="Game Analysis">Game Analysis</option>
-              <option value="Puzzle Solving">Puzzle Solving</option>
-              <option value="Tournament Prep">Tournament Prep</option>
-            </select>
+          <div class="form-group" style="margin-top: 15px;">
+            <label for="feedback-topic-input" style="font-weight:700; color: var(--brand-secondary);">♟️ Topic To Start * (Compulsory)</label>
+            <input type="text" id="feedback-topic-input" class="form-control" style="margin-top: 6px;" placeholder="e.g. Basics, Tactics, Openings, etc." required>
           </div>
         </div>
         <div class="modal-footer">
@@ -1002,7 +989,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Excel Spreadsheet Reader library (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="mockData.js?v=17"></script>
-  <script src="app.js?v=17"></script>
+  <script src="mockData.js?v=18"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>
