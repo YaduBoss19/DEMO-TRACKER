@@ -954,6 +954,7 @@
 
   <!-- Load Global Branding Configuration Default -->
   <script src="mockData.js?v=5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     // 1. Setup and Apply Custom Branding
@@ -978,6 +979,12 @@
         console.warn("Could not load custom branding settings, using defaults.");
       }
     }
+
+    // Call branding and dropdown populator synchronously to avoid blank states on startup
+    setTimeout(() => {
+      applyBranding();
+      populateSalesDropdowns();
+    }, 0);
 
     // Set Default calendar date to tomorrow
     const tomorrow = new Date();
