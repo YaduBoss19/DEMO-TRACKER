@@ -2319,8 +2319,8 @@ function initializeBrandingLists() {
   // Synchronize slotsList for compatibility
   state.branding.themeColors.slotsList = state.branding.slotLinks.map(s => s.name);
 
-  if (!state.branding.themeColors.agentsList || !Array.isArray(state.branding.themeColors.agentsList) || state.branding.themeColors.agentsList.length === 0) {
-    state.branding.themeColors.agentsList = ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
+  if (!state.branding.themeColors.agentsList || !Array.isArray(state.branding.themeColors.agentsList)) {
+    state.branding.themeColors.agentsList = [];
   }
 }
 
