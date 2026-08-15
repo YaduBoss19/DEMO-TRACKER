@@ -31,6 +31,13 @@
     body {
       font-family: var(--font-outfit);
       background-color: #0c0f17;
+      background-image: 
+        linear-gradient(45deg, #111420 25%, transparent 25%), 
+        linear-gradient(-45deg, #111420 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #111420 75%), 
+        linear-gradient(-45deg, transparent 75%, #111420 75%);
+      background-size: 80px 80px;
+      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -39,16 +46,6 @@
       justify-content: flex-start;
       padding: 40px 20px;
       overflow-x: hidden;
-    }
-
-    body.checkered-bg {
-      background-image: 
-        linear-gradient(45deg, #161b2c 25%, transparent 25%), 
-        linear-gradient(-45deg, #161b2c 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #161b2c 75%), 
-        linear-gradient(-45deg, transparent 75%, #161b2c 75%);
-      background-size: 80px 80px;
-      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
     }
 
     /* Container Card with Glassmorphism */
@@ -612,120 +609,9 @@
     .modal-backdrop.open {
       display: flex;
     }
-
-    /* Branded Login styles copied for Sales login screen */
-    .login-header-group {
-      text-align: center;
-      margin-bottom: 24px;
-      z-index: 10;
-    }
-
-    .login-brand-logo {
-      width: 100px;
-      height: 100px;
-      background-color: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px auto;
-      color: white;
-    }
-
-    .login-title {
-      color: white;
-      font-weight: 700;
-      font-size: 1.4rem;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      max-width: 600px;
-    }
-
-    .login-subtitle {
-      color: var(--text-muted);
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-top: 6px;
-    }
-
-    .login-card {
-      width: 90%;
-      max-width: 380px;
-      background: rgba(30, 41, 59, 0.45);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 30px 24px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      z-index: 10;
-    }
-
-    .login-form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 20px;
-    }
-
-    .login-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #94a3b8;
-      letter-spacing: 0.02em;
-    }
-
-    .login-input {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      padding: 12px;
-      color: white;
-      font-size: 0.88rem;
-      outline: none;
-      transition: background 0.3s ease, border-color 0.3s ease;
-    }
-
-    .login-input:focus {
-      border-color: rgba(255, 255, 255, 0.25);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .login-btn {
-      background-color: white;
-      color: #0f172a;
-      border: none;
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.88rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background 0.3s ease, transform 0.2s ease;
-    }
-
-    .login-btn:hover {
-      background-color: #f1f5f9;
-      transform: translateY(-1px);
-    }
-
-    .login-footer-text {
-      font-size: 0.7rem;
-      color: #64748b;
-      text-align: center;
-      margin-top: 16px;
-      z-index: 10;
-    }
   </style>
 </head>
-<body class="checkered-bg">
+<body>
 
   <!-- ♟️ Floating Chess Pieces Background Animation -->
   <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite;">♞</div>
@@ -734,113 +620,57 @@
   <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; animation-delay: -6s;">♜</div>
   <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
 
-  <!-- SALES NAVBAR -->
-  <div id="agent-navbar" style="display:none; justify-content:space-between; align-items:center; width:100%; max-width:1200px; margin:20px auto; padding:12px 20px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; z-index:10; position:relative; flex-wrap:wrap; gap:10px;">
-    <div style="font-size:0.85rem; color:var(--text-muted);">
-      Sales: <strong id="agent-logged-in-name" style="color:var(--brand-secondary); font-size: 0.95rem;">-</strong>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button type="button" class="btn-nav" id="show-calendar-btn" style="margin:0; padding:8px 16px; background:var(--brand-secondary); color:#0c0f17; font-weight:700;">📅 Booking Calendar</button>
-      <button type="button" class="btn-nav" id="show-sheet-btn" style="margin:0; padding:8px 16px; background:rgba(255,255,255,0.05); color:#ffffff;">📋 Demo Sheets & Corrections</button>
-      <button type="button" class="btn-nav" id="agent-signout-btn" style="margin:0; padding:8px 16px; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">🚪 Sign Out</button>
-    </div>
+  <!-- Page Header -->
+  <div class="page-header" style="text-align: center; margin-bottom: 25px; z-index: 10; position: relative; width: 100%; max-width: 1200px;">
+    <div class="logo-container" id="logo-slot" style="margin: 0 auto 10px auto; width: 80px; height: 80px;"></div>
+    <h1 class="title" id="company-name" style="font-family: var(--font-outfit); font-size: 2rem; font-weight: 800; color: #ffffff;">Eight Times Eight Chess Academy</h1>
+    <p class="subtitle" style="font-size: 0.95rem; color: var(--text-muted); margin-top: 5px; text-align: center; margin-left: auto; margin-right: auto; width: 100%;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
   </div>
 
-  <!-- BOOKING WORKSPACE CONTAINER -->
-  <div id="booking-workspace" style="display: none; flex-direction: column; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 10px;">
+  <!-- Large Full-Width Calendar Wrapper -->
+  <div class="calendar-layout-wide">
+    <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); gap: 15px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="btn-nav" id="prev-week-btn" style="margin: 0; min-width: 100px;">‹ Prev Week</button>
+        <button type="button" class="btn-nav" id="next-week-btn" style="margin: 0; min-width: 100px;">Next Week ›</button>
+      </div>
+      <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Timezone:</span>
+          <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+            <option value="IST" style="background: #111827; color: #ffffff;" selected>IST (India)</option>
+            <option value="GMT" style="background: #111827; color: #ffffff;">GMT/UTC (UK/Europe)</option>
+          </select>
+        </div>
+        <button type="button" id="fullscreen-btn" class="btn-nav" style="margin: 0; min-width: unset; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span>Fullscreen</span>
+        </button>
+      </div>
+    </div>
     
-    <!-- Page Header -->
-    <div class="page-header" style="text-align: center; margin-bottom: 25px; z-index: 10; position: relative; width: 100%; max-width: 1200px;">
-      <div class="logo-container" id="logo-slot" style="margin: 0 auto 10px auto; width: 80px; height: 80px;"></div>
-      <h1 class="title" id="company-name" style="font-family: var(--font-outfit); font-size: 2rem; font-weight: 800; color: #ffffff;">Eight Times Eight Chess Academy</h1>
-      <p class="subtitle" style="font-size: 0.95rem; color: var(--text-muted); margin-top: 5px; text-align: center; margin-left: auto; margin-right: auto; width: 100%;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
+    <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01); max-height: 480px; overflow-y: auto;">
+      <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 900px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
+        <thead>
+          <tr id="calendar-grid-header">
+            <th style="width: 110px; text-align: left; padding-left: 15px;">Time (IST)</th>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+            <th>Sun</th>
+          </tr>
+        </thead>
+        <tbody id="booking-calendar-body">
+          <tr>
+            <td colspan="8" style="padding: 40px; color: var(--text-muted);">Initialising scheduler calendar...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <!-- Calendar View Section -->
-    <div id="calendar-section" style="width:100%;">
-      <!-- Large Full-Width Calendar Wrapper -->
-      <div class="calendar-layout-wide">
-        <div class="calendar-header-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-color); gap: 15px; flex-wrap: wrap;">
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" class="btn-nav" id="prev-week-btn" style="margin: 0; min-width: 100px;">‹ Prev Week</button>
-            <button type="button" class="btn-nav" id="next-week-btn" style="margin: 0; min-width: 100px;">Next Week ›</button>
-          </div>
-          <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
-          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Timezone:</span>
-              <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
-                <option value="IST" style="background: #111827; color: #ffffff;" selected>IST (India)</option>
-                <option value="GMT" style="background: #111827; color: #ffffff;">GMT/UTC (UK/Europe)</option>
-              </select>
-            </div>
-            <button type="button" id="fullscreen-btn" class="btn-nav" style="margin: 0; min-width: unset; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-              <span>Fullscreen</span>
-            </button>
-          </div>
-        </div>
-        
-        <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01); max-height: 480px; overflow-y: auto;">
-          <table class="custom-table calendar-grid-table" style="table-layout: fixed; min-width: 900px; width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
-            <thead>
-              <tr id="calendar-grid-header">
-                <th style="width: 110px; text-align: left; padding-left: 15px;">Time (IST)</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Sat</th>
-                <th>Sun</th>
-              </tr>
-            </thead>
-            <tbody id="booking-calendar-body">
-              <tr>
-                <td colspan="8" style="padding: 40px; color: var(--text-muted);">Initialising scheduler calendar...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Demo Sheets & Corrections Tab Section -->
-    <div id="sheet-section" class="calendar-layout-wide" style="display: none; padding: 24px; width:100%;">
-      <div class="calendar-header-nav" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom:15px; margin-bottom: 15px; flex-wrap:wrap; gap:12px;">
-        <h3 style="font-family: var(--font-outfit); font-size:1.25rem; font-weight:800; color:#ffffff; margin:0;">📋 Booked Demos & Corrections Sheet</h3>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <input type="text" id="sales-search-input" placeholder="Search by student name..." style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; padding:8px 12px; border-radius:8px; font-size:0.85rem; outline:none; min-width:240px;">
-        </div>
-      </div>
-      
-      <div class="table-container" style="overflow-x:auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01);">
-        <table class="custom-table" id="sales-demos-table" style="min-width:100% !important; table-layout:auto !important; width:100%; border-collapse: collapse; font-size: 0.82rem;">
-          <thead>
-            <tr style="background:rgba(255,255,255,0.03);">
-              <th style="padding:12px; color:var(--text-muted); font-weight:700;">#</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Date</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Time</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Slot</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Student Name</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Age</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Language</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Level</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Location</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Mobile</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Tutor</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Status</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:left;">Sales Note</th>
-              <th style="padding:12px; color:var(--text-muted); font-weight:700; text-align:center;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="sales-demos-tbody">
-            <!-- Dynamic rows -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 
   <!-- Booking Modal Overlay -->
@@ -901,11 +731,6 @@
           <div class="form-group">
             <label for="mobile-number">Mobile / WhatsApp Number</label>
             <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
-          </div>
-
-          <div class="form-group" style="margin-top: 15px;">
-            <label for="agent-note">Sales Note (One Line - Invisible to Tutors)</label>
-            <input type="text" id="agent-note" class="form-control" placeholder="Add custom sales-only notes here...">
           </div>
 
           <!-- Hidden Agent Identifier -->
@@ -980,12 +805,6 @@
       }
     }
 
-    // Call branding and dropdown populator synchronously to avoid blank states on startup
-    setTimeout(() => {
-      applyBranding();
-      populateSalesDropdowns();
-    }, 0);
-
     // Set Default calendar date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1009,24 +828,9 @@
       }
       document.title = `Book a Demo | ${branding.companyName}`;
       
-      const logoSlot1 = document.getElementById("login-logo-slot");
       const logoSlot = document.getElementById("logo-slot");
-      const hasLogoUrl = branding.logoUrl && typeof branding.logoUrl === "string" && branding.logoUrl !== "null" && branding.logoUrl !== "undefined" && branding.logoUrl.trim() !== "";
-      const logoMarkup = hasLogoUrl
-        ? `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`
-        : (branding.companyLogo || `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`);
-
-      if (logoSlot1) {
-        logoSlot1.innerHTML = logoMarkup;
-        if (hasLogoUrl) {
-          logoSlot1.style.backgroundColor = "transparent";
-          logoSlot1.style.border = "none";
-        } else {
-          logoSlot1.style.backgroundColor = "#1e293b";
-          logoSlot1.style.border = "1px solid rgba(255, 255, 255, 0.1)";
-        }
-      }
       if (logoSlot) {
+        const hasLogoUrl = branding.logoUrl && typeof branding.logoUrl === "string" && branding.logoUrl !== "null" && branding.logoUrl !== "undefined" && branding.logoUrl.trim() !== "";
         if (hasLogoUrl) {
           logoSlot.innerHTML = `<img src="${branding.logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;">`;
           logoSlot.style.backgroundColor = "transparent";
@@ -1045,10 +849,6 @@
       const companyNameEl = document.getElementById("company-name");
       if (companyNameEl) {
         companyNameEl.textContent = branding.companyName;
-      }
-      const loginBrandName = document.getElementById("login-brand-name");
-      if (loginBrandName) {
-        loginBrandName.textContent = branding.companyName;
       }
     }
 
@@ -1528,287 +1328,8 @@
 
       // 4. Always apply final branding configurations and re-render grid
       applyBranding();
-      populateSalesDropdowns();
-      checkSalesSession();
       renderTimetableGrid();
     }
-
-    // --- 🔐 Sales Portal Security & View Management ---
-    function populateSalesDropdowns() {
-      const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || [];
-      const selectEl = document.getElementById("sales-login-name");
-      if (selectEl) {
-        selectEl.innerHTML = agents.map(agent => {
-          const name = (typeof agent === "object" && agent !== null) ? agent.name : agent;
-          return `<option value="${name}">${name}</option>`;
-        }).join("");
-      }
-    }
-
-    function checkSalesSession() {
-      const sessionStr = sessionStorage.getItem("CHESS_SALES_SESSION");
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          document.getElementById("sales-login-screen").style.display = "none";
-          document.getElementById("booking-workspace").style.display = "flex";
-          document.getElementById("agent-navbar").style.display = "flex";
-          document.getElementById("agent-logged-in-name").textContent = session.name;
-          document.getElementById("agent-name").value = session.name;
-          document.body.classList.remove("checkered-bg");
-          renderSalesDemosTable();
-        } catch (e) {
-          sessionStorage.removeItem("CHESS_SALES_SESSION");
-          document.body.classList.add("checkered-bg");
-        }
-      } else {
-        document.getElementById("sales-login-screen").style.display = "flex";
-        document.getElementById("booking-workspace").style.display = "none";
-        document.getElementById("agent-navbar").style.display = "none";
-        document.body.classList.add("checkered-bg");
-      }
-    }
-
-    // Populate dropdowns initially on file read using fallback defaults
-    populateSalesDropdowns();
-
-    // Login Form Submit Listener
-    const loginFormEl = document.getElementById("sales-login-form");
-    if (loginFormEl) {
-      loginFormEl.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const selectedAgent = document.getElementById("sales-login-name").value;
-        const accessCode = document.getElementById("sales-login-code").value.trim();
-        
-        const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || [];
-        const matchedAgent = agents.find(a => (typeof a === "object" && a !== null ? a.name : a) === selectedAgent);
-        
-        let configCode = "AGENT123";
-        if (matchedAgent && typeof matchedAgent === "object" && matchedAgent.accessCode !== undefined && matchedAgent.accessCode !== null) {
-          configCode = String(matchedAgent.accessCode).trim();
-        } else {
-          const globalCode = branding.themeColors && (branding.themeColors.agentAccessCode || branding.themeColors.agentaccesscode);
-          if (globalCode !== undefined && globalCode !== null) {
-            configCode = String(globalCode).trim();
-          }
-        }
-        
-        if (accessCode === configCode) {
-          sessionStorage.setItem("CHESS_SALES_SESSION", JSON.stringify({ name: selectedAgent }));
-          checkSalesSession();
-          // Reset password box
-          document.getElementById("sales-login-code").value = "";
-        } else {
-          alert("Invalid Sales Access Code. Please try again.");
-        }
-      });
-    }
-
-    // Navigation Switchers
-    document.getElementById("show-calendar-btn").addEventListener("click", () => {
-      document.getElementById("calendar-section").style.display = "block";
-      document.getElementById("sheet-section").style.display = "none";
-      document.getElementById("show-calendar-btn").style.background = "var(--brand-secondary)";
-      document.getElementById("show-calendar-btn").style.color = "#0c0f17";
-      document.getElementById("show-calendar-btn").style.fontWeight = "700";
-      document.getElementById("show-sheet-btn").style.background = "rgba(255,255,255,0.05)";
-      document.getElementById("show-sheet-btn").style.color = "#ffffff";
-      document.getElementById("show-sheet-btn").style.fontWeight = "400";
-    });
-
-    document.getElementById("show-sheet-btn").addEventListener("click", () => {
-      document.getElementById("calendar-section").style.display = "none";
-      document.getElementById("sheet-section").style.display = "block";
-      document.getElementById("show-sheet-btn").style.background = "var(--brand-secondary)";
-      document.getElementById("show-sheet-btn").style.color = "#0c0f17";
-      document.getElementById("show-sheet-btn").style.fontWeight = "700";
-      document.getElementById("show-calendar-btn").style.background = "rgba(255,255,255,0.05)";
-      document.getElementById("show-calendar-btn").style.color = "#ffffff";
-      document.getElementById("show-calendar-btn").style.fontWeight = "400";
-      renderSalesDemosTable();
-    });
-
-    document.getElementById("agent-signout-btn").addEventListener("click", () => {
-      if (confirm("Are you sure you want to sign out?")) {
-        sessionStorage.removeItem("CHESS_SALES_SESSION");
-        checkSalesSession();
-      }
-    });
-
-    // Date formatting helper for Agent view
-    function formatDisplayDate(dateStr) {
-      if (!dateStr || dateStr === "-") return "-";
-      if (typeof dateStr === "string") {
-        const trimmed = dateStr.trim();
-        if (trimmed.includes("-")) {
-          const parts = trimmed.split("-");
-          if (parts.length === 3) {
-            if (parts[0].length === 4) {
-              return `${parts[2]}-${parts[1]}-${parts[0].slice(-2)}`;
-            }
-            return trimmed;
-          }
-        }
-      }
-      return dateStr;
-    }
-
-    // Render Sales booked demos & corrections sheet
-    function renderSalesDemosTable() {
-      const tbody = document.getElementById("sales-demos-tbody");
-      if (!tbody) return;
-      
-      const searchVal = document.getElementById("sales-search-input").value.toLowerCase();
-      
-      // Sort demos by dateTime descending (latest first)
-      const sortedDemos = [...(window.allDemos || [])].sort((a, b) => {
-        return new Date(b.date + ' ' + (b.time || '00:00')) - new Date(a.date + ' ' + (a.time || '00:00'));
-      });
-      
-      const filtered = sortedDemos.filter(d => {
-        const student = (d.studentName || d.studentname || "").toLowerCase();
-        return student.includes(searchVal);
-      });
-      
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="14" style="padding: 30px; text-align: center; color: var(--text-muted);">No matching demos found.</td></tr>`;
-        return;
-      }
-      
-      tbody.innerHTML = filtered.map((d, index) => {
-        const dateStr = d.date || "";
-        const timeStr = d.time || "";
-        const slotStr = d.slot || "";
-        const nameStr = d.studentName || d.studentname || "-";
-        const ageStr = d.age || "-";
-        const langStr = d.language || "-";
-        const levelStr = d.level || "-";
-        const locStr = d.location || "-";
-        const phoneStr = d.mobileNumber || d.mobilenumber || "-";
-        const tutorStr = d.tutorName || d.tutorname || "Unassigned";
-        const statusStr = d.status || "DEMO NOT DONE";
-        const noteStr = d.agentNote || d.agentnote || "-";
-        
-        return `
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding:12px; text-align:center;">${index + 1}</td>
-            <td style="padding:12px; white-space:nowrap;"><strong>${formatDisplayDate(dateStr)}</strong></td>
-            <td style="padding:12px;">${timeStr}</td>
-            <td style="padding:12px; white-space:nowrap;">${slotStr}</td>
-            <td style="padding:12px; font-weight:700;">${nameStr}</td>
-            <td style="padding:12px;">${ageStr}</td>
-            <td style="padding:12px;">${langStr}</td>
-            <td style="padding:12px;">${levelStr}</td>
-            <td style="padding:12px;">${locStr}</td>
-            <td style="padding:12px; white-space:nowrap;">${phoneStr}</td>
-            <td style="padding:12px;">${tutorStr}</td>
-            <td style="padding:12px;">
-              <span class="status-badge" style="
-                padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:700;
-                background:${getStatusBg(statusStr)}; color:${getStatusColor(statusStr)};
-              ">${statusStr}</span>
-            </td>
-            <td style="padding:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${noteStr}">
-              <em>${noteStr}</em>
-            </td>
-            <td style="padding:12px; text-align:center;">
-              <button type="button" class="btn-nav" onclick="openCorrectionModal('${d.id}')" style="margin:0; padding:4px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); color:#fff; border:1px solid var(--border-color);">✏️ Edit</button>
-            </td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    // Helper status styling
-    function getStatusBg(status) {
-      const s = status.toUpperCase();
-      if (s === "CONVERTED") return "rgba(5, 150, 105, 0.15)";
-      if (s === "CANCELLED" || s === "TUTOR LEAVE") return "rgba(220, 38, 38, 0.15)";
-      if (s === "RESCHEDULE") return "rgba(217, 121, 6, 0.15)";
-      if (s === "DEMO DONE") return "rgba(37, 99, 235, 0.15)";
-      return "rgba(107, 114, 128, 0.15)";
-    }
-    
-    function getStatusColor(status) {
-      const s = status.toUpperCase();
-      if (s === "CONVERTED") return "#10b981";
-      if (s === "CANCELLED" || s === "TUTOR LEAVE") return "#f87171";
-      if (s === "RESCHEDULE") return "#fbbf24";
-      if (s === "DEMO DONE") return "#60a5fa";
-      return "#9ca3af";
-    }
-
-    // Search bar event listener
-    document.getElementById("sales-search-input").addEventListener("input", renderSalesDemosTable);
-
-    // Global hook for correction modal
-    window.openCorrectionModal = function(demoId) {
-      const demo = window.allDemos.find(d => d.id === demoId);
-      if (!demo) return;
-      
-      document.getElementById("corr-demo-id").value = demo.id;
-      document.getElementById("corr-student-name").value = demo.studentName || demo.studentname || "";
-      document.getElementById("corr-student-age").value = demo.age || "";
-      document.getElementById("corr-student-language").value = demo.language || "";
-      document.getElementById("corr-student-level").value = demo.level || "Beginner";
-      document.getElementById("corr-student-loc").value = demo.location || "";
-      document.getElementById("corr-student-mobile").value = demo.mobileNumber || demo.mobilenumber || "";
-      document.getElementById("corr-sales-note").value = demo.agentNote || demo.agentnote || "";
-      
-      document.getElementById("correction-modal").style.display = "flex";
-    };
-
-    // Close buttons for Correction Modal
-    document.getElementById("correction-modal-close").addEventListener("click", () => {
-      document.getElementById("correction-modal").style.display = "none";
-    });
-    document.getElementById("corr-modal-cancel").addEventListener("click", () => {
-      document.getElementById("correction-modal").style.display = "none";
-    });
-
-    // Save Correction form submit
-    document.getElementById("correction-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const demoId = document.getElementById("corr-demo-id").value;
-      const originalDemo = window.allDemos.find(d => d.id === demoId);
-      if (!originalDemo) return;
-      
-      const saveBtn = e.target.querySelector('button[type="submit"]');
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving...";
-      
-      const updatedPayload = {
-        ...originalDemo,
-        studentName: document.getElementById("corr-student-name").value.trim(),
-        studentname: document.getElementById("corr-student-name").value.trim(),
-        age: document.getElementById("corr-student-age").value.trim(),
-        language: document.getElementById("corr-student-language").value.trim(),
-        level: document.getElementById("corr-student-level").value,
-        location: document.getElementById("corr-student-loc").value.trim(),
-        mobileNumber: document.getElementById("corr-student-mobile").value.trim(),
-        mobilenumber: document.getElementById("corr-student-mobile").value.trim(),
-        agentNote: document.getElementById("corr-sales-note").value.trim(),
-        agentnote: document.getElementById("corr-sales-note").value.trim()
-      };
-      
-      const success = await writeToDatabase("updateDemo", updatedPayload);
-      if (success) {
-        // Update local memory
-        const idx = window.allDemos.findIndex(d => d.id === demoId);
-        if (idx !== -1) {
-          window.allDemos[idx] = updatedPayload;
-        }
-        alert("Corrections saved successfully!");
-        document.getElementById("correction-modal").style.display = "none";
-        renderSalesDemosTable();
-        renderTimetableGrid();
-      } else {
-        alert("Failed to save corrections. Please check connection and try again.");
-      }
-      
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Save Corrections";
-    });
 
     // 2. Submit Handler to sync database
     document.getElementById("booking-form").addEventListener("submit", async (e) => {
@@ -1833,7 +1354,6 @@
       const timeVal = demoSlotInput.dataset.time || slot;
       const zoomLinkVal = demoSlotInput.dataset.zoomLink || "https://zoom.us/j/default-meeting";
       const agentName = document.getElementById("agent-name").value;
-      const agentNote = document.getElementById("agent-note").value.trim();
 
       if (!slot || !date) {
         alert("Please select a slot from the calendar first!");
@@ -1861,9 +1381,7 @@
         level: level,
         feedback: "",
         revision: "-",
-        topicToStart: "-",
-        agentNote: agentNote,
-        agentnote: agentNote
+        topicToStart: "-"
       };
 
       const success = await writeToDatabase("addDemo", demoPayload);
@@ -1914,10 +1432,6 @@
         if (window.allDemos) {
           window.allDemos.push(demoPayload);
         }
-        try {
-          document.getElementById("booking-form").reset();
-          document.getElementById("agent-note").value = "";
-        } catch(e) {}
         renderTimetableGrid();
       } else {
         alert("Booking failed. Please check your internet connection and try again.");
@@ -2061,44 +1575,9 @@
             feedback: payload.feedback || "",
             revision: payload.revision || "-",
             topicToStart: payload.topicToStart || "-",
-            topictostart: payload.topicToStart || "-",
-            agentNote: payload.agentNote || "",
-            agentnote: payload.agentNote || ""
+            topictostart: payload.topicToStart || "-"
           };
           const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
-          return !error;
-        }
-        if (action === "updateDemo") {
-          const dbPayload = {
-            id: payload.id,
-            tutorId: payload.tutorId,
-            tutorid: payload.tutorId,
-            tutorName: payload.tutorName,
-            tutorname: payload.tutorName,
-            studentName: payload.studentName,
-            studentname: payload.studentName,
-            date: payload.date,
-            time: payload.time,
-            dateTime: payload.dateTime || `${payload.date} ${payload.time}`,
-            datetime: payload.dateTime || `${payload.date} ${payload.time}`,
-            slot: payload.slot,
-            status: payload.status,
-            age: payload.age,
-            language: payload.language,
-            agentName: payload.agentName,
-            agentname: payload.agentName,
-            location: payload.location,
-            mobileNumber: payload.mobileNumber,
-            mobilenumber: payload.mobileNumber,
-            level: payload.level,
-            feedback: payload.feedback || "",
-            revision: payload.revision || "-",
-            topicToStart: payload.topicToStart || "-",
-            topictostart: payload.topicToStart || "-",
-            agentNote: payload.agentNote || "",
-            agentnote: payload.agentNote || ""
-          };
-          const { error } = await window.supabaseClient.from('demos').upsert(dbPayload);
           return !error;
         }
         return false;
@@ -2121,100 +1600,5 @@
       });
     }
   </script>
-
-  <!-- SALES LOGIN SCREEN -->
-  <div id="sales-login-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: transparent; z-index: 200000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow: hidden;">
-    <!-- ♟️ Floating Chess Pieces Background Animation -->
-    <div class="floating-piece" style="top: 10%; left: 6%; animation: float-slow 14s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♞</div>
-    <div class="floating-piece" style="top: 62%; left: 4%; animation: float-medium 10s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♟</div>
-    <div class="floating-piece" style="top: 14%; right: 8%; animation: float-fast 8s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♛</div>
-    <div class="floating-piece" style="top: 68%; right: 5%; animation: float-slow 12s ease-in-out infinite; color:rgba(255,255,255,0.01); font-size:7.5rem;">♜</div>
-    <div class="floating-piece" style="top: 38%; left: 46%; font-size: 6rem; animation: float-medium 16s ease-in-out infinite; opacity: 0.01;">♚</div>
-
-    <div class="login-header-group">
-      <div class="login-brand-logo" id="login-logo-slot">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: #ffffff;"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
-      </div>
-      <h1 class="login-title" id="login-brand-name">Eight Times Eight Chess Academy</h1>
-      <div class="login-subtitle">Sales Portal</div>
-    </div>
-
-    <div class="login-card" style="z-index: 210000;">
-      <form id="sales-login-form">
-        <div class="login-form-group">
-          <label class="login-label" for="sales-login-name">Select Sales Name</label>
-          <select id="sales-login-name" class="login-input" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; padding:10px; border-radius:8px; cursor:pointer;" required>
-            <!-- Dynamically populated sales representatives -->
-          </select>
-        </div>
-        <div class="login-form-group" style="margin-bottom: 24px;">
-          <label class="login-label" for="sales-login-code">Sales Access Code</label>
-          <input type="password" id="sales-login-code" class="login-input" placeholder="Enter sales access code" required>
-        </div>
-        <button type="submit" class="login-btn">
-          ↥ View Sales Dashboard
-        </button>
-      </form>
-    </div>
-
-    <div class="login-footer-text">
-      Enter your sales credentials to schedule and manage demos
-    </div>
-  </div>
-
-  <!-- MODAL: AGENT CORRECTIONS MODAL -->
-  <div class="modal-backdrop" id="correction-modal">
-    <div class="booking-card" style="max-width: 500px; z-index:210000;">
-      <button type="button" class="modal-close" id="correction-modal-close" style="float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; padding: 4px;">✕</button>
-      <div class="header" style="margin-bottom: 20px; text-align:left;">
-        <h2 class="title" style="font-size: 1.4rem; color: #ffffff;">Correct Demo Details</h2>
-        <p class="subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Make changes to your scheduled class</p>
-      </div>
-      <form id="correction-form" style="text-align:left;">
-        <input type="hidden" id="corr-demo-id">
-        <div class="form-group" style="margin-bottom:12px;">
-          <label for="corr-student-name">Student Full Name</label>
-          <input type="text" id="corr-student-name" class="form-control" required>
-        </div>
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label for="corr-student-age">Student Age</label>
-            <input type="text" id="corr-student-age" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="corr-student-language">Language Preference</label>
-            <input type="text" id="corr-student-language" class="form-control" required>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label for="corr-student-level">Level Preference</label>
-            <select id="corr-student-level" class="form-control">
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="corr-student-loc">Location</label>
-            <input type="text" id="corr-student-loc" class="form-control" required>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label for="corr-student-mobile">Mobile Number</label>
-          <input type="text" id="corr-student-mobile" class="form-control" required>
-        </div>
-        <div class="form-group" style="margin-bottom:15px;">
-          <label for="corr-sales-note">Sales Note (One Line - Invisible to Tutors)</label>
-          <input type="text" id="corr-sales-note" class="form-control" placeholder="Add custom sales-only notes here...">
-        </div>
-        
-        <div class="modal-footer" style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-          <button type="button" class="btn" id="corr-modal-cancel" style="background:rgba(255,255,255,0.05); color:#ffffff; border:1px solid var(--border-color); padding:10px 20px;">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="background:var(--brand-secondary); color:#0c0f17; font-weight:700; padding:10px 20px;">Save Corrections</button>
-        </div>
-      </form>
-    </div>
-  </div>
 </body>
 </html>
