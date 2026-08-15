@@ -1583,9 +1583,15 @@
         const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || [];
         const matchedAgent = agents.find(a => (typeof a === "object" && a !== null ? a.name : a) === selectedAgent);
         
-        const configCode = (matchedAgent && typeof matchedAgent === "object" && matchedAgent.accessCode)
-          ? matchedAgent.accessCode.trim()
-          : ((branding.themeColors && (branding.themeColors.agentAccessCode || branding.themeColors.agentaccesscode)) || "AGENT123");
+        let configCode = "AGENT123";
+        if (matchedAgent && typeof matchedAgent === "object" && matchedAgent.accessCode !== undefined && matchedAgent.accessCode !== null) {
+          configCode = String(matchedAgent.accessCode).trim();
+        } else {
+          const globalCode = branding.themeColors && (branding.themeColors.agentAccessCode || branding.themeColors.agentaccesscode);
+          if (globalCode !== undefined && globalCode !== null) {
+            configCode = String(globalCode).trim();
+          }
+        }
         
         if (accessCode === configCode) {
           sessionStorage.setItem("CHESS_SALES_SESSION", JSON.stringify({ name: selectedAgent }));
