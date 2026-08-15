@@ -958,20 +958,21 @@
   <script>
     // 1. Setup and Apply Custom Branding
     const savedBranding = localStorage.getItem("CHESS_PORTAL_BRANDING");
-    let branding = window.DEFAULT_BRANDING || {
+    const activeDefaultBranding = typeof DEFAULT_BRANDING !== "undefined" ? DEFAULT_BRANDING : {
       companyName: "EIGHT TIMES EIGHT CHESS ACADEMY",
       currency: "₹",
       connectorType: "sheets",
       themeColors: { primary: "#111827", secondary: "#e07a5f" }
     };
+    let branding = { ...activeDefaultBranding };
 
     if (savedBranding) {
       try {
         branding = { ...branding, ...JSON.parse(savedBranding) };
-        if (window.DEFAULT_BRANDING.connectorType === "supabase" && window.DEFAULT_BRANDING.supabaseKey && !window.DEFAULT_BRANDING.supabaseKey.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
+        if (activeDefaultBranding.connectorType === "supabase" && activeDefaultBranding.supabaseKey && !activeDefaultBranding.supabaseKey.includes("PASTE_YOUR_LONG_SUPABASE_ANON_KEY_HERE")) {
           branding.connectorType = "supabase";
-          branding.supabaseUrl = window.DEFAULT_BRANDING.supabaseUrl;
-          branding.supabaseKey = window.DEFAULT_BRANDING.supabaseKey;
+          branding.supabaseUrl = activeDefaultBranding.supabaseUrl;
+          branding.supabaseKey = activeDefaultBranding.supabaseKey;
         }
       } catch (e) {
         console.warn("Could not load custom branding settings, using defaults.");
