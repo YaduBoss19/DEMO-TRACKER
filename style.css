@@ -939,20 +939,33 @@ header {
 }
 
 .login-input {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 12px;
-  color: white;
+  color: #ffffff !important;
   font-family: var(--font-body);
   font-size: 0.88rem;
   outline: none;
   transition: var(--transition-smooth);
 }
 
+.login-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover, 
+.login-input:-webkit-autofill:focus, 
+.login-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .login-input:focus {
   border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 .login-btn {
