@@ -2353,11 +2353,16 @@ function renderSettingsDropdownLists() {
     agentsListDiv.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:10px;">No sales representatives created.</p>`;
   } else {
     state.branding.themeColors.agentsList.forEach(agent => {
+      const isObj = typeof agent === "object" && agent !== null;
+      const name = isObj ? agent.name : agent;
+      const code = isObj ? agent.accessCode : "";
+      const displayStr = code ? `${name} <span style="opacity: 0.6; font-size: 0.8rem; margin-left: 8px;">(Code: ${code})</span>` : name;
+      
       const row = document.createElement("div");
       row.style = "display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;";
       row.innerHTML = `
-        <span>${agent}</span>
-        <button type="button" class="delete-agent-option-btn" data-agent="${agent}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:0 2px;">🗑️</button>
+        <span>${displayStr}</span>
+        <button type="button" class="delete-agent-option-btn" data-agent="${name}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:0 2px;">🗑️</button>
       `;
       agentsListDiv.appendChild(row);
     });
@@ -3883,15 +3888,31 @@ function initEventListeners() {
   if (addAgentBtn) {
     addAgentBtn.addEventListener("click", async () => {
       const input = document.getElementById("new-sales-input");
+      const codeInput = document.getElementById("new-sales-code-input");
       const val = input.value.trim();
+      const codeVal = codeInput ? codeInput.value.trim() : "";
+      
       if (!val) return;
       initializeBrandingLists();
-      if (state.branding.themeColors.agentsList.includes(val)) {
+      
+      const exists = state.branding.themeColors.agentsList.some(a => {
+        const name = (typeof a === "object" && a !== null) ? a.name : a;
+        return name.toLowerCase() === val.toLowerCase();
+      });
+      
+      if (exists) {
         showToast("Sales representative already exists.", "warning");
         return;
       }
-      state.branding.themeColors.agentsList.push(val);
+      
+      state.branding.themeColors.agentsList.push({
+        name: val,
+        accessCode: codeVal || "AGENT123"
+      });
+      
       input.value = "";
+      if (codeInput) codeInput.value = "";
+      
       renderSettingsDropdownLists();
       await writeToSheets("updateBranding", state.branding);
       showToast("Sales representative added and saved.");
@@ -4147,7 +4168,7 @@ function initEventListeners() {
   }
 
   // Delegate click events on dynamically generated buttons
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     const target = e.target;
 
     if (target.classList.contains("edit-slab-btn-el")) openSlabModal(target.dataset.id);
@@ -4238,9 +4259,12 @@ function initEventListeners() {
       e.preventDefault();
       const agentVal = target.dataset.agent;
       initializeBrandingLists();
-      state.branding.themeColors.agentsList = state.branding.themeColors.agentsList.filter(a => a !== agentVal);
+      state.branding.themeColors.agentsList = state.branding.themeColors.agentsList.filter(a => {
+        const name = (typeof a === "object" && a !== null) ? a.name : a;
+        return name !== agentVal;
+      });
       renderSettingsDropdownLists();
-      writeToSheets("updateBranding", state.branding);
+      await writeToSheets("updateBranding", state.branding);
       showToast("Sales representative removed and saved.");
       renderDashboard();
     }

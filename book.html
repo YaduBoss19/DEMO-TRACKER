@@ -1535,10 +1535,13 @@
 
     // --- 🔐 Sales Portal Security & View Management ---
     function populateSalesDropdowns() {
-      const agents = (branding.themeColors && branding.themeColors.agentsList) || ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
+      const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || ["Admin", "Rajesh", "Meera", "Amit", "Sarah", "John"];
       const selectEl = document.getElementById("sales-login-name");
       if (selectEl) {
-        selectEl.innerHTML = agents.map(name => `<option value="${name}">${name}</option>`).join("");
+        selectEl.innerHTML = agents.map(agent => {
+          const name = (typeof agent === "object" && agent !== null) ? agent.name : agent;
+          return `<option value="${name}">${name}</option>`;
+        }).join("");
       }
     }
 
@@ -1575,9 +1578,14 @@
       loginFormEl.addEventListener("submit", (e) => {
         e.preventDefault();
         const selectedAgent = document.getElementById("sales-login-name").value;
-        const accessCode = document.getElementById("sales-login-code").value;
+        const accessCode = document.getElementById("sales-login-code").value.trim();
         
-        const configCode = (branding.themeColors && branding.themeColors.agentAccessCode) || "AGENT123";
+        const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || [];
+        const matchedAgent = agents.find(a => (typeof a === "object" && a !== null ? a.name : a) === selectedAgent);
+        
+        const configCode = (matchedAgent && typeof matchedAgent === "object" && matchedAgent.accessCode)
+          ? matchedAgent.accessCode.trim()
+          : ((branding.themeColors && (branding.themeColors.agentAccessCode || branding.themeColors.agentaccesscode)) || "AGENT123");
         
         if (accessCode === configCode) {
           sessionStorage.setItem("CHESS_SALES_SESSION", JSON.stringify({ name: selectedAgent }));
