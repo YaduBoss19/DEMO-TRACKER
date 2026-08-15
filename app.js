@@ -162,7 +162,7 @@ async function fetchFromSupabase() {
         currency: brandingData.currency || state.branding.currency,
         themeColors: {
           ...state.branding.themeColors,
-          ...(brandingData.themeColors || {})
+          ...((brandingData.themeColors || brandingData.themecolors) || {})
         }
       };
       
@@ -185,14 +185,16 @@ async function fetchFromSupabase() {
         }
       }
 
-      if (brandingData.inviteTemplate) {
-        state.inviteTemplate = brandingData.inviteTemplate;
+      const rawInvite = brandingData.inviteTemplate || brandingData.invitetemplate;
+      if (rawInvite) {
+        state.inviteTemplate = rawInvite;
       }
-      if (brandingData.timetableTemplate) {
+      const rawTimetable = brandingData.timetableTemplate || brandingData.timetabletemplate;
+      if (rawTimetable) {
         try {
-          state.timetable = typeof brandingData.timetableTemplate === "string"
-            ? JSON.parse(brandingData.timetableTemplate)
-            : brandingData.timetableTemplate;
+          state.timetable = typeof rawTimetable === "string"
+            ? JSON.parse(rawTimetable)
+            : rawTimetable;
         } catch(e) {}
       }
       initializeBrandingLists();

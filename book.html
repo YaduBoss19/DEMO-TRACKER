@@ -1416,19 +1416,25 @@
           const { data: bData, error: bErr } = await client.from('branding').select('*').eq('id', 'default').maybeSingle();
           if (!bErr && bData) {
             branding.companyName = bData.name || branding.companyName;
-            branding.logoUrl = bData.logo || branding.logoUrl;
-            if (bData.themeColors) {
-              const colors = typeof bData.themeColors === "string" ? JSON.parse(bData.themeColors) : bData.themeColors;
+            branding.logoUrl = bData.logo || bData.logoUrl || branding.logoUrl;
+            
+            const rawColors = bData.themeColors || bData.themecolors;
+            if (rawColors) {
+              const colors = typeof rawColors === "string" ? JSON.parse(rawColors) : rawColors;
               branding.themeColors = { ...branding.themeColors, ...colors };
             }
-            if (bData.inviteTemplate) {
-              branding.inviteTemplate = bData.inviteTemplate;
+            
+            const rawInvite = bData.inviteTemplate || bData.invitetemplate;
+            if (rawInvite) {
+              branding.inviteTemplate = rawInvite;
             }
-            if (bData.timetableTemplate) {
+            
+            const rawTimetable = bData.timetableTemplate || bData.timetabletemplate;
+            if (rawTimetable) {
               try {
-                window.timetable = typeof bData.timetableTemplate === "string" 
-                  ? JSON.parse(bData.timetableTemplate) 
-                  : bData.timetableTemplate;
+                window.timetable = typeof rawTimetable === "string" 
+                  ? JSON.parse(rawTimetable) 
+                  : rawTimetable;
               } catch(e) {}
             }
           }
