@@ -733,8 +733,13 @@
             <input type="tel" id="mobile-number" class="form-control" placeholder="e.g. +91 98765 43210" required>
           </div>
 
-          <!-- Hidden Agent Identifier -->
-          <input type="hidden" id="agent-name" value="-">
+          <!-- Agent / Sales Name Dropbox Selection -->
+          <div class="form-group" style="margin-top: 15px; text-align: left;">
+            <label for="agent-name">Agent / Sales Executive Name</label>
+            <select id="agent-name" class="form-control" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; padding:10px; border-radius:8px; cursor:pointer;" required>
+              <!-- Dynamically populated sales representatives -->
+            </select>
+          </div>
 
           <button type="submit" class="btn" id="submit-btn" style="margin-top: 15px;">
             <span>Schedule Free Demo</span>
@@ -805,6 +810,21 @@
       }
     }
 
+    // Call populator synchronously to load initial lists
+    setTimeout(() => {
+      populateSalesDropdowns();
+      
+      // Pre-fill agent name from URL parameter ?agent=John
+      const urlParams = new URLSearchParams(window.location.search);
+      const agent = urlParams.get('agent');
+      if (agent) {
+        const selectEl = document.getElementById("agent-name");
+        if (selectEl) {
+          selectEl.value = decodeURIComponent(agent);
+        }
+      }
+    }, 0);
+
     // Set Default calendar date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -813,13 +833,6 @@
     document.getElementById("demo-date").addEventListener("change", () => {
       renderTimetableGrid();
     });
-
-    // Pre-fill agent name from URL parameter ?agent=John
-    const urlParams = new URLSearchParams(window.location.search);
-    const agent = urlParams.get('agent');
-    if (agent) {
-      document.getElementById("agent-name").value = decodeURIComponent(agent);
-    }
 
     function applyBranding() {
       if (branding.themeColors) {
@@ -1328,7 +1341,20 @@
 
       // 4. Always apply final branding configurations and re-render grid
       applyBranding();
+      populateSalesDropdowns();
       renderTimetableGrid();
+    }
+
+    // Dynamic dropdown populator for Agent name selector
+    function populateSalesDropdowns() {
+      const agents = (branding.themeColors && (branding.themeColors.agentsList || branding.themeColors.agentslist)) || [];
+      const selectEl = document.getElementById("agent-name");
+      if (selectEl) {
+        selectEl.innerHTML = agents.map(agent => {
+          const name = (typeof agent === "object" && agent !== null) ? agent.name : agent;
+          return `<option value="${name}">${name}</option>`;
+        }).join("");
+      }
     }
 
     // 2. Submit Handler to sync database
