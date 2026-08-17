@@ -1828,6 +1828,7 @@ function renderDemosTable() {
           <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
           <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
           <button class="action-btn share-demo-btn-el" data-id="${demo.id}" title="Share Invite on WhatsApp" style="background-color: #25d366; color: white;">💬</button>
+          <button class="action-btn reminder-demo-btn-el" data-id="${demo.id}" title="Send/Copy 1-Hour Reminder" style="background-color: #e07a5f; color: white;">⏰</button>
         </td>
       `;
       body.appendChild(tr);
@@ -1954,10 +1955,15 @@ function renderDemosTable() {
             ${tutorStatusOptions}
           </select>
         </td>
-        <td>
-          <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
-            🟢 Start Class
-          </a>
+        <td style="white-space: nowrap;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
+              🟢 Start Class
+            </a>
+            <button class="btn btn-sm tutor-remind-btn" data-id="${demo.id}" style="background-color:#e07a5f; color:white; font-weight:bold; padding:4px 8px; border-radius:6px; font-size:0.72rem; border:none; cursor:pointer;" title="Send Reminder to Student">
+              ⏰ Remind
+            </button>
+          </div>
         </td>
       `;
       body.appendChild(tr);
@@ -2774,16 +2780,23 @@ function openTutorModal(tutorId = null) {
     title.textContent = "Edit User Profile";
     const tutor = state.tutors.find(t => t.id === tutorId);
     if (tutor) {
+      const emailVal = tutor.email || "";
+      const emailParts = emailVal.split("|");
+      const languages = emailParts[0] ? emailParts[0].trim() : "";
+      const phone = emailParts[1] ? emailParts[1].trim() : "";
+
       document.getElementById("tutor-form-id").value = tutor.id;
       document.getElementById("tutor-form-name").value = tutor.name;
       document.getElementById("tutor-form-code").value = tutor.accessCode || tutor.accesscode || "";
-      document.getElementById("tutor-form-languages").value = tutor.email || "";
+      document.getElementById("tutor-form-languages").value = languages;
+      document.getElementById("tutor-form-phone").value = phone;
       document.getElementById("tutor-form-role").value = tutor.role || "tutor";
     }
   } else {
     title.textContent = "Add User Profile";
     document.getElementById("tutor-form-id").value = "";
     document.getElementById("tutor-form-languages").value = "English";
+    document.getElementById("tutor-form-phone").value = "";
     document.getElementById("tutor-form-role").value = "tutor";
   }
   modal.classList.add("open");
@@ -2796,9 +2809,11 @@ async function handleTutorSubmit(e) {
   const accessCode = document.getElementById("tutor-form-code").value.trim();
   const role = document.getElementById("tutor-form-role").value;
   const languages = document.getElementById("tutor-form-languages").value.trim();
+  const phone = document.getElementById("tutor-form-phone").value.trim();
+  const dbEmail = phone ? `${languages} | ${phone}` : languages;
 
   const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-  const tutorData = { name, accessCode, role, avatar, email: languages };
+  const tutorData = { name, accessCode, role, avatar, email: dbEmail };
 
   if (id) {
     const idx = state.tutors.findIndex(t => t.id === id);
@@ -4224,6 +4239,9 @@ function initEventListeners() {
     if (target.classList.contains("delete-demo-btn-el")) deleteDemo(target.dataset.id);
     if (target.classList.contains("share-demo-btn-el")) sendDemoInvite(target.dataset.id);
     if (target.classList.contains("edit-slot-btn-el")) openSlotModal(target.dataset.id);
+    if (target.classList.contains("reminder-demo-btn-el") || target.classList.contains("tutor-remind-btn")) {
+      openReminderModal(target.dataset.id);
+    }
 
     if (target.classList.contains("row-move-up-btn")) {
       e.preventDefault();
@@ -5231,4 +5249,95 @@ function processImportedRows(rows) {
   } else {
     showToast("No valid rows were found. Make sure Student Name is populated.", "warning");
   }
+}
+
+function openReminderModal(demoId) {
+  const demo = state.demos.find(d => d.id === demoId);
+  if (!demo) return;
+
+  const tutor = state.tutors.find(t => t.id === demo.tutorId);
+  
+  let zoomLink = "";
+  if (demo.slot) {
+    zoomLink = typeof getTeacherZoomLinkForSlot === "function" ? getTeacherZoomLinkForSlot(demo.slot) : "";
+  }
+  if (!zoomLink || zoomLink.includes("onlineclass.site/home") || zoomLink.includes("onlineclass.site/join")) {
+    const raw = demo.zoomLink || (tutor && tutor.zoomLink) || (typeof getZoomLinkForSlot === "function" ? getZoomLinkForSlot(demo.slot) : "");
+    zoomLink = typeof formatZoomStartLink === "function" ? formatZoomStartLink(raw) : raw;
+  }
+  if (!zoomLink) {
+    const cleanKey = (demo.slot || "").toLowerCase().replace(/\s+/g, '');
+    zoomLink = `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+  }
+
+  const dateStr = typeof formatDisplayDate === "function" ? formatDisplayDate(demo.date || demo.dateTime) : (demo.date || "");
+  const timeStr = typeof formatDisplayTime === "function" ? formatDisplayTime(demo.time) : (demo.time || "");
+  
+  const msg = `Dear Parent,\n\nThis is a friendly reminder that the scheduled Demo Chess Class for ${demo.studentName || "your child"} starts in 1 hour.\n\nDATE: ${dateStr}\nTIME: ${timeStr} (IST)\nCLASS JOIN LINK:\n${zoomLink}\n\nPlease join 5 minutes early. See you there!\n\nRegards,\nTeam Eight Times Eight Chess Academy`;
+
+  // Create backdrop
+  const modalDiv = document.createElement("div");
+  modalDiv.id = "dynamic-reminder-modal";
+  modalDiv.className = "modal-backdrop open";
+  modalDiv.style.position = "fixed";
+  modalDiv.style.top = "0";
+  modalDiv.style.left = "0";
+  modalDiv.style.width = "100vw";
+  modalDiv.style.height = "100vh";
+  modalDiv.style.background = "rgba(0,0,0,0.6)";
+  modalDiv.style.display = "flex";
+  modalDiv.style.alignItems = "center";
+  modalDiv.style.justifyContent = "center";
+  modalDiv.style.padding = "20px";
+  modalDiv.style.zIndex = "210000";
+
+  modalDiv.innerHTML = `
+    <div class="modal-content" style="max-width: 480px; width: 100%; text-align: left; background: #111827; color: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+        <h4 style="margin:0; font-size:1.2rem; font-weight:700;">⏰ Send 1-Hour Reminder</h4>
+        <span style="cursor:pointer; font-size:1.4rem; color:var(--text-muted);" onclick="document.getElementById('dynamic-reminder-modal').remove()">✕</span>
+      </div>
+      <div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px; margin-top: 0;">Review and send the trial class reminder to the student.</p>
+        <div style="margin-bottom:15px;">
+          <label style="font-size:0.75rem; font-weight:700; color:#94a3b8; display:block; margin-bottom:6px;">Recipient Phone Number</label>
+          <input type="text" id="rem-phone" class="form-control" value="${demo.mobileNumber || demo.mobilenumber || ""}" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; box-sizing:border-box; padding:10px; border-radius:8px;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:0.75rem; font-weight:700; color:#94a3b8; display:block; margin-bottom:6px;">Reminder Message Text</label>
+          <textarea id="rem-text" class="form-control" style="background:#1f2937; color:#fff; border:1px solid var(--border-color); width:100%; box-sizing:border-box; padding:10px; border-radius:8px; height:150px; font-family:inherit; font-size:0.85rem; resize:none;">${msg}</textarea>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border-color); padding:8px 16px; border-radius:8px; cursor:pointer;" onclick="document.getElementById('dynamic-reminder-modal').remove()">Cancel</button>
+        <button type="button" class="btn" style="background:rgba(255,255,255,0.1); color:#fff; border:1px solid var(--border-color); padding:8px 16px; border-radius:8px; cursor:pointer;" id="btn-rem-copy">📋 Copy Message</button>
+        <button type="button" class="btn btn-primary" style="background:#25d366; color:#0c0f17; font-weight:700; padding:8px 16px; border-radius:8px; border:none; cursor:pointer;" id="btn-rem-redirect">💬 Open WhatsApp</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modalDiv);
+
+  // Event listeners
+  document.getElementById("btn-rem-copy").addEventListener("click", () => {
+    const text = document.getElementById("rem-text").value;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Reminder message copied to clipboard!");
+    });
+  });
+
+  document.getElementById("btn-rem-redirect").addEventListener("click", () => {
+    const text = document.getElementById("rem-text").value;
+    const phoneRaw = document.getElementById("rem-phone").value.trim();
+    const cleanPhone = phoneRaw.replace(/[^\d+]/g, "");
+    
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Message copied! Redirecting to WhatsApp...");
+      setTimeout(() => {
+        const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank");
+        document.getElementById('dynamic-reminder-modal').remove();
+      }, 800);
+    });
+  });
 }

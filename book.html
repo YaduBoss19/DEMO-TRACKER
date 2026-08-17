@@ -1478,6 +1478,35 @@
           });
         }
 
+        // Trigger automated background WhatsApp to tutor if enabled
+        if (branding.whatsappEnabled && tutorId) {
+          const assignedTutor = window.tutorsList ? window.tutorsList.find(t => t.id === tutorId) : null;
+          if (assignedTutor) {
+            const emailVal = assignedTutor.email || "";
+            const emailParts = emailVal.split("|");
+            const tutorPhone = emailParts[1] ? emailParts[1].trim() : "";
+            
+            if (tutorPhone) {
+              let dateFormatted = date;
+              if (date.includes("-")) {
+                const parts = date.split("-");
+                if (parts.length === 3) {
+                  const year = parts[0].slice(-2);
+                  const month = parts[1];
+                  const day = parts[2];
+                  dateFormatted = `${day}/${month}/${year}`;
+                }
+              }
+              const tutorText = `Hello ${assignedTutor.name},\n\nA new trial demo class has been scheduled for you!\n\nSTUDENT: ${studentName} (Age: ${age})\nDATE: ${dateFormatted}\nTIME: ${timeVal}\n\nCLASS LINK:\n${zoomLinkVal}\n\nPlease be ready 5 minutes before class starts.`;
+              sendBackgroundWhatsApp(tutorPhone, tutorText).then(sent => {
+                if (sent) {
+                  console.log("Automated WhatsApp notification to tutor sent successfully!");
+                }
+              });
+            }
+          }
+        }
+
         // Refresh calendar availability in background
         if (window.allDemos) {
           window.allDemos.push(demoPayload);
