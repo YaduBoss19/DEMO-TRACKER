@@ -1053,7 +1053,65 @@
           const td = document.createElement("td");
 
           if (availableTutors.length === 0) {
-            td.innerHTML = `<div style="color: rgba(255,255,255,0.06); font-size: 0.75rem; padding: 12px 0;">—</div>`;
+            const dayBookingsCount = window.allDemos ? window.allDemos.filter(d => {
+              const dDate = d.date || d.dateTime || "";
+              return dDate.includes(dateStr);
+            }).length : 0;
+            const dailyLimit = parseInt(branding.dailyBookingLimit) || 50;
+            const limitReached = dayBookingsCount >= dailyLimit;
+
+            if (limitReached) {
+              td.innerHTML = `<div style="color: rgba(239, 68, 68, 0.4); font-size: 0.75rem; padding: 12px 0; cursor: not-allowed;">—</div>`;
+            } else {
+              const addCell = document.createElement("div");
+              addCell.style.color = "rgba(255, 255, 255, 0.15)";
+              addCell.style.fontSize = "0.75rem";
+              addCell.style.padding = "10px 0";
+              addCell.style.cursor = "pointer";
+              addCell.style.borderRadius = "6px";
+              addCell.style.transition = "background 0.2s, color 0.2s";
+              addCell.style.textAlign = "center";
+              addCell.innerHTML = "➕ Book";
+              
+              addCell.addEventListener("mouseenter", () => {
+                addCell.style.background = "rgba(255, 255, 255, 0.04)";
+                addCell.style.color = "var(--brand-secondary)";
+              });
+              addCell.addEventListener("mouseleave", () => {
+                addCell.style.background = "transparent";
+                addCell.style.color = "rgba(255, 255, 255, 0.15)";
+              });
+
+              addCell.addEventListener("click", () => {
+                document.querySelectorAll(".calendar-cell").forEach(c => c.classList.remove("selected-booking-cell"));
+                // Set inputs
+                document.getElementById("demo-date").value = dateStr;
+                
+                const demoSlotInput = document.getElementById("demo-slot");
+                demoSlotInput.value = slotName;
+                demoSlotInput.dataset.tutorId = "";
+                demoSlotInput.dataset.tutorName = "Unassigned";
+                demoSlotInput.dataset.time = time;
+                const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+                const fallbackLink = branding[cleanKey] || branding[cleanKey + 'zoom'] || branding[slotName] || `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+                demoSlotInput.dataset.zoomLink = fallbackLink;
+
+                // Reset form and view states
+                document.getElementById("booking-form").reset();
+                document.getElementById("form-panel").style.display = "block";
+                document.getElementById("success-panel").style.display = "none";
+
+                // Open modal overlay
+                const modal = document.getElementById("booking-modal");
+                if (modal) {
+                  modal.classList.add("open");
+                  const formattedDate = date.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                  document.getElementById("booking-modal-subtitle").textContent = `${formattedDate} at ${time} (Unassigned Slot)`;
+                }
+              });
+              
+              td.appendChild(addCell);
+            }
           } else {
             // Find all tutors who are available for this slot ID and are not booked on this date/time
             const freeTutors = availableTutors.filter(t => {
@@ -1415,8 +1473,8 @@
       // Construct Demo Item (Matching DB schema)
       const demoPayload = {
         id: `demo_${Date.now()}`,
-        tutorId: tutorId,
-        tutorName: tutorName,
+        tutorId: "",
+        tutorName: "Unassigned",
         studentName: studentName,
         date: date,
         time: timeVal,
@@ -1469,7 +1527,7 @@
             .replace(/{SLOT}/gi, slot)
             .replace(/{LINK}/gi, zoomLinkVal)
             .replace(/{STUDENT}/gi, studentName)
-            .replace(/{TUTOR}/gi, tutorName);
+            .replace(/{TUTOR}/gi, "Eight Times Eight Coach");
             
           sendBackgroundWhatsApp(mobileNumber, text).then(sent => {
             if (sent) {
@@ -1549,7 +1607,7 @@
         .replace(/{SLOT}/gi, demo.slot || "")
         .replace(/{LINK}/gi, zoomLink)
         .replace(/{STUDENT}/gi, demo.studentName || "")
-        .replace(/{TUTOR}/gi, demo.tutorName || "");
+        .replace(/{TUTOR}/gi, (demo.tutorName && demo.tutorName !== "Unassigned") ? demo.tutorName : "Eight Times Eight Coach");
       
       navigator.clipboard.writeText(text).then(() => {
         alert("Invitation details copied to clipboard! Opening WhatsApp Web/App...");
