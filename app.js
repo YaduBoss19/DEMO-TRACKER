@@ -1762,6 +1762,7 @@ function renderDemosTable() {
 
       // Build inline Tutor dropdown select
       let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px;">`;
+      tutorSelectHtml += `<option value="" ${(demo.tutorId === "" || !demo.tutorId || demo.tutorName === "Unassigned") ? 'selected' : ''}>-- Unassigned --</option>`;
       state.tutors.forEach(t => {
         if (t.role === "tutor" || !t.role) {
           tutorSelectHtml += `<option value="${t.id}" ${demo.tutorId === t.id ? 'selected' : ''}>${t.name}</option>`;
@@ -4248,6 +4249,10 @@ function initEventListeners() {
   // Delegate click events on dynamically generated buttons
   document.addEventListener("click", async (e) => {
     const target = e.target;
+
+    if (target.classList.contains("modal-backdrop")) {
+      target.classList.remove("open");
+    }
 
     if (target.classList.contains("edit-slab-btn-el")) openSlabModal(target.dataset.id);
     if (target.classList.contains("delete-slab-btn-el")) deleteSlab(target.dataset.id);
