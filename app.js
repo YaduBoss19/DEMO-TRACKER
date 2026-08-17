@@ -300,7 +300,7 @@ async function writeToSupabase(action, payload) {
           currency: payload.currency,
           themeColors: payload.themeColors,
           inviteTemplate: state.inviteTemplate || "",
-          timetableTemplate: payload.timetableTemplate || []
+          timetableTemplate: payload.timetableTemplate !== undefined ? payload.timetableTemplate : (state.timetable || [])
         };
         const { error: bErr } = await supabaseClient.from('branding').upsert(bPayload);
         if (bErr) throw bErr;
@@ -2500,18 +2500,7 @@ function renderTutorSlots() {
   const tutor = state.tutors.find(t => t.id === state.currentUser.id);
   if (!tutor) return;
 
-  // Set master Zoom input value
-  const zoomInput = document.getElementById("tutor-master-zoom");
-  if (zoomInput) {
-    zoomInput.value = tutor.zoomLink || "";
-  }
-
-  // Set languages input value
-  const languagesInput = document.getElementById("tutor-languages");
-  if (languagesInput) {
-    languagesInput.value = tutor.email || "";
-  }
-
+  // availability load
   const availability = Array.isArray(tutor.availability) ? tutor.availability : [];
   const { slots, times, days } = generateWeeklySlots();
 
@@ -3792,24 +3781,14 @@ function initEventListeners() {
       availability.push(cell.dataset.slotId);
     });
 
-    const zoomLinkInput = document.getElementById("tutor-master-zoom");
-    const zoomLink = zoomLinkInput ? zoomLinkInput.value.trim() : "";
-    
-    const languagesInput = document.getElementById("tutor-languages");
-    const languages = languagesInput ? languagesInput.value.trim() : "";
-
     tutor.availability = availability;
-    tutor.zoomLink = zoomLink;
-    tutor.email = languages;
 
     saveToLocalStorage();
 
     // Write to Sheets / Supabase
     const payload = {
       ...tutor,
-      availability: JSON.stringify(availability),
-      zoomLink: zoomLink,
-      email: languages
+      availability: JSON.stringify(availability)
     };
 
     const success = await writeToSheets("updateTutor", payload);
