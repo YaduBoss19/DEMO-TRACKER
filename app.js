@@ -2506,6 +2506,12 @@ function renderTutorSlots() {
     zoomInput.value = tutor.zoomLink || "";
   }
 
+  // Set languages input value
+  const languagesInput = document.getElementById("tutor-languages");
+  if (languagesInput) {
+    languagesInput.value = tutor.email || "";
+  }
+
   const availability = Array.isArray(tutor.availability) ? tutor.availability : [];
   const { slots, times, days } = generateWeeklySlots();
 
@@ -2571,6 +2577,12 @@ function renderTutorSlots() {
           const currentlyActive = cell.classList.contains("active");
           
           if (currentlyActive) {
+            // Check 24 hour cancellation rule
+            if (isSlotWithin24Hours(day.key, time)) {
+              showToast("You cannot cancel availability for slots that start in less than 24 hours!", "error");
+              return;
+            }
+
             // Tutor is trying to make this slot Unavailable (unchecking it)
             // Block if there is any scheduled demo for this tutor on this day and time
             const hasBookedDemo = state.demos.some(d => {
@@ -2608,6 +2620,47 @@ function getDayKeyFromDateStr(dateStr) {
   const date = new Date(dateStr + "T00:00:00");
   const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   return days[date.getDay()];
+}
+
+function isSlotWithin24Hours(dayKey, timeStr) {
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const targetDayIndex = dayKeys.indexOf(dayKey.toLowerCase());
+  if (targetDayIndex === -1) return false;
+
+  const now = new Date();
+  
+  // Parse the time string (e.g., "10:00 AM" or "6:30 PM")
+  const timeRegex = /(\d+):(\d+)\s*(AM|PM)/i;
+  const match = timeStr.match(timeRegex);
+  if (!match) return false;
+
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const ampm = match[3].toUpperCase();
+
+  if (ampm === "PM" && hours !== 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+
+  // Find the next occurrence of targetDayIndex starting from today
+  const targetDate = new Date(now);
+  let daysDiff = targetDayIndex - now.getDay();
+  if (daysDiff < 0) {
+    daysDiff += 7;
+  }
+  
+  targetDate.setDate(now.getDate() + daysDiff);
+  targetDate.setHours(hours, minutes, 0, 0);
+
+  // If the target slot is earlier today, next occurrence is next week
+  if (targetDate < now) {
+    targetDate.setDate(targetDate.getDate() + 7);
+  }
+
+  // Calculate difference
+  const diffMs = targetDate - now;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  return diffHours < 24;
 }
 
 // --- Toast notifications ---
@@ -2735,11 +2788,13 @@ function openTutorModal(tutorId = null) {
       document.getElementById("tutor-form-id").value = tutor.id;
       document.getElementById("tutor-form-name").value = tutor.name;
       document.getElementById("tutor-form-code").value = tutor.accessCode || tutor.accesscode || "";
+      document.getElementById("tutor-form-languages").value = tutor.email || "";
       document.getElementById("tutor-form-role").value = tutor.role || "tutor";
     }
   } else {
     title.textContent = "Add User Profile";
     document.getElementById("tutor-form-id").value = "";
+    document.getElementById("tutor-form-languages").value = "English";
     document.getElementById("tutor-form-role").value = "tutor";
   }
   modal.classList.add("open");
@@ -2751,21 +2806,25 @@ async function handleTutorSubmit(e) {
   const name = document.getElementById("tutor-form-name").value.trim();
   const accessCode = document.getElementById("tutor-form-code").value.trim();
   const role = document.getElementById("tutor-form-role").value;
+  const languages = document.getElementById("tutor-form-languages").value.trim();
 
   const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-  const tutorData = { name, accessCode, role, avatar };
+  const tutorData = { name, accessCode, role, avatar, email: languages };
 
   if (id) {
     const idx = state.tutors.findIndex(t => t.id === id);
     if (idx !== -1) {
-      state.tutors[idx] = { id, ...tutorData };
-      await writeToSheets("updateTutor", { id, ...tutorData });
+      const oldTutor = state.tutors[idx];
+      const updatedTutor = { ...oldTutor, ...tutorData, id };
+      state.tutors[idx] = updatedTutor;
+      await writeToSheets("updateTutor", updatedTutor);
       showToast("User profile updated.");
     }
   } else {
     const newId = `tutor_${Date.now()}`;
-    state.tutors.push({ id: newId, ...tutorData });
-    await writeToSheets("addTutor", { id: newId, ...tutorData });
+    const newTutor = { id: newId, ...tutorData, availability: [], zoomLink: "", zoomlink: "" };
+    state.tutors.push(newTutor);
+    await writeToSheets("addTutor", newTutor);
     showToast("User profile added.");
   }
 
@@ -3735,9 +3794,13 @@ function initEventListeners() {
 
     const zoomLinkInput = document.getElementById("tutor-master-zoom");
     const zoomLink = zoomLinkInput ? zoomLinkInput.value.trim() : "";
+    
+    const languagesInput = document.getElementById("tutor-languages");
+    const languages = languagesInput ? languagesInput.value.trim() : "";
 
     tutor.availability = availability;
     tutor.zoomLink = zoomLink;
+    tutor.email = languages;
 
     saveToLocalStorage();
 
@@ -3745,7 +3808,8 @@ function initEventListeners() {
     const payload = {
       ...tutor,
       availability: JSON.stringify(availability),
-      zoomLink: zoomLink
+      zoomLink: zoomLink,
+      email: languages
     };
 
     const success = await writeToSheets("updateTutor", payload);

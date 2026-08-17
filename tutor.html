@@ -481,9 +481,15 @@
             <button class="btn btn-primary" id="save-tutor-slots-btn">Save Settings</button>
           </div>
 
-          <div class="form-group" style="max-width: 500px; margin-bottom: 25px;">
-            <label for="tutor-master-zoom" style="font-weight: 700;">My Personal Zoom / Online Class Link</label>
-            <input type="url" id="tutor-master-zoom" class="form-control" placeholder="https://zoom.us/j/your-meeting-id" style="margin-top: 6px;">
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 25px;">
+            <div class="form-group" style="flex: 1; min-width: 300px; margin-bottom: 0;">
+              <label for="tutor-master-zoom" style="font-weight: 700;">My Personal Zoom / Online Class Link</label>
+              <input type="url" id="tutor-master-zoom" class="form-control" placeholder="https://zoom.us/j/your-meeting-id" style="margin-top: 6px;">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+              <label for="tutor-languages" style="font-weight: 700;">Languages I Speak (e.g. English, Hindi)</label>
+              <input type="text" id="tutor-languages" class="form-control" placeholder="e.g. English, Hindi, Tamil" style="margin-top: 6px;">
+            </div>
           </div>
           
           <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255,255,255,0.01);">

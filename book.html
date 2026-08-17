@@ -637,6 +637,19 @@
       <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Language:</span>
+          <select id="language-filter" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+            <option value="ALL" style="background: #111827; color: #ffffff;" selected>All Languages</option>
+            <option value="English" style="background: #111827; color: #ffffff;">English</option>
+            <option value="Hindi" style="background: #111827; color: #ffffff;">Hindi</option>
+            <option value="Tamil" style="background: #111827; color: #ffffff;">Tamil</option>
+            <option value="Telugu" style="background: #111827; color: #ffffff;">Telugu</option>
+            <option value="Kannada" style="background: #111827; color: #ffffff;">Kannada</option>
+            <option value="Malayalam" style="background: #111827; color: #ffffff;">Malayalam</option>
+            <option value="Spanish" style="background: #111827; color: #ffffff;">Spanish</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Timezone:</span>
           <select id="timezone-selector" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
             <option value="IST" style="background: #111827; color: #ffffff;" selected>IST (India)</option>
@@ -1028,8 +1041,15 @@
           const weeklySlotId = `${dayKey}_slot_${timeIdx}`;
           const slotName = `Slot ${timeIdx + 1}`;
 
-          // Find tutors available for this slot ID
-          const availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
+          // Find tutors available for this slot ID and filter by language if selected
+          let availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
+          const langFilter = document.getElementById("language-filter")?.value || "ALL";
+          if (langFilter !== "ALL") {
+            availableTutors = availableTutors.filter(t => {
+              const spoken = (t.email || "English").toLowerCase();
+              return spoken.includes(langFilter.toLowerCase());
+            });
+          }
           const td = document.createElement("td");
 
           if (availableTutors.length === 0) {
@@ -1114,7 +1134,7 @@
 
                 cell.innerHTML = `
                   <div style="font-weight: 700;">${tutor.name}</div>
-                  <div style="font-size: 0.58rem; opacity: 0.95; margin-top: 1px;">(${tutor.languages || "English"})</div>
+                  <div style="font-size: 0.58rem; opacity: 0.95; margin-top: 1px;">(${tutor.email || "English"})</div>
                 `;
 
                 // Hover effects
@@ -1181,6 +1201,10 @@
     });
 
     document.getElementById("timezone-selector")?.addEventListener("change", () => {
+      renderTimetableGrid();
+    });
+
+    document.getElementById("language-filter")?.addEventListener("change", () => {
       renderTimetableGrid();
     });
 
