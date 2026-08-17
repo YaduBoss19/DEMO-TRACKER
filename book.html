@@ -1402,7 +1402,7 @@
       const tutorId = demoSlotInput.dataset.tutorId || "";
       const tutorName = demoSlotInput.dataset.tutorName || "Unassigned";
       const timeVal = demoSlotInput.dataset.time || slot;
-      const zoomLinkVal = demoSlotInput.dataset.zoomLink || "https://zoom.us/j/default-meeting";
+      const zoomLinkVal = getStudentJoinLinkForSlot(slot);
       const agentName = document.getElementById("agent-name").value;
 
       if (!slot || !date) {
@@ -1497,7 +1497,7 @@
                   dateFormatted = `${day}/${month}/${year}`;
                 }
               }
-              const tutorText = `Hello ${assignedTutor.name},\n\nA new trial demo class has been scheduled for you!\n\nSTUDENT: ${studentName} (Age: ${age})\nDATE: ${dateFormatted}\nTIME: ${timeVal}\n\nCLASS LINK:\n${zoomLinkVal}\n\nPlease be ready 5 minutes before class starts.`;
+              const tutorText = `Hello ${assignedTutor.name},\n\nA new trial demo class has been scheduled for you!\n\nSTUDENT: ${studentName} (Age: ${age})\nDATE: ${dateFormatted}\nTIME: ${timeVal}\n\nCLASS LINK:\n${getTeacherZoomLinkForSlot(slot)}\n\nPlease be ready 5 minutes before class starts.`;
               sendBackgroundWhatsApp(tutorPhone, tutorText).then(sent => {
                 if (sent) {
                   console.log("Automated WhatsApp notification to tutor sent successfully!");
@@ -1560,6 +1560,29 @@
         window.open(url, '_blank');
       });
     });
+
+    function getStudentJoinLinkForSlot(slotName) {
+      const slotLinks = (branding && branding.themeColors && (branding.themeColors.slotLinks || branding.themeColors.slotlinks)) || [];
+      const found = slotLinks.find(s => s.name === slotName || s.id === slotName.toLowerCase().replace(/\s+/g, '_'));
+      if (found && found.link) {
+        return found.link.trim();
+      }
+      const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+      return `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+    }
+
+    function getTeacherZoomLinkForSlot(slotName) {
+      const slotLinks = (branding && branding.themeColors && (branding.themeColors.slotLinks || branding.themeColors.slotlinks)) || [];
+      const found = slotLinks.find(s => s.name === slotName || s.id === slotName.toLowerCase().replace(/\s+/g, '_'));
+      if (found && found.teacherLink) {
+        return found.teacherLink.trim();
+      }
+      if (found && found.link) {
+        return found.link.trim();
+      }
+      const cleanKey = slotName.toLowerCase().replace(/\s+/g, '');
+      return `https://eighttimeseight.onlineclass.site/joinPublic/default-${cleanKey}`;
+    }
 
     function normalizePhoneNumber(phone) {
       if (!phone) return "";

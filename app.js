@@ -3000,8 +3000,9 @@ function openDemoModal(demoId = null) {
     const agents = state.branding.themeColors?.agentsList || [];
     agents.forEach(agent => {
       const op = document.createElement("option");
-      op.value = agent;
-      op.textContent = agent;
+      const name = typeof agent === "object" && agent !== null ? agent.name : agent;
+      op.value = name;
+      op.textContent = name;
       agentSelect.appendChild(op);
     });
   }
@@ -3040,14 +3041,11 @@ function openDemoModal(demoId = null) {
       }
       
       document.getElementById("demo-age").value = demo.age || "";
-      document.getElementById("demo-language").value = demo.language || "";
-      document.getElementById("demo-level").value = demo.level || "";
-      document.getElementById("demo-revision").value = demo.revision || "";
-      document.getElementById("demo-topic-start").value = demo.topicToStart || "";
+      document.getElementById("demo-language").value = demo.language || "English";
+      document.getElementById("demo-level").value = demo.level || "Beginner";
       document.getElementById("demo-sales-name").value = demo.agentName || "";
       document.getElementById("demo-location").value = demo.location || "";
       document.getElementById("demo-mobile-number").value = demo.mobileNumber || "";
-      document.getElementById("demo-feedback").value = demo.feedback || "";
       document.getElementById("demo-sales-note").value = demo.agentNote || "";
     }
   } else {
@@ -3062,9 +3060,8 @@ function openDemoModal(demoId = null) {
     if (customContainer) customContainer.style.display = "none";
     if (customInput) customInput.value = "";
     
-    document.getElementById("demo-level").value = "";
-    document.getElementById("demo-revision").value = "";
-    document.getElementById("demo-topic-start").value = "";
+    document.getElementById("demo-language").value = "English";
+    document.getElementById("demo-level").value = "Beginner";
     document.getElementById("demo-sales-name").value = "";
     document.getElementById("demo-location").value = "";
     document.getElementById("demo-mobile-number").value = "";
@@ -3091,15 +3088,17 @@ async function handleDemoSubmit(e) {
   }
   
   const age = document.getElementById("demo-age").value.trim() || "-";
-  const language = document.getElementById("demo-language").value.trim() || "-";
-  const level = document.getElementById("demo-level").value.trim() || "-";
-  const revision = document.getElementById("demo-revision").value.trim() || "-";
-  const topicToStart = document.getElementById("demo-topic-start").value.trim() || "-";
+  const language = document.getElementById("demo-language").value;
+  const level = document.getElementById("demo-level").value;
   const agentName = document.getElementById("demo-sales-name").value.trim() || "-";
   const location = document.getElementById("demo-location").value.trim() || "-";
   const mobileNumber = document.getElementById("demo-mobile-number").value.trim() || "-";
-  const feedback = document.getElementById("demo-feedback").value.trim() || "";
   const agentNote = document.getElementById("demo-sales-note").value.trim() || "";
+
+  const oldDemo = id ? state.demos.find(d => d.id === id) : null;
+  const revision = oldDemo ? (oldDemo.revision || "-") : "-";
+  const topicToStart = oldDemo ? (oldDemo.topicToStart || "-") : "-";
+  const feedback = oldDemo ? (oldDemo.feedback || "") : "";
 
   let status = "DEMO NOT DONE";
   let shouldTriggerWhatsApp = false;

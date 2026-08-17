@@ -862,33 +862,28 @@
             </div>
             <div class="form-group" style="flex: 1; min-width: 120px;">
               <label for="demo-language">Language</label>
-              <input type="text" id="demo-language" class="form-control" placeholder="e.g. English">
+              <select id="demo-language" class="form-control" required>
+                <option value="English" selected>English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Telugu">Telugu</option>
+                <option value="Kannada">Kannada</option>
+                <option value="Malayalam">Malayalam</option>
+                <option value="Spanish">Spanish</option>
+              </select>
             </div>
             <div class="form-group" style="flex: 1.5; min-width: 150px;">
               <label for="demo-level">Level</label>
-              <input type="text" id="demo-level" class="form-control" placeholder="e.g. Beginner/Intermediate">
+              <select id="demo-level" class="form-control" required>
+                <option value="Beginner" selected>Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Not Sure">Not Sure</option>
+              </select>
             </div>
           </div>
 
-          <!-- Row 4: Class Outcomes -->
-          <div class="form-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
-            <div class="form-group" style="flex: 1; min-width: 120px;">
-              <label for="demo-revision">Revision Required?</label>
-              <input type="text" id="demo-revision" class="form-control" placeholder="e.g. Yes/No">
-            </div>
-            <div class="form-group" style="flex: 2; min-width: 200px;">
-              <label for="demo-topic-start">Topic To Start</label>
-              <input type="text" id="demo-topic-start" class="form-control" placeholder="e.g. Basics, Openings">
-            </div>
-          </div>
-
-          <!-- Row 5: Notes -->
-          <div class="form-group" style="margin-bottom: 15px;">
-            <label for="demo-feedback">Feedback & Notes</label>
-            <textarea id="demo-feedback" class="form-control" style="resize:vertical; min-height:80px;" placeholder="Add class outcome notes..."></textarea>
-          </div>
-
-          <!-- Row 6: Sales Note -->
+          <!-- Row 4: Sales Note -->
           <div class="form-group" style="margin-bottom: 15px;">
             <label for="demo-sales-note">Sales Note (One Line - Invisible to Tutors)</label>
             <input type="text" id="demo-sales-note" class="form-control" placeholder="Add custom sales-only notes here...">
