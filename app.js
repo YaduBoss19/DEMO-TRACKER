@@ -1862,11 +1862,16 @@ function renderDemosTable() {
       </tr>
     `;
 
-    const tutorDemos = demos.filter(d => d.tutorId === state.currentUser.id);
+    const tutorDemos = demos.filter(d => {
+      if (d.tutorId === state.currentUser.id) return true;
+      const isUnassigned = !d.tutorId || d.tutorId === "" || d.tutorName === "Unassigned" || d.tutorName === "" || !d.tutorName;
+      const isNotCancelled = (d.status || "").toUpperCase() !== "CANCELLED";
+      return isUnassigned && isNotCancelled;
+    });
 
     body.innerHTML = "";
     if (tutorDemos.length === 0) {
-      body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px;">No demos scheduled for you this month.</td></tr>`;
       return;
     }
 
@@ -1939,6 +1944,35 @@ function renderDemosTable() {
         const raw = demo.zoomLink || (tutor && tutor.zoomLink) || getZoomLinkForSlot(demo.slot);
         zoomLink = formatZoomStartLink(raw);
       }
+
+      const isDemoUnassigned = !demo.tutorId || demo.tutorId === "" || demo.tutorName === "Unassigned" || demo.tutorName === "" || !demo.tutorName;
+      
+      let statusHtml = "";
+      let actionHtml = "";
+      if (isDemoUnassigned) {
+        statusHtml = `<span style="background: rgba(236, 112, 99, 0.15); color: #f1948a; border: 1.5px solid rgba(236, 112, 99, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">Open Pool</span>`;
+        actionHtml = `
+          <button class="btn btn-sm claim-demo-btn" data-id="${demo.id}" style="background-color: var(--brand-secondary); color: #0c0f17; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; border: none; cursor: pointer; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            🙋‍♂️ Claim Demo
+          </button>
+        `;
+      } else {
+        statusHtml = `
+          <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
+            ${tutorStatusOptions}
+          </select>
+        `;
+        actionHtml = `
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
+              🟢 Start Class
+            </a>
+            <button class="btn btn-sm tutor-remind-btn" data-id="${demo.id}" style="background-color:#e07a5f; color:white; font-weight:bold; padding:4px 8px; border-radius:6px; font-size:0.72rem; border:none; cursor:pointer;" title="Send Reminder to Student">
+              ⏰ Remind
+            </button>
+          </div>
+        `;
+      }
       
       tr.innerHTML = `
         <td><strong>${idx + 1}</strong></td>
@@ -1950,21 +1984,8 @@ function renderDemosTable() {
         <td>${demo.language}</td>
         <td>${demo.level || '-'}</td>
         <td>${noteText}</td>
-        <td>
-          <select class="status-pill-select ${statusClass} tutor-status-select" data-id="${demo.id}">
-            ${tutorStatusOptions}
-          </select>
-        </td>
-        <td style="white-space: nowrap;">
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
-              🟢 Start Class
-            </a>
-            <button class="btn btn-sm tutor-remind-btn" data-id="${demo.id}" style="background-color:#e07a5f; color:white; font-weight:bold; padding:4px 8px; border-radius:6px; font-size:0.72rem; border:none; cursor:pointer;" title="Send Reminder to Student">
-              ⏰ Remind
-            </button>
-          </div>
-        </td>
+        <td>${statusHtml}</td>
+        <td style="white-space: nowrap;">${actionHtml}</td>
       `;
       body.appendChild(tr);
     });
@@ -4242,6 +4263,9 @@ function initEventListeners() {
     if (target.classList.contains("reminder-demo-btn-el") || target.classList.contains("tutor-remind-btn")) {
       openReminderModal(target.dataset.id);
     }
+    if (target.classList.contains("claim-demo-btn")) {
+      claimDemo(target.dataset.id);
+    }
 
     if (target.classList.contains("row-move-up-btn")) {
       e.preventDefault();
@@ -5340,4 +5364,31 @@ function openReminderModal(demoId) {
       }, 800);
     });
   });
+}
+
+async function claimDemo(demoId) {
+  const demo = state.demos.find(d => d.id === demoId);
+  if (!demo) return;
+
+  const tutor = state.tutors.find(t => t.id === state.currentUser.id);
+  if (!tutor) return;
+
+  if (confirm(`Do you want to claim the demo class for student ${demo.studentName}?`)) {
+    demo.tutorId = tutor.id;
+    demo.tutorName = tutor.name;
+    demo.tutorid = tutor.id;
+    demo.tutorname = tutor.name;
+
+    // Save to local storage
+    saveToLocalStorage();
+
+    // Sync database
+    const success = await writeToSheets("updateDemo", demo);
+    if (success) {
+      showToast("Demo claimed successfully!");
+      updateViews();
+    } else {
+      showToast("Failed to claim demo on server.", "error");
+    }
+  }
 }
