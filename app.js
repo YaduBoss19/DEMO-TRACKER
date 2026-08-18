@@ -1760,12 +1760,14 @@ function renderDemosTable() {
       }
       slotSelectHtml += `</select>`;
 
+      const isClaimed = demo.tutorId && demo.tutorId !== "" && demo.tutorName !== "Unassigned";
+
       // Build inline Tutor dropdown select
-      let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px;">`;
-      tutorSelectHtml += `<option value="" ${(demo.tutorId === "" || !demo.tutorId || demo.tutorName === "Unassigned") ? 'selected' : ''}>-- Unassigned --</option>`;
+      let tutorSelectHtml = `<select class="inline-tutor-select" data-id="${demo.id}" style="width:125px; border-color: ${isClaimed ? '#22c55e' : '#f59e0b'}; background: ${isClaimed ? 'rgba(34,197,94,0.05)' : 'rgba(245,158,11,0.05)'}; color: ${isClaimed ? '#22c55e' : '#f59e0b'}; font-weight: bold; font-size: 0.8rem;">`;
+      tutorSelectHtml += `<option value="" ${(demo.tutorId === "" || !demo.tutorId || demo.tutorName === "Unassigned") ? 'selected' : ''} style="background:#1e293b; color:#ffffff;">-- Unassigned --</option>`;
       state.tutors.forEach(t => {
         if (t.role === "tutor" || !t.role) {
-          tutorSelectHtml += `<option value="${t.id}" ${demo.tutorId === t.id ? 'selected' : ''}>${t.name}</option>`;
+          tutorSelectHtml += `<option value="${t.id}" ${demo.tutorId === t.id ? 'selected' : ''} style="background:#1e293b; color:#ffffff;">${t.name}</option>`;
         }
       });
       tutorSelectHtml += `</select>`;
@@ -1805,7 +1807,12 @@ function renderDemosTable() {
             </div>
           </td>
           <td><div style="display:flex; align-items:center; gap:5px;">${slotSelectHtml} <a href="${zoomLink}" target="_blank" style="font-size:1.1rem;" title="Click to join class">🔗</a></div></td>
-          <td>${tutorSelectHtml}</td>
+          <td>
+            ${tutorSelectHtml}
+            <div style="margin-top: 4px; font-size: 0.62rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 3px; border-radius: 4px; padding: 2px 4px; text-transform: uppercase; background: ${isClaimed ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}; color: ${isClaimed ? '#22c55e' : '#f59e0b'}; border: 1px solid ${isClaimed ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'};">
+              ${isClaimed ? '✅ Confirmed' : '⏳ Unclaimed'}
+            </div>
+          </td>
           <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
           <td>
             <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
@@ -4174,6 +4181,33 @@ function initEventListeners() {
   });
 
   document.getElementById("add-demo-btn")?.addEventListener("click", () => openDemoModal());
+  document.getElementById("quick-add-row-btn")?.addEventListener("click", async () => {
+    const newDemo = {
+      id: `demo_${Date.now()}`,
+      tutorId: "",
+      tutorName: "Unassigned",
+      studentName: "",
+      date: new Date().toISOString().split('T')[0],
+      time: "12:00 PM",
+      slot: "Slot 1",
+      status: "DEMO NOT DONE",
+      age: "-",
+      language: "English",
+      agentName: "Admin",
+      location: "-",
+      mobileNumber: "-",
+      level: "Beginner",
+      feedback: "",
+      revision: "-",
+      topicToStart: "-",
+      agentNote: ""
+    };
+    state.demos.unshift(newDemo);
+    saveToLocalStorage();
+    renderDemosTable();
+    showToast("Blank row added! Type details inline to edit.");
+    await writeToSheets("addDemo", newDemo);
+  });
   document.getElementById("admin-add-slab-btn")?.addEventListener("click", () => openSlabModal());
   document.getElementById("admin-add-tutor-btn")?.addEventListener("click", () => openTutorModal());
 
