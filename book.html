@@ -410,7 +410,7 @@
     }
 
     /* Responsive */
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
       .booking-card {
         padding: 25px 20px;
       }
@@ -418,6 +418,15 @@
         flex-direction: column;
         gap: 18px;
       }
+    }
+
+    .form-control:-webkit-autofill,
+    .form-control:-webkit-autofill:hover, 
+    .form-control:-webkit-autofill:focus, 
+    .form-control:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 30px #1a1e29 inset !important;
+      -webkit-text-fill-color: #ffffff !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
     .calendar-grid-table td {
       padding: 6px 4px !important;
@@ -624,7 +633,7 @@
   <div class="page-header" style="text-align: center; margin-bottom: 25px; z-index: 10; position: relative; width: 100%; max-width: 1200px;">
     <div class="logo-container" id="logo-slot" style="margin: 0 auto 10px auto; width: 80px; height: 80px;"></div>
     <h1 class="title" id="company-name" style="font-family: var(--font-outfit); font-size: 2rem; font-weight: 800; color: #ffffff;">Eight Times Eight Chess Academy</h1>
-    <p class="subtitle" style="font-size: 0.95rem; color: var(--text-muted); margin-top: 5px; text-align: center; margin-left: auto; margin-right: auto; width: 100%;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
+    <p class="subtitle" style="font-size: 0.95rem; color: rgba(255,255,255,0.6) !important; margin-top: 5px; text-align: center; margin-left: auto; margin-right: auto; width: 100%;">Weekly Scheduler - Select an available slot to book a free trial demo lesson.</p>
   </div>
 
   <!-- Large Full-Width Calendar Wrapper -->

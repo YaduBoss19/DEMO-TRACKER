@@ -902,7 +902,7 @@ header {
 }
 
 .login-subtitle {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6) !important;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -934,7 +934,7 @@ header {
 .login-label {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.9) !important;
   letter-spacing: 0.02em;
 }
 
@@ -993,7 +993,7 @@ header {
 
 .login-footer-text {
   font-size: 0.7rem;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.4) !important;
   text-align: center;
   margin-top: 16px;
   z-index: 10;
@@ -1134,6 +1134,9 @@ header {
   transform: translateY(-20px);
   transition: var(--transition-smooth);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh; /* Don't overflow the viewport height */
 }
 
 .modal-backdrop.open .modal-content {
@@ -1146,6 +1149,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -1164,15 +1168,17 @@ header {
 
 .modal-body {
   padding: 20px;
+  overflow-y: auto; /* Enable scroll inside the modal content */
 }
 
 .modal-footer {
   padding: 14px 20px;
   border-top: 1px solid var(--border-color);
-  background-color: #f9fafb;
+  background-color: var(--card-bg);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* Switch styling */
@@ -1428,13 +1434,22 @@ input:checked + .slider-toggle:before {
   }
   .nav-menu {
     flex-direction: row !important;
-    flex-wrap: wrap;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+    justify-content: flex-start !important;
+    width: 100%;
     gap: 6px;
-    justify-content: center;
+  }
+  .nav-menu::-webkit-scrollbar {
+    display: none;
   }
   .nav-item, .nav-item-external {
     padding: 6px 12px;
     font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   main {
     padding: 15px;
@@ -1455,5 +1470,18 @@ input:checked + .slider-toggle:before {
     flex-grow: 1;
     width: auto !important;
   }
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+}
+
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover, 
+.form-control:-webkit-autofill:focus, 
+.form-control:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--surface-color) inset !important;
+  -webkit-text-fill-color: var(--text-main) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
