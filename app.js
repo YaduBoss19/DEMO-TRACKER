@@ -1991,9 +1991,6 @@ function renderDemosTable() {
             <a href="${zoomLink}" target="_blank" class="btn btn-sm" style="background-color:#22c55e; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:4px; border:none; box-shadow:0 2px 4px rgba(34,197,94,0.2); transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Start Zoom Class">
               🟢 Start Class
             </a>
-            <button class="btn btn-sm tutor-remind-btn" data-id="${demo.id}" style="background-color:#e07a5f; color:white; font-weight:bold; padding:4px 8px; border-radius:6px; font-size:0.72rem; border:none; cursor:pointer;" title="Send Reminder to Student">
-              ⏰ Remind
-            </button>
           </div>
         `;
       }

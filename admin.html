@@ -372,14 +372,10 @@
               <p style="color:var(--text-muted); font-size:0.82rem; margin-top:2px;">Central database log containing tutor sessions</p>
             </div>
             <div style="display:flex; gap:10px;">
-              <input type="file" id="demo-file-input" accept=".csv, .xlsx, .xls" style="display:none;">
               <button class="btn" id="copy-booking-link-btn" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);">🔗 Copy Booking Link</button>
-              <button class="btn" id="bulk-import-btn">Bulk Import Demos</button>
-              <button class="btn" id="download-template-btn" style="background-color: var(--brand-secondary); color: white;">📥 Get Import Template</button>
               <button class="btn" id="export-demos-btn">Export to Excel</button>
               <button class="btn btn-danger" id="bulk-delete-btn" style="display:none;">🗑️ Delete Selected (0)</button>
               <button class="btn btn-primary" id="add-demo-btn">+ Add Demo</button>
-              <button class="btn" id="quick-add-row-btn" style="background-color: var(--color-success); color: white; border: none;">➕ Quick Add Row</button>
             </div>
           </div>
 
@@ -407,6 +403,13 @@
                 <!-- Javascript fills table -->
               </thead>
               <tbody id="demos-table-body"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="13" style="text-align: center; padding: 15px; background: rgba(0,0,0,0.01);">
+                    <button class="btn" id="quick-add-row-btn" style="background-color: var(--color-success); color: white; border: none; padding: 8px 20px; font-weight: bold; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">➕ Quick Add Row</button>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>

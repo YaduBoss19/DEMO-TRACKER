@@ -1047,6 +1047,43 @@ header {
   border-color: var(--brand-secondary);
 }
 
+.inline-date-input,
+.inline-time-input,
+.inline-student-input,
+.inline-mobile-input,
+.inline-language-input,
+.inline-level-input,
+.inline-tutor-select,
+.inline-agent-select,
+.inline-slot-select,
+.admin-status-select {
+  border: 1.5px solid #cbd5e1 !important; /* clear visible border */
+  background-color: #f8fafc !important; /* light slate background */
+  color: #0f172a !important; /* high-contrast dark text */
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  outline: none !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.inline-date-input:focus,
+.inline-time-input:focus,
+.inline-student-input:focus,
+.inline-mobile-input:focus,
+.inline-language-input:focus,
+.inline-level-input:focus,
+.inline-tutor-select:focus,
+.inline-agent-select:focus,
+.inline-slot-select:focus,
+.admin-status-select:focus {
+  border-color: var(--brand-secondary) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(224, 122, 95, 0.2) !important;
+  background-color: #ffffff !important;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
