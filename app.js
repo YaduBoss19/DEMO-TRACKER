@@ -1698,6 +1698,11 @@ function renderDemosTable() {
   
   if (!head || !body) return;
 
+  // UX Guard: Don't overwrite if user is actively focusing an input/select field inside the demos table
+  if (document.activeElement && document.activeElement.closest && document.activeElement.closest("#demos-table")) {
+    return;
+  }
+
   const isTutor = isTutorPage;
   const demos = getFilteredDemosByRange();
 
@@ -1853,6 +1858,7 @@ function renderDemosTable() {
             <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
             <button class="action-btn share-demo-btn-el" data-id="${demo.id}" title="Share Invite on WhatsApp" style="background-color: #25d366; color: white;">💬</button>
             <button class="action-btn reminder-demo-btn-el" data-id="${demo.id}" title="Send/Copy 1-Hour Reminder" style="background-color: #e07a5f; color: white;">⏰</button>
+            <button class="action-btn edit-feedback-btn" data-id="${demo.id}" title="View/Edit Tutor Notes & Feedback" style="background-color: #3b82f6; color: white;">📝</button>
           </td>
         `;
       body.appendChild(tr);
@@ -2833,6 +2839,7 @@ function openTutorModal(tutorId = null) {
       document.getElementById("tutor-form-languages").value = languages;
       document.getElementById("tutor-form-phone").value = phone;
       document.getElementById("tutor-form-role").value = tutor.role || "tutor";
+      document.getElementById("tutor-form-status").value = tutor.status || "ACTIVE";
     }
   } else {
     title.textContent = "Add User Profile";
@@ -2840,6 +2847,7 @@ function openTutorModal(tutorId = null) {
     document.getElementById("tutor-form-languages").value = "English";
     document.getElementById("tutor-form-phone").value = "";
     document.getElementById("tutor-form-role").value = "tutor";
+    document.getElementById("tutor-form-status").value = "ACTIVE";
   }
   modal.classList.add("open");
 }
@@ -2852,10 +2860,11 @@ async function handleTutorSubmit(e) {
   const role = document.getElementById("tutor-form-role").value;
   const languages = document.getElementById("tutor-form-languages").value.trim();
   const phone = document.getElementById("tutor-form-phone").value.trim();
+  const status = document.getElementById("tutor-form-status").value;
   const dbEmail = phone ? `${languages} | ${phone}` : languages;
 
   const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
-  const tutorData = { name, accessCode, role, avatar, email: dbEmail };
+  const tutorData = { name, accessCode, role, avatar, email: dbEmail, status };
 
   if (id) {
     const idx = state.tutors.findIndex(t => t.id === id);
@@ -5185,6 +5194,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     }, 6000);
+    // Sidebar toggle click listener
+    document.getElementById("sidebar-toggle-btn")?.addEventListener("click", () => {
+      document.body.classList.toggle("sidebar-collapsed");
+      localStorage.setItem("sidebarCollapsed", document.body.classList.contains("sidebar-collapsed"));
+    });
+    if (localStorage.getItem("sidebarCollapsed") === "true") {
+      document.body.classList.add("sidebar-collapsed");
+    }
   } else {
     // Require Login
     document.getElementById("login-screen").style.display = "flex";

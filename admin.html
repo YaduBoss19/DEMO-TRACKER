@@ -166,9 +166,12 @@
     <main>
       
       <header>
-        <div class="header-title-area">
-          <h1 id="main-header-title">Welcome back, Admin</h1>
-          <p id="main-header-subtitle">Academy Dashboard Overview</p>
+        <div class="header-title-area" style="display: flex; align-items: center; gap: 12px;">
+          <button type="button" id="sidebar-toggle-btn" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: bold;" title="Collapse/Expand Sidebar">☰</button>
+          <div>
+            <h1 id="main-header-title" style="margin: 0;">Welcome back, Admin</h1>
+            <p id="main-header-subtitle" style="margin: 2px 0 0 0;">Academy Dashboard Overview</p>
+          </div>
         </div>
         
         <div style="display: flex; align-items: center; gap: 16px;">
@@ -785,6 +788,13 @@
               <option value="sales">Sales</option>
               <option value="demo_manager">Demo Manager</option>
               <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label for="tutor-form-status">Status / Availability</label>
+            <select id="tutor-form-status" class="form-control">
+              <option value="ACTIVE">Active (Available)</option>
+              <option value="UNAVAILABLE">Unavailable / Inactive</option>
             </select>
           </div>
         </div>

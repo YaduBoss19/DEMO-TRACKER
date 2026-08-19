@@ -646,6 +646,12 @@
       <span id="current-week-label" style="font-weight: 700; font-size: 1.05rem; color: #ffffff;">Loading Week...</span>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Tutor:</span>
+          <select id="tutor-filter" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+            <option value="ALL" style="background: #111827; color: #ffffff;" selected>All Tutors</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Language:</span>
           <select id="language-filter" style="background: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1.5px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
             <option value="ALL" style="background: #111827; color: #ffffff;" selected>All Languages</option>
@@ -1050,8 +1056,18 @@
           const weeklySlotId = `${dayKey}_slot_${timeIdx}`;
           const slotName = `Slot ${timeIdx + 1}`;
 
-          // Find tutors available for this slot ID and filter by language if selected
+           // Find tutors available for this slot ID and filter by language if selected
           let availableTutors = tutors.filter(t => t.availability && t.availability.includes(weeklySlotId));
+          
+          // Exclude UNAVAILABLE tutors
+          availableTutors = availableTutors.filter(t => (t.status || "ACTIVE") === "ACTIVE");
+
+          // Filter by selected tutor
+          const tutorFilter = document.getElementById("tutor-filter")?.value || "ALL";
+          if (tutorFilter !== "ALL") {
+            availableTutors = availableTutors.filter(t => t.id === tutorFilter);
+          }
+
           const langFilter = document.getElementById("language-filter")?.value || "ALL";
           if (langFilter !== "ALL") {
             availableTutors = availableTutors.filter(t => {
@@ -1275,6 +1291,10 @@
       renderTimetableGrid();
     });
 
+    document.getElementById("tutor-filter")?.addEventListener("change", () => {
+      renderTimetableGrid();
+    });
+
     document.getElementById("fullscreen-btn")?.addEventListener("click", () => {
       const container = document.querySelector(".calendar-layout-wide");
       const btn = document.getElementById("fullscreen-btn");
@@ -1433,7 +1453,25 @@
       // 4. Always apply final branding configurations and re-render grid
       applyBranding();
       populateSalesDropdowns();
+      populateTutorsFilter();
       renderTimetableGrid();
+    }
+
+    // Dynamic dropdown populator for Tutor wise availability selector
+    function populateTutorsFilter() {
+      const filter = document.getElementById("tutor-filter");
+      if (!filter) return;
+      
+      filter.innerHTML = '<option value="ALL" style="background: #111827; color: #ffffff;" selected>All Tutors</option>';
+      const activeTutors = (window.tutorsList || []).filter(t => (t.status || "ACTIVE") === "ACTIVE");
+      activeTutors.forEach(t => {
+        const op = document.createElement("option");
+        op.value = t.id;
+        op.textContent = t.name;
+        op.style.background = "#111827";
+        op.style.color = "#ffffff";
+        filter.appendChild(op);
+      });
     }
 
     // Dynamic dropdown populator for Agent name selector

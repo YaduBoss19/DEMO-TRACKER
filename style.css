@@ -1522,3 +1522,35 @@ input:checked + .slider-toggle:before {
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/* Sidebar collapsed layouts */
+body.sidebar-collapsed aside {
+  display: none !important;
+}
+body.sidebar-collapsed main {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Prevent table cell line breaks for single-row layout */
+#demos-table td, #demos-table th {
+  white-space: nowrap !important;
+}
+
+/* Clear visible styling for text toggle buttons & inputs */
+.timezone-toggle-btn, .ampm-toggle-btn {
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 0.72rem !important;
+}
+
+.filter-input, .filter-select {
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
