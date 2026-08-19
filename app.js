@@ -1028,17 +1028,37 @@ async function sendBackgroundWhatsApp(to, body) {
 function parseDateString(dateStr) {
   if (!dateStr) return new Date(0);
   const clean = String(dateStr).trim();
+  
   // Try standard parsing
   let d = new Date(clean);
   if (!isNaN(d.getTime())) return d;
   
-  // Handle custom formats like "15 Jul 26" or "15 July 2026"
   const parts = clean.split(/[^a-zA-Z0-9]/).filter(Boolean);
   if (parts.length >= 3) {
+    const p0 = parseInt(parts[0]);
+    const p1 = parseInt(parts[1]);
+    const p2 = parseInt(parts[2]);
+    
+    // If it's pure numbers, e.g. "17-08-2026" or "2026-08-17"
+    if (!isNaN(p0) && !isNaN(p1) && !isNaN(p2)) {
+      if (parts[2].length === 4 || p2 > 31) {
+        // format is DD-MM-YYYY
+        let year = p2;
+        if (year < 100) year += 2000;
+        return new Date(year, p1 - 1, p0);
+      } else if (parts[0].length === 4 || p0 > 31) {
+        // format is YYYY-MM-DD
+        let year = p0;
+        if (year < 100) year += 2000;
+        return new Date(year, p1 - 1, p2);
+      }
+    }
+    
+    // Fallback to month text abbreviations (e.g. "15 Jul 26")
     const day = parseInt(parts[0]);
     const monthStr = parts[1].toLowerCase();
     let year = parseInt(parts[2]);
-    if (year < 100) year += 2000; // e.g. 26 -> 2026
+    if (year < 100) year += 2000;
     
     const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
     let monthIdx = -1;
@@ -1120,8 +1140,14 @@ function getFilteredDemosByRange() {
     list = getMonthYearFilteredDemos();
   }
   
-  // Sort chronologically by date and time automatically
-  return list.sort((a, b) => getDemoDateTimeObject(a).getTime() - getDemoDateTimeObject(b).getTime());
+  // Sort chronologically by date and time, but float draft/newly added rows (studentName is blank) to the top!
+  return list.sort((a, b) => {
+    const aDraft = !a.studentName || a.studentName.trim() === "";
+    const bDraft = !b.studentName || b.studentName.trim() === "";
+    if (aDraft && !bDraft) return -1;
+    if (!aDraft && bDraft) return 1;
+    return getDemoDateTimeObject(a).getTime() - getDemoDateTimeObject(b).getTime();
+  });
 }
 
 function calculateTutorMetrics(tutorId, demosList = getMonthYearFilteredDemos()) {
@@ -1685,16 +1711,11 @@ function renderDemosTable() {
         <th>SLOT NUMBER</th>
         <th>TUTOR NAME</th>
         <th>STUDENT NAME</th>
-        <th>DEMO STATUS</th>
-        <th>AGE</th>
-        <th>LANGUAGE</th>
-        <th>AGENT NAME</th>
-        <th>LOCATION</th>
         <th>MOBILE NUMBER</th>
+        <th>LANGUAGE</th>
         <th>LEVEL</th>
-        <th>feedback</th>
-        <th>REVISION</th>
-        <th>TOPIC TO START</th>
+        <th>AGENT NAME</th>
+        <th>DEMO STATUS</th>
         <th style="width:100px;">Actions</th>
       </tr>
     `;
@@ -1814,6 +1835,10 @@ function renderDemosTable() {
             </div>
           </td>
           <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td>${agentSelectHtml}</td>
           <td>
             <select class="status-pill-select ${statusClass} admin-status-select" data-id="${demo.id}">
               <option value="DEMO NOT DONE" ${st === 'DEMO NOT DONE' ? 'selected' : ''}>DEMO NOT DONE</option>
@@ -1823,22 +1848,13 @@ function renderDemosTable() {
               <option value="RESCHEDULE" ${st === 'RESCHEDULE' ? 'selected' : ''}>RESCHEDULE</option>
             </select>
           </td>
-          <td><input type="text" class="inline-age-input" data-id="${demo.id}" value="${demo.age !== '-' ? demo.age : ''}" style="width:40px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-          <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-          <td>${agentSelectHtml}</td>
-          <td><input type="text" class="inline-location-input" data-id="${demo.id}" value="${demo.location !== '-' ? demo.location : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-          <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-          <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-          <td>${feedbackMarkup}</td>
-          <td><input type="text" class="inline-revision-input" data-id="${demo.id}" value="${demo.revision !== '-' ? demo.revision : ''}" style="width:75px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td><input type="text" class="inline-topic-input" data-id="${demo.id}" value="${demo.topicToStart !== '-' ? demo.topicToStart : ''}" style="width:115px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
-        <td>
-          <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
-          <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
-          <button class="action-btn share-demo-btn-el" data-id="${demo.id}" title="Share Invite on WhatsApp" style="background-color: #25d366; color: white;">💬</button>
-          <button class="action-btn reminder-demo-btn-el" data-id="${demo.id}" title="Send/Copy 1-Hour Reminder" style="background-color: #e07a5f; color: white;">⏰</button>
-        </td>
-      `;
+          <td>
+            <button class="action-btn edit-demo-btn-el" data-id="${demo.id}" title="Edit Demo">✏️</button>
+            <button class="action-btn delete delete-demo-btn-el" data-id="${demo.id}" title="Delete Demo">🗑️</button>
+            <button class="action-btn share-demo-btn-el" data-id="${demo.id}" title="Share Invite on WhatsApp" style="background-color: #25d366; color: white;">💬</button>
+            <button class="action-btn reminder-demo-btn-el" data-id="${demo.id}" title="Send/Copy 1-Hour Reminder" style="background-color: #e07a5f; color: white;">⏰</button>
+          </td>
+        `;
       body.appendChild(tr);
     });
 
