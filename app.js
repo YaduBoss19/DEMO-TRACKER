@@ -365,8 +365,8 @@ async function writeToSupabase(action, payload) {
       case "addDemo":
         const demoAddPayload = {
           id: payload.id,
-          tutorId: payload.tutorId,
-          tutorid: payload.tutorId,
+          tutorId: (payload.tutorId === "Unassigned" || payload.tutorId === "") ? null : payload.tutorId,
+          tutorid: (payload.tutorId === "Unassigned" || payload.tutorId === "") ? null : payload.tutorId,
           tutorName: payload.tutorName,
           tutorname: payload.tutorName,
           studentName: payload.studentName,
@@ -409,8 +409,8 @@ async function writeToSupabase(action, payload) {
       case "updateDemo":
         const demoUpPayload = {
           id: payload.id,
-          tutorId: payload.tutorId,
-          tutorid: payload.tutorId,
+          tutorId: (payload.tutorId === "Unassigned" || payload.tutorId === "") ? null : payload.tutorId,
+          tutorid: (payload.tutorId === "Unassigned" || payload.tutorId === "") ? null : payload.tutorId,
           tutorName: payload.tutorName,
           tutorname: payload.tutorName,
           studentName: payload.studentName,
@@ -1840,8 +1840,13 @@ function renderDemosTable() {
               ${isClaimed ? '✅ Confirmed' : '⏳ Unclaimed'}
             </div>
           </td>
-          <td><input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);"></td>
-          <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:105px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
+          <td>
+            <input type="text" class="inline-student-input" data-id="${demo.id}" value="${demo.studentName || ''}" style="width:110px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-weight:bold; font-family:var(--font-main);">
+            <div style="font-size: 0.68rem; color: #475569; margin-top: 3px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; font-weight: 500;" title="${demo.feedback || 'No feedback yet'}">
+              📝 ${demo.feedback || 'No feedback'}
+            </div>
+          </td>
+          <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:135px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
           <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
           <td><input type="text" class="inline-level-input" data-id="${demo.id}" value="${demo.level !== '-' ? demo.level : ''}" style="width:90px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
           <td>${agentSelectHtml}</td>
@@ -4491,12 +4496,16 @@ function initEventListeners() {
 
   document.getElementById("add-demo-btn")?.addEventListener("click", () => openDemoModal());
   document.getElementById("quick-add-row-btn")?.addEventListener("click", async () => {
+    const year = state.selectedYear;
+    const month = String(state.selectedMonth + 1).padStart(2, "0");
+    const dateStr = `${year}-${month}-01`;
+
     const newDemo = {
       id: `demo_${Date.now()}`,
-      tutorId: "",
+      tutorId: null,
       tutorName: "Unassigned",
       studentName: "",
-      date: new Date().toISOString().split('T')[0],
+      date: dateStr,
       time: "12:00 PM",
       slot: "Slot 1",
       status: "DEMO NOT DONE",

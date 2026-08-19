@@ -1176,6 +1176,13 @@ header {
   max-height: 90vh; /* Don't overflow the viewport height */
 }
 
+.modal-content form {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  flex-grow: 1 !important;
+}
+
 .modal-backdrop.open .modal-content {
   transform: translateY(0);
 }
