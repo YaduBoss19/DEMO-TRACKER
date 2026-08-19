@@ -1554,3 +1554,21 @@ body.sidebar-collapsed main {
   color: #0f172a !important;
 }
 
+/* Custom class states for slots */
+.calendar-cell.class-group {
+  background-color: rgba(245, 158, 11, 0.12) !important; /* light orange */
+  color: #d97706 !important; /* dark orange text */
+  border: 1.5px solid rgba(245, 158, 11, 0.4) !important;
+  font-weight: bold;
+}
+.calendar-cell.class-private {
+  background-color: rgba(59, 130, 246, 0.12) !important; /* light blue */
+  color: #2563eb !important; /* dark blue text */
+  border: 1.5px solid rgba(59, 130, 246, 0.4) !important;
+  font-weight: bold;
+}
+.calendar-cell.working-time-slot {
+  border: 2.2px dashed var(--brand-secondary) !important;
+  background-color: rgba(224, 122, 95, 0.03) !important;
+}
+

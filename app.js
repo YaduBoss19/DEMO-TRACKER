@@ -1299,6 +1299,7 @@ function updateViews() {
   if (state.activeTab === "admin-slabs") renderAdminSlabs();
   if (state.activeTab === "admin-branding") renderAdminBranding();
   if (state.activeTab === "admin-tutors") renderAdminTutors();
+  if (state.activeTab === "admin-availability") renderAdminAvailability();
   if (state.activeTab === "admin-timetable") renderAdminTimetable();
   if (state.activeTab === "tutor-slots") renderTutorSlots();
 }
@@ -2488,6 +2489,12 @@ function renderAdminBranding() {
   const accessCodeEl = document.getElementById("sales-access-code-input");
   if (accessCodeEl) accessCodeEl.value = branding.themeColors.agentAccessCode || "AGENT123";
 
+  const workStartEl = document.getElementById("brand-work-start");
+  if (workStartEl) workStartEl.value = branding.workTimeStart || "10:00 AM";
+
+  const workEndEl = document.getElementById("brand-work-end");
+  if (workEndEl) workEndEl.value = branding.workTimeEnd || "10:00 PM";
+
   renderSettingsDropdownLists();
   renderSlotLinksSettingsTable();
 }
@@ -2543,6 +2550,233 @@ function renderAdminTimetable() {
     if (saveBtn) saveBtn.style.display = "inline-flex";
   }
 }
+
+// --- Helper: Parse Time String to Minutes from Midnight ---
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  const clean = timeStr.replace(/IST/i, "").replace(/GMT/i, "").trim().toUpperCase();
+  const match = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+  if (!match) return 0;
+  let hrs = parseInt(match[1]);
+  const mins = parseInt(match[2]);
+  const ampm = match[3];
+  if (ampm === "PM" && hrs < 12) hrs += 12;
+  if (ampm === "AM" && hrs === 12) hrs = 0;
+  return hrs * 60 + mins;
+}
+
+// --- VIEW: ADMIN TUTORS AVAILABILITY MATRIX ---
+let adminAvailWeekStart = (() => {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - today.getDay());
+  start.setHours(0, 0, 0, 0);
+  return start;
+})();
+
+function renderAdminAvailability() {
+  const tbody = document.getElementById("admin-avail-grid-body");
+  const headerTr = document.getElementById("admin-avail-grid-header");
+  const weekLabel = document.getElementById("admin-avail-week-label");
+  if (!tbody || !headerTr || !weekLabel) return;
+
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(adminAvailWeekStart);
+    d.setDate(adminAvailWeekStart.getDate() + i + 1); // Monday is i+1 since Sunday is start
+    dates.push(d);
+  }
+
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  weekLabel.textContent = `${months[dates[0].getMonth()]} ${dates[0].getDate()} - ${months[dates[6].getMonth()]} ${dates[6].getDate()}, ${dates[0].getFullYear()}`;
+
+  const daysStr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  headerTr.innerHTML = `<th style="width: 120px; text-align: left; padding-left: 15px;">Time</th>`;
+  dates.forEach((date, i) => {
+    const th = document.createElement("th");
+    th.innerHTML = `<div>${daysStr[i]} ${date.getDate()}</div>`;
+    headerTr.appendChild(th);
+  });
+
+  tbody.innerHTML = "";
+
+  const { slots, times, days } = generateWeeklySlots();
+
+  times.forEach((time, timeIdx) => {
+    if (timeIdx < 12) return; // Only show 6:00 AM onwards (timeIdx >= 12)
+    const tr = document.createElement("tr");
+
+    // Time label cell
+    const timeTd = document.createElement("td");
+    timeTd.style.textAlign = "left";
+    timeTd.style.paddingLeft = "15px";
+    timeTd.style.fontWeight = "bold";
+    timeTd.textContent = time;
+    tr.appendChild(timeTd);
+
+    // Day cells
+    dates.forEach((date, dayIdx) => {
+      const dayKey = daysStr[dayIdx].toLowerCase();
+      const slotId = `${dayKey}_slot_${timeIdx}`;
+      const colDateStr = date.toISOString().split('T')[0];
+
+      // Find tutors available or busy on this slot
+      const tutorsStatusList = [];
+
+      state.tutors.forEach(t => {
+        if ((t.status || "ACTIVE") !== "ACTIVE") return; // Skip unavailable tutors
+        
+        const availability = Array.isArray(t.availability) ? t.availability : [];
+        const slotEntry = availability.find(a => {
+          if (typeof a === "string") return a === slotId;
+          if (a && typeof a === "object") return a.slotId === slotId;
+          return false;
+        });
+
+        if (slotEntry) {
+          const entryType = (slotEntry && typeof slotEntry === "object") ? slotEntry.type : "available";
+          const entryLabel = (slotEntry && typeof slotEntry === "object") ? slotEntry.label : "";
+
+          if (entryType === "group" || entryType === "individual") {
+            // Busy with Class
+            tutorsStatusList.push({
+              name: t.name,
+              type: "class",
+              label: entryLabel || (entryType === "group" ? "Group" : "Private")
+            });
+          } else {
+            // Check if there is a scheduled demo in database on this date/time for this tutor
+            const slotName = `Slot ${timeIdx + 1}`;
+            const bookedDemo = state.demos.find(d => {
+              if (d.tutorId !== t.id) return false;
+              if (d.status === "Cancelled") return false;
+              return d.date === colDateStr && (d.time === time || d.slot === slotName);
+            });
+
+            if (bookedDemo) {
+              tutorsStatusList.push({
+                name: t.name,
+                type: "demo",
+                label: `Demo: ${bookedDemo.studentName}`
+              });
+            } else {
+              tutorsStatusList.push({
+                name: t.name,
+                type: "available",
+                label: ""
+              });
+            }
+          }
+        }
+      });
+
+      const td = document.createElement("td");
+      if (tutorsStatusList.length === 0) {
+        td.innerHTML = `<span style="color:var(--text-muted); opacity:0.5;">—</span>`;
+      } else {
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.flexDirection = "column";
+        wrapper.style.gap = "4px";
+
+        tutorsStatusList.forEach(item => {
+          const badge = document.createElement("div");
+          badge.style.fontSize = "0.72rem";
+          badge.style.fontWeight = "700";
+          badge.style.padding = "2px 6px";
+          badge.style.borderRadius = "4px";
+          badge.style.whiteSpace = "nowrap";
+          badge.style.display = "inline-flex";
+          badge.style.alignItems = "center";
+          badge.style.gap = "4px";
+
+          if (item.type === "available") {
+            badge.style.background = "rgba(34,197,94,0.12)";
+            badge.style.color = "#22c55e";
+            badge.style.border = "1px solid rgba(34,197,94,0.2)";
+            badge.innerHTML = `🟢 <strong>${item.name}</strong>`;
+          } else if (item.type === "demo") {
+            badge.style.background = "rgba(59,130,246,0.12)";
+            badge.style.color = "#3b82f6";
+            badge.style.border = "1px solid rgba(59,130,246,0.2)";
+            badge.innerHTML = `🔵 ${item.name} (${item.label})`;
+          } else {
+            badge.style.background = "rgba(245,158,11,0.12)";
+            badge.style.color = "#f59e0b";
+            badge.style.border = "1px solid rgba(245,158,11,0.2)";
+            badge.innerHTML = `🔴 ${item.name} [${item.label}]`;
+          }
+          wrapper.appendChild(badge);
+        });
+
+        td.appendChild(wrapper);
+      }
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Bind Tutor Slot Edit Modal listeners
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("tutor-slot-edit-status")?.addEventListener("change", (e) => {
+    const val = e.target.value;
+    const labelGroup = document.getElementById("tutor-slot-label-group");
+    if (labelGroup) {
+      labelGroup.style.display = (val === "GROUP" || val === "INDIVIDUAL") ? "block" : "none";
+    }
+  });
+
+  document.getElementById("tutor-slot-edit-close")?.addEventListener("click", () => document.getElementById("tutor-slot-edit-modal").classList.remove("open"));
+  document.getElementById("tutor-slot-edit-cancel")?.addEventListener("click", () => document.getElementById("tutor-slot-edit-modal").classList.remove("open"));
+
+  document.getElementById("tutor-slot-edit-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const slotId = document.getElementById("tutor-slot-edit-id").value;
+    const status = document.getElementById("tutor-slot-edit-status").value;
+    const label = document.getElementById("tutor-slot-edit-label").value.trim();
+
+    const tutor = state.tutors.find(t => t.id === state.currentUser.id);
+    if (!tutor) return;
+
+    let availability = Array.isArray(tutor.availability) ? tutor.availability : [];
+
+    // Filter out old entries for this slotId
+    availability = availability.filter(a => {
+      if (typeof a === "string") return a !== slotId;
+      if (a && typeof a === "object") return a.slotId !== slotId;
+      return true;
+    });
+
+    if (status !== "UNAVAILABLE") {
+      if (status === "AVAILABLE") {
+        availability.push({ slotId, type: "available", label: "" });
+      } else {
+        availability.push({ slotId, type: status.toLowerCase(), label });
+      }
+    }
+
+    tutor.availability = availability;
+    
+    document.getElementById("tutor-slot-edit-modal").classList.remove("open");
+    saveToLocalStorage();
+
+    const payload = {
+      ...tutor,
+      availability: JSON.stringify(availability)
+    };
+
+    const success = await writeToSheets("updateTutor", payload);
+    if (success) {
+      showToast("Slot updated and saved successfully!");
+    } else {
+      showToast("Saved locally. Database sync failed.", "warning");
+    }
+    
+    renderTutorSlots();
+  });
+});
 
 function renderTutorSlots() {
   const tbody = document.getElementById("tutor-slots-grid-body");
@@ -2611,42 +2845,81 @@ function renderTutorSlots() {
           }
         });
       } else {
-        // Green Color for Available
-        const isActive = availability.includes(slotId);
-        cell.className = `calendar-cell ${isActive ? 'active' : ''}`;
-        cell.innerHTML = isActive ? "Available ✓" : "Unavailable";
+        // Find if this slot has a detailed entry in availability
+        const slotEntry = availability.find(a => {
+          if (typeof a === "string") return a === slotId;
+          if (a && typeof a === "object") return a.slotId === slotId;
+          return false;
+        });
+
+        const hasEntry = !!slotEntry;
+        const entryType = (slotEntry && typeof slotEntry === "object") ? slotEntry.type : (hasEntry ? "available" : "unavailable");
+        const entryLabel = (slotEntry && typeof slotEntry === "object") ? slotEntry.label : "";
+
+        cell.className = "calendar-cell";
+        cell.dataset.slotId = slotId;
+
+        // Highlight "Official Work Time" if time is in state.timetable
+        const startVal = state.branding.workTimeStart || "10:00 AM";
+        const endVal = state.branding.workTimeEnd || "10:00 PM";
+        const startMinutes = parseTimeToMinutes(startVal);
+        const endMinutes = parseTimeToMinutes(endVal);
+        const currentMinutes = parseTimeToMinutes(time);
+        const isWorkingTime = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+        if (isWorkingTime) {
+          cell.classList.add("working-time-slot");
+        }
+
+        if (!hasEntry || entryType === "unavailable") {
+          cell.classList.add("inactive");
+          cell.innerHTML = "Unavailable";
+        } else if (entryType === "available") {
+          cell.classList.add("active"); // green
+          cell.innerHTML = "Available ✓";
+        } else if (entryType === "group") {
+          cell.classList.add("class-group"); // orange
+          cell.innerHTML = `👥 ${entryLabel || 'Group Class'}`;
+        } else if (entryType === "individual") {
+          cell.classList.add("class-private"); // blue
+          cell.innerHTML = `👤 ${entryLabel || 'Private Class'}`;
+        }
 
         cell.addEventListener("click", () => {
-          const currentlyActive = cell.classList.contains("active");
-          
-          if (currentlyActive) {
-            // Check 24 hour cancellation rule
+          // Check 24 hour cancellation rule if toggling to unavailable
+          if (hasEntry && entryType !== "unavailable") {
             if (isSlotWithin24Hours(day.key, time)) {
+              // Block if there is any scheduled demo for this tutor on this day and time
+              const hasBookedDemo = state.demos.some(d => {
+                if (d.tutorId !== state.currentUser.id) return false;
+                if (d.status === "Cancelled") return false;
+                const dDayKey = getDayKeyFromDateStr(d.date);
+                if (dDayKey !== day.key) return false;
+                const slotName = `Slot ${timeIdx + 1}`;
+                return d.time === time || d.slot === slotName;
+              });
+              if (hasBookedDemo) {
+                showToast("This slot cannot be removed because you have an active demo scheduled!", "error");
+                return;
+              }
               showToast("You cannot cancel availability for slots that start in less than 24 hours!", "error");
-              return;
-            }
-
-            // Tutor is trying to make this slot Unavailable (unchecking it)
-            // Block if there is any scheduled demo for this tutor on this day and time
-            const hasBookedDemo = state.demos.some(d => {
-              if (d.tutorId !== state.currentUser.id) return false;
-              if (d.status === "Cancelled") return false;
-              
-              const dDayKey = getDayKeyFromDateStr(d.date);
-              if (dDayKey !== day.key) return false;
-              
-              const slotName = `Slot ${timeIdx + 1}`;
-              return d.time === time || d.slot === slotName;
-            });
-            
-            if (hasBookedDemo) {
-              showToast("This slot cannot be removed because you have an active demo scheduled!", "error");
               return;
             }
           }
 
-          const active = cell.classList.toggle("active");
-          cell.innerHTML = active ? "Available ✓" : "Unavailable";
+          // Open Slot Edit Modal!
+          const modal = document.getElementById("tutor-slot-edit-modal");
+          if (!modal) return;
+
+          document.getElementById("tutor-slot-edit-id").value = slotId;
+          document.getElementById("tutor-slot-edit-status").value = entryType.toUpperCase();
+          document.getElementById("tutor-slot-edit-label").value = entryLabel;
+
+          const labelGroup = document.getElementById("tutor-slot-label-group");
+          if (labelGroup) {
+            labelGroup.style.display = (entryType === "group" || entryType === "individual") ? "block" : "none";
+          }
+
+          modal.classList.add("open");
         });
       }
 
@@ -3539,6 +3812,8 @@ async function handleBrandingSubmit(e) {
   const whatsappToken = document.getElementById("brand-whatsapp-token")?.value.trim() || "";
   const whatsappAdminNumber = document.getElementById("brand-whatsapp-test-num")?.value.trim() || "";
   const agentAccessCode = document.getElementById("agent-access-code-input")?.value.trim() || "AGENT123";
+  const workTimeStart = document.getElementById("brand-work-start")?.value.trim() || "10:00 AM";
+  const workTimeEnd = document.getElementById("brand-work-end")?.value.trim() || "10:00 PM";
 
   state.branding.companyName = name;
   state.branding.currency = currency;
@@ -3554,6 +3829,8 @@ async function handleBrandingSubmit(e) {
   state.branding.whatsappInstanceId = whatsappInstanceId;
   state.branding.whatsappToken = whatsappToken;
   state.branding.whatsappAdminNumber = whatsappAdminNumber;
+  state.branding.workTimeStart = workTimeStart;
+  state.branding.workTimeEnd = workTimeEnd;
 
   initSupabase();
 
@@ -3644,6 +3921,16 @@ function initEventListeners() {
     const monthEl = document.getElementById("date-switcher-month");
     if (monthEl) monthEl.textContent = `${months[state.selectedMonth]} ${state.selectedYear}`;
     updateViews();
+  });
+
+  document.getElementById("admin-avail-prev-week-btn")?.addEventListener("click", () => {
+    adminAvailWeekStart.setDate(adminAvailWeekStart.getDate() - 7);
+    renderAdminAvailability();
+  });
+
+  document.getElementById("admin-avail-next-week-btn")?.addEventListener("click", () => {
+    adminAvailWeekStart.setDate(adminAvailWeekStart.getDate() + 7);
+    renderAdminAvailability();
   });
 
   // Predictor
