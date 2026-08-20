@@ -839,16 +839,84 @@
     }
 
     // Call populator synchronously to load initial lists
+    window.leadsquaredLeadId = null;
     setTimeout(() => {
       populateSalesDropdowns();
       
-      // Pre-fill agent name from URL parameter ?agent=John
       const urlParams = new URLSearchParams(window.location.search);
+      
+      // Capture LeadSquared Lead ID
+      const leadId = urlParams.get('leadId') || urlParams.get('leadid');
+      if (leadId) {
+        window.leadsquaredLeadId = decodeURIComponent(leadId);
+      }
+
+      // Pre-fill agent name
       const agent = urlParams.get('agent');
       if (agent) {
         const selectEl = document.getElementById("agent-name");
         if (selectEl) {
           selectEl.value = decodeURIComponent(agent);
+        }
+      }
+
+      // Pre-fill and lock mobile number
+      const phone = urlParams.get('phone') || urlParams.get('mobile') || urlParams.get('number');
+      if (phone) {
+        const input = document.getElementById("mobile-number");
+        if (input) {
+          input.value = decodeURIComponent(phone);
+          input.setAttribute("readonly", "true");
+          input.style.backgroundColor = "rgba(255,255,255,0.05)";
+          input.style.color = "#94a3b8";
+        }
+      }
+
+      // Pre-fill and lock student name
+      const name = urlParams.get('studentName') || urlParams.get('name') || urlParams.get('studentname');
+      if (name) {
+        const input = document.getElementById("student-name");
+        if (input) {
+          input.value = decodeURIComponent(name);
+          input.setAttribute("readonly", "true");
+          input.style.backgroundColor = "rgba(255,255,255,0.05)";
+          input.style.color = "#94a3b8";
+        }
+      }
+
+      // Pre-fill age
+      const age = urlParams.get('age');
+      if (age) {
+        const input = document.getElementById("student-age");
+        if (input) {
+          input.value = decodeURIComponent(age);
+        }
+      }
+
+      // Pre-fill location
+      const loc = urlParams.get('location') || urlParams.get('city');
+      if (loc) {
+        const input = document.getElementById("student-location");
+        if (input) {
+          input.value = decodeURIComponent(loc);
+        }
+      }
+
+      // Pre-fill language
+      const lang = urlParams.get('language') || urlParams.get('lang');
+      if (lang) {
+        const select = document.getElementById("student-language");
+        if (select) {
+          select.value = decodeURIComponent(lang);
+        }
+      }
+
+      // Pre-fill level
+      const lvl = urlParams.get('level');
+      if (lvl) {
+        const select = document.getElementById("student-level");
+        if (select) {
+          select.value = decodeURIComponent(lvl);
         }
       }
     }, 0);
@@ -1536,7 +1604,9 @@
         level: level,
         feedback: "",
         revision: "-",
-        topicToStart: "-"
+        topicToStart: "-",
+        leadsquared_lead_id: window.leadsquaredLeadId || null,
+        leadsquared_sync_status: "Pending"
       };
 
       const success = await writeToDatabase("addDemo", demoPayload);
@@ -1782,7 +1852,11 @@
             feedback: payload.feedback || "",
             revision: payload.revision || "-",
             topicToStart: payload.topicToStart || "-",
-            topictostart: payload.topicToStart || "-"
+            topictostart: payload.topicToStart || "-",
+            leadsquared_lead_id: payload.leadsquared_lead_id || null,
+            "leadsquaredLeadId": payload.leadsquared_lead_id || null,
+            leadsquared_sync_status: payload.leadsquared_sync_status || "Pending",
+            "leadsquaredSyncStatus": payload.leadsquared_sync_status || "Pending"
           };
           const { error } = await window.supabaseClient.from('demos').insert([dbPayload]);
           return !error;
