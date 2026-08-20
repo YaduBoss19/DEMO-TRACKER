@@ -79,7 +79,11 @@ function mapSheetDemoToApp(s, rowNum) {
     revision: s.revision || s["REVISION"] || "-",
     topicToStart: s.topicToStart || s.topictostart || s["TOPIC TO START"] || "-",
     agentNote: s.agentNote || s.agentnote || s["AGENT NOTE"] || "",
-    position: parseInt(s.position) || (rowNum ? parseInt(rowNum) : 0)
+    position: parseInt(s.position) || (rowNum ? parseInt(rowNum) : 0),
+    leadsquared_lead_id: s.leadsquared_lead_id || s.leadsquaredLeadId || "",
+    leadsquared_sync_status: s.leadsquared_sync_status || s.leadsquaredSyncStatus || "Pending",
+    leadsquared_sync_time: s.leadsquared_sync_time || s.leadsquaredSyncTime || "",
+    leadsquared_sync_error: s.leadsquared_sync_error || s.leadsquaredSyncError || ""
   };
 }
 
@@ -389,7 +393,15 @@ async function writeToSupabase(action, payload) {
           revision: payload.revision || "-",
           topicToStart: payload.topicToStart || "-",
           topictostart: payload.topicToStart || "-",
-          position: payload.position || 0
+          position: payload.position || 0,
+          leadsquared_lead_id: payload.leadsquared_lead_id || null,
+          "leadsquaredLeadId": payload.leadsquared_lead_id || null,
+          leadsquared_sync_status: payload.leadsquared_sync_status || "Pending",
+          "leadsquaredSyncStatus": payload.leadsquared_sync_status || "Pending",
+          leadsquared_sync_time: payload.leadsquared_sync_time || null,
+          "leadsquaredSyncTime": payload.leadsquared_sync_time || null,
+          leadsquared_sync_error: payload.leadsquared_sync_error || null,
+          "leadsquaredSyncError": payload.leadsquared_sync_error || null
         };
         try {
           const { error: dAddErr } = await supabaseClient.from('demos').insert([demoAddPayload]);
@@ -433,7 +445,15 @@ async function writeToSupabase(action, payload) {
           revision: payload.revision || "-",
           topicToStart: payload.topicToStart || "-",
           topictostart: payload.topicToStart || "-",
-          position: payload.position || 0
+          position: payload.position || 0,
+          leadsquared_lead_id: payload.leadsquared_lead_id || null,
+          "leadsquaredLeadId": payload.leadsquared_lead_id || null,
+          leadsquared_sync_status: payload.leadsquared_sync_status || "Pending",
+          "leadsquaredSyncStatus": payload.leadsquared_sync_status || "Pending",
+          leadsquared_sync_time: payload.leadsquared_sync_time || null,
+          "leadsquaredSyncTime": payload.leadsquared_sync_time || null,
+          leadsquared_sync_error: payload.leadsquared_sync_error || null,
+          "leadsquaredSyncError": payload.leadsquared_sync_error || null
         };
         try {
           const { error: dUpErr } = await supabaseClient.from('demos').upsert(demoUpPayload);
@@ -1822,6 +1842,29 @@ function renderDemosTable() {
           </div>
         `;
 
+        let syncStatusHtml = "";
+        if (demo.feedback && demo.feedback.trim() !== "") {
+          const syncStatus = demo.leadsquared_sync_status || demo.leadsquaredSyncStatus || "Pending";
+          const syncError = demo.leadsquared_sync_error || demo.leadsquaredSyncError || "";
+          const syncTime = demo.leadsquared_sync_time || demo.leadsquaredSyncTime || "";
+          
+          if (syncStatus === "Sent") {
+            syncStatusHtml = `<div style="font-size: 0.62rem; color: #22c55e; margin-top: 2.5px; font-weight: bold;" title="Synced on ${syncTime}">☁️ LeadSquared Synced ✓</div>`;
+          } else if (syncStatus === "Failed") {
+            syncStatusHtml = `
+              <div style="font-size: 0.62rem; color: #ef4444; margin-top: 2.5px; font-weight: bold; display: flex; align-items: center; gap: 3px;" title="Failed: ${syncError}. Click to retry.">
+                ❌ Sync Pending 
+                <button type="button" class="retry-sync-btn" data-id="${demo.id}" style="background: none; border: none; padding: 0; color: #3b82f6; text-decoration: underline; font-size: 0.62rem; cursor: pointer; font-weight: bold;">Retry</button>
+              </div>`;
+          } else {
+            syncStatusHtml = `
+              <div style="font-size: 0.62rem; color: #f59e0b; margin-top: 2.5px; font-weight: bold; display: flex; align-items: center; gap: 3px;" title="Sync is pending. Click to sync now.">
+                ⏳ Sync Pending
+                <button type="button" class="retry-sync-btn" data-id="${demo.id}" style="background: none; border: none; padding: 0; color: #3b82f6; text-decoration: underline; font-size: 0.62rem; cursor: pointer; font-weight: bold;">Sync</button>
+              </div>`;
+          }
+        }
+
         tr.innerHTML = `
           <td><input type="checkbox" class="demo-bulk-checkbox" data-id="${demo.id}" ${isChecked}></td>
           <td><strong>${idx + 1}</strong></td>
@@ -1845,6 +1888,7 @@ function renderDemosTable() {
             <div style="font-size: 0.68rem; color: #475569; margin-top: 3px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; font-weight: 500;" title="${demo.feedback || 'No feedback yet'}">
               📝 ${demo.feedback || 'No feedback'}
             </div>
+            ${syncStatusHtml}
           </td>
           <td><input type="text" class="inline-mobile-input" data-id="${demo.id}" value="${demo.mobileNumber !== '-' ? demo.mobileNumber : ''}" style="width:135px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
           <td><input type="text" class="inline-language-input" data-id="${demo.id}" value="${demo.language !== '-' ? demo.language : ''}" style="width:85px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main); font-family:var(--font-main);"></td>
@@ -1948,10 +1992,34 @@ function renderDemosTable() {
         combinedNotesMarkup += `</div>`;
       }
       
+      let syncStatusHtml = "";
+      if (demo.feedback && demo.feedback.trim() !== "") {
+        const syncStatus = demo.leadsquared_sync_status || demo.leadsquaredSyncStatus || "Pending";
+        const syncError = demo.leadsquared_sync_error || demo.leadsquaredSyncError || "";
+        const syncTime = demo.leadsquared_sync_time || demo.leadsquaredSyncTime || "";
+        
+        if (syncStatus === "Sent") {
+          syncStatusHtml = `<div style="font-size: 0.62rem; color: #22c55e; margin-top: 2.5px; font-weight: bold;" title="Synced on ${syncTime}">☁️ LeadSquared Synced ✓</div>`;
+        } else if (syncStatus === "Failed") {
+          syncStatusHtml = `
+            <div style="font-size: 0.62rem; color: #ef4444; margin-top: 2.5px; font-weight: bold; display: flex; align-items: center; gap: 3px;" title="Failed: ${syncError}. Click to retry.">
+              ❌ Sync Pending 
+              <button type="button" class="retry-sync-btn" data-id="${demo.id}" style="background: none; border: none; padding: 0; color: #3b82f6; text-decoration: underline; font-size: 0.62rem; cursor: pointer; font-weight: bold;">Retry</button>
+            </div>`;
+        } else {
+          syncStatusHtml = `
+            <div style="font-size: 0.62rem; color: #f59e0b; margin-top: 2.5px; font-weight: bold; display: flex; align-items: center; gap: 3px;" title="Sync is pending. Click to sync now.">
+              ⏳ Sync Pending
+              <button type="button" class="retry-sync-btn" data-id="${demo.id}" style="background: none; border: none; padding: 0; color: #3b82f6; text-decoration: underline; font-size: 0.62rem; cursor: pointer; font-weight: bold;">Sync</button>
+            </div>`;
+        }
+      }
+
       const noteText = `
         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; min-width: 160px;">
           <div style="text-align:left; flex-grow:1;">
             ${combinedNotesMarkup || `<span style="color:var(--text-muted);font-style:italic;">No notes</span>`}
+            ${syncStatusHtml}
           </div>
           <button class="btn btn-sm edit-feedback-btn" data-id="${demo.id}" style="padding: 2px 6px; flex-shrink: 0;" title="Edit Notes & Outcomes">✏️</button>
         </div>
@@ -3777,11 +3845,60 @@ async function handleFeedbackSubmit(e) {
       document.getElementById("feedback-modal").classList.remove("open");
       renderDemosTable();
       renderDashboard();
-      showToast("Demo notes, status and outcome saved successfully.");
+      showToast("Feedback Saved ✓");
+      triggerLeadSquaredSync(id);
     } else {
-      showToast("Failed to save changes to database. Saved locally.", "warning");
+      showToast("Feedback Saved — LeadSquared Sync Pending", "warning");
       saveToLocalStorage();
       document.getElementById("feedback-modal").classList.remove("open");
+      renderDemosTable();
+      renderDashboard();
+      triggerLeadSquaredSync(id);
+    }
+  }
+}
+
+// --- helper: trigger LeadSquared sync backend route ---
+async function triggerLeadSquaredSync(demoId) {
+  const idx = state.demos.findIndex(d => d.id === demoId);
+  if (idx !== -1) {
+    state.demos[idx].leadsquared_sync_status = "Pending";
+    state.demos[idx].leadsquaredSyncStatus = "Pending";
+    saveToLocalStorage();
+    renderDemosTable();
+    renderDashboard();
+  }
+
+  try {
+    const response = await fetch("/api/sync-leadsquared", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ demoId })
+    });
+
+    const resData = await response.json();
+    if (!response.ok) {
+      throw new Error(resData.error || "Sync failed");
+    }
+
+    // Refresh from Supabase to fetch new database sync status
+    await fetchFromSheets();
+    renderDemosTable();
+    renderDashboard();
+    showToast("LeadSquared Synced ✓", "success");
+
+  } catch (err) {
+    console.error("LeadSquared Sync failed:", err);
+    showToast("Feedback Saved — LeadSquared Sync Pending", "warning");
+    
+    if (idx !== -1) {
+      state.demos[idx].leadsquared_sync_status = "Failed";
+      state.demos[idx].leadsquaredSyncStatus = "Failed";
+      state.demos[idx].leadsquared_sync_error = err.message;
+      state.demos[idx].leadsquaredSyncError = err.message;
+      saveToLocalStorage();
       renderDemosTable();
       renderDashboard();
     }
@@ -4601,6 +4718,12 @@ function initEventListeners() {
   // Delegate click events on dynamically generated buttons
   document.addEventListener("click", async (e) => {
     const target = e.target;
+
+    if (target.classList.contains("retry-sync-btn")) {
+      e.preventDefault();
+      triggerLeadSquaredSync(target.dataset.id);
+      return;
+    }
 
     if (target.classList.contains("modal-backdrop")) {
       target.classList.remove("open");
